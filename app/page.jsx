@@ -2,205 +2,199 @@
 import { useState, useEffect, useRef } from 'react';
 
 const STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap');
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --parchment: #FDFAF5;
-    --ink: #1C1A17;
-    --amber: #C4956A;
-    --amber-dark: #A67850;
-    --green: #2D5A27;
-    --border: #EDE8DF;
-    --surface: #F5F0E8;
-    --muted: #9A8C7A;
-    --dark-bg: #1C1A17;
-    --dark-surface: #2A2723;
-    --dark-border: #3A3630;
+    --red: #E8260A;
+    --black: #111111;
+    --white: #FFFFFF;
+    --gray: #F2F2F2;
+    --gray2: #CCCCCC;
   }
 
   body {
     font-family: 'DM Sans', sans-serif;
-    background: var(--parchment);
-    color: var(--ink);
+    background: var(--white);
+    color: var(--black);
     min-height: 100vh;
   }
-
-  .serif { font-family: 'Playfair Display', serif; }
 
   .app { width: 100%; margin: 0 auto; min-height: 100vh; position: relative; overflow-x: hidden; }
 
   .btn {
     display: inline-flex; align-items: center; justify-content: center;
-    padding: 12px 24px; border-radius: 100px; border: none; cursor: pointer;
-    font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500;
+    padding: 12px 24px; border-radius: 4px; border: none; cursor: pointer;
+    font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
     transition: all 0.15s ease; text-decoration: none;
   }
-  .btn-primary { background: var(--ink); color: var(--parchment); }
-  .btn-primary:hover { background: #333; }
-  .btn-primary:disabled { background: var(--muted); cursor: not-allowed; }
-  .btn-amber { background: var(--amber); color: white; }
-  .btn-amber:hover { background: var(--amber-dark); }
-  .btn-ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--border); }
-  .btn-ghost:hover { border-color: var(--muted); }
-  .btn-sm { padding: 8px 16px; font-size: 13px; }
+  .btn-primary { background: var(--red); color: var(--white); }
+  .btn-primary:hover { background: #c41f07; }
+  .btn-primary:disabled { background: var(--gray2); cursor: not-allowed; }
+  .btn-red { background: var(--red); color: var(--white); }
+  .btn-red:hover { background: #c41f07; }
+  .btn-ghost { background: transparent; color: var(--black); border: 2px solid var(--black); border-radius: 4px; }
+  .btn-ghost:hover { background: var(--gray); }
+  .btn-sm { padding: 8px 16px; font-size: 14px; }
   .btn-full { width: 100%; }
 
   .screen { min-height: 100vh; display: flex; flex-direction: column; }
   .safe-top { padding-top: env(safe-area-inset-top, 0px); }
 
-  .hero { background: var(--ink); color: var(--parchment); padding: 48px 24px 36px; }
+  .hero { background: var(--black); color: var(--white); padding: 48px 24px 36px; }
   .hero-sm { padding: 36px 24px 28px; }
-  .hero-label { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); margin-bottom: 8px; font-weight: 500; }
-  .hero-title { font-size: 28px; line-height: 1.2; }
+  .hero-label { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--red); margin-bottom: 8px; font-weight: 700; }
+  .hero-title { font-family: 'Barlow Condensed', sans-serif; font-size: 56px; line-height: 0.92; font-weight: 700; text-transform: uppercase; letter-spacing: -0.01em; }
 
-  .back-row { display: flex; align-items: center; gap: 8px; padding: 16px 20px; }
-  .back-btn { background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 14px; font-family: 'DM Sans', sans-serif; }
-  .back-btn:hover { color: var(--ink); }
+  .back-row { display: flex; align-items: center; gap: 8px; padding: 16px 20px; border-bottom: 2px solid var(--black); }
+  .back-btn { background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; color: var(--black); font-size: 13px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+  .back-btn:hover { color: var(--red); }
 
-  .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 20px; }
+  .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 20px; }
   .cookbook-card {
-    border-radius: 16px; aspect-ratio: 3/4; display: flex; flex-direction: column;
+    border-radius: 0; aspect-ratio: 3/4; display: flex; flex-direction: column;
     justify-content: flex-end; padding: 16px; cursor: pointer; position: relative; overflow: hidden;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    background: var(--black);
+    transition: opacity 0.15s ease;
   }
-  .cookbook-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+  .cookbook-card:hover { opacity: 0.82; }
   .cookbook-card-emoji { font-size: 28px; position: absolute; top: 16px; left: 16px; }
-  .cookbook-card-name { font-size: 15px; font-weight: 600; color: white; line-height: 1.2; }
-  .cookbook-card-count { font-size: 12px; color: rgba(255,255,255,0.7); margin-top: 2px; }
+  .cookbook-card-name { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 700; color: white; line-height: 1.0; text-transform: uppercase; letter-spacing: 0.02em; }
+  .cookbook-card-count { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; color: var(--red); margin-top: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
   .new-cookbook-card {
-    border-radius: 16px; aspect-ratio: 3/4; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 8px; border: 2px dashed var(--border);
-    cursor: pointer; background: var(--surface); transition: all 0.15s;
+    border-radius: 0; aspect-ratio: 3/4; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 8px; border: 2px solid var(--black);
+    cursor: pointer; background: var(--white); transition: all 0.15s;
   }
-  .new-cookbook-card:hover { border-color: var(--amber); }
-  .new-cookbook-card span { font-size: 13px; color: var(--muted); font-weight: 500; }
+  .new-cookbook-card:hover { background: var(--gray); }
+  .new-cookbook-card span { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; color: var(--black); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
 
-  .recipe-list { padding: 0 20px; display: flex; flex-direction: column; gap: 12px; }
+  .recipe-list { padding: 0 20px; display: flex; flex-direction: column; gap: 8px; }
   .recipe-card {
-    border-radius: 14px; padding: 16px; background: var(--surface);
-    border: 1.5px solid var(--border); cursor: pointer; transition: all 0.15s;
+    border-radius: 0; padding: 16px; background: var(--white);
+    border: 2px solid var(--black); cursor: pointer; transition: all 0.15s;
     display: flex; align-items: center; justify-content: space-between;
   }
-  .recipe-card:hover { border-color: var(--amber); background: white; }
-  .recipe-card-info h3 { font-size: 16px; font-weight: 600; }
-  .recipe-card-meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
-  .recipe-card-cooked { font-size: 11px; color: var(--amber); font-weight: 600; margin-top: 4px; }
+  .recipe-card:hover { background: var(--gray); }
+  .recipe-card-info h3 { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; line-height: 1; }
+  .recipe-card-meta { font-size: 12px; color: var(--gray2); margin-top: 4px; }
+  .recipe-card-cooked { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; color: var(--red); font-weight: 700; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.08em; }
 
-  .form-screen { background: var(--parchment); min-height: 100vh; }
+  .form-screen { background: var(--white); min-height: 100vh; }
   .form-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
   .form-field { display: flex; flex-direction: column; gap: 6px; }
-  .form-label { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .form-label { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--black); }
   .form-input {
-    padding: 12px 14px; border-radius: 10px; border: 1.5px solid var(--border);
-    font-size: 15px; font-family: 'DM Sans', sans-serif; background: white;
-    outline: none; transition: border-color 0.15s; color: var(--ink);
+    padding: 12px 14px; border-radius: 0; border: 2px solid var(--black);
+    font-size: 15px; font-family: 'DM Sans', sans-serif; background: var(--white);
+    outline: none; transition: border-color 0.15s; color: var(--black);
   }
-  .form-input:focus { border-color: var(--amber); }
+  .form-input:focus { border-color: var(--red); }
   .form-textarea { resize: vertical; min-height: 80px; }
 
-  .tabs { display: flex; padding: 0 20px; gap: 0; border-bottom: 1.5px solid var(--border); }
-  .tab { padding: 12px 16px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; background: none; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1.5px; transition: all 0.15s; font-family: 'DM Sans', sans-serif; }
-  .tab.active { color: var(--ink); border-bottom-color: var(--amber); }
+  .tabs { display: flex; padding: 0 20px; gap: 0; border-bottom: 2px solid var(--black); }
+  .tab { padding: 12px 16px; font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; border: none; background: none; color: var(--gray2); border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.15s; }
+  .tab.active { color: var(--black); border-bottom-color: var(--red); }
 
   .emoji-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-  .emoji-btn { font-size: 24px; padding: 8px; border-radius: 10px; border: 2px solid transparent; cursor: pointer; background: var(--surface); transition: all 0.1s; }
-  .emoji-btn.selected { border-color: var(--amber); background: white; }
+  .emoji-btn { font-size: 24px; padding: 8px; border-radius: 0; border: 2px solid transparent; cursor: pointer; background: var(--gray); transition: all 0.1s; }
+  .emoji-btn.selected { border-color: var(--red); background: white; }
   .color-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
-  .color-btn { width: 36px; height: 36px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; transition: all 0.1s; }
-  .color-btn.selected { border-color: white; box-shadow: 0 0 0 2px var(--ink); }
+  .color-btn { width: 36px; height: 36px; border-radius: 0; border: 3px solid transparent; cursor: pointer; transition: all 0.1s; }
+  .color-btn.selected { border-color: white; box-shadow: 0 0 0 2px var(--black); }
 
   .dynamic-list { display: flex; flex-direction: column; gap: 10px; }
   .dynamic-item { display: flex; gap: 8px; align-items: flex-start; }
-  .remove-btn { padding: 12px 10px; border: none; background: none; cursor: pointer; color: var(--muted); font-size: 18px; line-height: 1; flex-shrink: 0; }
-  .remove-btn:hover { color: #c00; }
+  .remove-btn { padding: 12px 10px; border: none; background: none; cursor: pointer; color: var(--gray2); font-size: 18px; line-height: 1; flex-shrink: 0; }
+  .remove-btn:hover { color: var(--red); }
 
   .cookbook-preview {
-    border-radius: 16px; aspect-ratio: 3/4; max-width: 140px;
+    border-radius: 0; aspect-ratio: 3/4; max-width: 140px;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    margin: 0 auto;
+    margin: 0 auto; background: var(--black);
   }
 
-  .detail-hero { background: var(--ink); color: var(--parchment); padding: 36px 24px 28px; }
+  .detail-hero { background: var(--black); color: var(--white); padding: 36px 24px 28px; }
   .detail-meta { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
-  .detail-meta-item { font-size: 13px; color: rgba(253,250,245,0.65); }
+  .detail-meta-item { font-size: 13px; color: var(--gray2); }
   .detail-section { padding: 20px; }
-  .detail-section h2 { font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
-  .ingredient-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 15px; }
-  .ingredient-qty { color: var(--muted); font-size: 13px; }
-  .step-preview { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
-  .step-num { width: 24px; height: 24px; border-radius: 50%; background: var(--amber); color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+  .detail-section h2 { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--black); margin-bottom: 12px; }
+  .ingredient-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--gray2); font-size: 15px; }
+  .ingredient-qty { color: var(--gray2); font-size: 13px; }
+  .step-preview { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--gray2); }
+  .step-num { width: 24px; height: 24px; border-radius: 0; background: var(--red); color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px; font-family: 'Barlow Condensed', sans-serif; }
 
   .checklist-item {
     display: flex; align-items: center; gap: 12px; padding: 14px 16px;
-    border-radius: 12px; border: 1.5px solid var(--border); background: white;
+    border-radius: 0; border: 2px solid var(--black); background: white;
     cursor: pointer; transition: all 0.2s;
   }
-  .checklist-item.checked { background: var(--surface); }
-  .checklist-item.checked .ci-name { text-decoration: line-through; color: var(--muted); }
+  .checklist-item.checked { background: var(--gray); border-color: var(--gray2); }
+  .checklist-item.checked .ci-name { text-decoration: line-through; color: var(--gray2); }
   .check-circle {
-    width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--border);
+    width: 24px; height: 24px; border-radius: 0; border: 2px solid var(--black);
     display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: white; transition: all 0.2s;
   }
-  .checklist-item.checked .check-circle { background: var(--green); border-color: var(--green); }
+  .checklist-item.checked .check-circle { background: var(--red); border-color: var(--red); }
   .ci-name { font-size: 15px; font-weight: 500; }
-  .ci-qty { font-size: 12px; color: var(--muted); margin-top: 1px; }
-  .checklist-progress { height: 4px; background: var(--border); margin: 0 20px; border-radius: 2px; overflow: hidden; }
-  .checklist-progress-fill { height: 100%; background: var(--amber); border-radius: 2px; transition: width 0.3s ease; }
+  .ci-qty { font-size: 12px; color: var(--gray2); margin-top: 1px; }
+  .checklist-progress { height: 4px; background: var(--gray2); margin: 0 20px; overflow: hidden; }
+  .checklist-progress-fill { height: 100%; background: var(--red); transition: width 0.3s ease; }
 
-  .cook-screen { background: var(--dark-bg); min-height: 100vh; display: flex; flex-direction: column; color: var(--parchment); }
+  .cook-screen { background: var(--black); min-height: 100vh; display: flex; flex-direction: column; color: var(--white); }
   .cook-header { padding: 20px 20px 0; display: flex; align-items: center; justify-content: space-between; }
-  .cook-title { font-size: 13px; color: rgba(253,250,245,0.5); font-weight: 500; }
+  .cook-title { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; color: rgba(255,255,255,0.4); font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; }
   .cook-dots { display: flex; gap: 6px; }
-  .cook-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(253,250,245,0.2); transition: all 0.2s; }
-  .cook-dot.active { background: var(--amber); width: 18px; }
-  .cook-dot.done { background: rgba(253,250,245,0.5); }
+  .cook-dot { width: 6px; height: 6px; border-radius: 0; background: rgba(255,255,255,0.2); transition: all 0.2s; }
+  .cook-dot.active { background: var(--red); width: 18px; }
+  .cook-dot.done { background: rgba(255,255,255,0.4); }
   .cook-steps { flex: 1; display: flex; flex-direction: column; padding: 0 24px; justify-content: center; }
-  .cook-prev { padding: 20px 0 24px; border-bottom: 1px solid var(--dark-border); }
-  .cook-prev-text { font-size: 14px; text-decoration: line-through; line-height: 1.5; color: rgba(253,250,245,0.3); }
+  .cook-prev { padding: 20px 0 24px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .cook-prev-text { font-size: 14px; text-decoration: line-through; line-height: 1.5; color: rgba(255,255,255,0.2); }
   .cook-current { padding: 36px 0; flex: 1; display: flex; flex-direction: column; justify-content: center; }
-  .cook-step-label { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); margin-bottom: 16px; font-weight: 500; }
-  .cook-current-text { font-size: 24px; line-height: 1.4; }
-  .cook-next { padding: 24px 0 20px; border-top: 1px solid var(--dark-border); }
-  .cook-next-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(253,250,245,0.4); margin-bottom: 8px; }
-  .cook-next-text { font-size: 14px; line-height: 1.5; color: rgba(253,250,245,0.4); }
+  .cook-step-label { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--red); margin-bottom: 16px; font-weight: 700; }
+  .cook-current-text { font-family: 'Barlow Condensed', sans-serif; font-size: 36px; line-height: 1.05; font-weight: 700; text-transform: uppercase; }
+  .cook-next { padding: 24px 0 20px; border-top: 1px solid rgba(255,255,255,0.08); }
+  .cook-next-label { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(255,255,255,0.3); margin-bottom: 8px; font-weight: 700; }
+  .cook-next-text { font-size: 14px; line-height: 1.5; color: rgba(255,255,255,0.3); }
   .cook-footer { padding: 20px 24px 40px; }
   .cook-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .cook-nav-btn {
-    width: 52px; height: 52px; border-radius: 50%; border: 1.5px solid var(--dark-border);
-    background: var(--dark-surface); color: var(--parchment); cursor: pointer;
+    width: 52px; height: 52px; border-radius: 0; border: 2px solid rgba(255,255,255,0.15);
+    background: transparent; color: var(--white); cursor: pointer;
     display: flex; align-items: center; justify-content: center; font-size: 20px; transition: all 0.15s;
   }
-  .cook-nav-btn:hover:not(:disabled) { border-color: var(--amber); }
-  .cook-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .cook-nav-btn:hover:not(:disabled) { border-color: var(--red); color: var(--red); }
+  .cook-nav-btn:disabled { opacity: 0.2; cursor: not-allowed; }
 
   .timer-widget {
-    background: var(--dark-surface); border: 1px solid var(--dark-border);
-    border-radius: 12px; padding: 12px 16px; margin-top: 16px;
+    background: var(--red);
+    border-radius: 0; padding: 12px 16px; margin-top: 16px;
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
   }
-  .timer-display { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
-  .timer-display.running { color: var(--amber); }
-  .timer-display.done { color: #4caf50; }
-  .timer-start-btn { padding: 8px 16px; border-radius: 100px; border: 1.5px solid var(--amber); background: transparent; color: var(--amber); font-size: 13px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
-  .timer-start-btn:hover { background: var(--amber); color: white; }
-  .timer-start-btn.running { border-color: var(--muted); color: var(--muted); }
+  .timer-display { font-family: 'Barlow Condensed', sans-serif; font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; color: white; }
+  .timer-display.running { color: white; }
+  .timer-display.done { color: var(--black); }
+  .timer-start-btn { padding: 8px 16px; border-radius: 0; border: 2px solid white; background: transparent; color: white; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: 0.08em; transition: all 0.15s; }
+  .timer-start-btn:hover { background: white; color: var(--red); }
+  .timer-start-btn.running { border-color: rgba(255,255,255,0.4); color: rgba(255,255,255,0.4); }
 
-  .done-screen { background: var(--dark-bg); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--parchment); padding: 40px 24px; text-align: center; }
+  .done-screen { background: var(--black); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--white); padding: 40px 24px; text-align: center; }
   .done-emoji { font-size: 64px; margin-bottom: 24px; }
-  .done-title { font-size: 32px; margin-bottom: 8px; }
-  .done-sub { color: rgba(253,250,245,0.6); font-size: 16px; margin-bottom: 40px; }
+  .done-title { font-family: 'Barlow Condensed', sans-serif; font-size: 64px; margin-bottom: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: -0.01em; line-height: 0.95; }
+  .done-sub { color: rgba(255,255,255,0.5); font-size: 16px; margin-bottom: 40px; }
 
   .scroll-body { overflow-y: auto; flex: 1; }
   .pb-safe { padding-bottom: 40px; }
 
   @media (min-width: 640px) {
-    .hero { padding: 56px 48px 44px; }
-    .hero-sm { padding: 44px 48px 32px; }
-    .hero-title { font-size: 38px; }
+    .hero { padding: 64px 48px 48px; }
+    .hero-sm { padding: 48px 48px 36px; }
+    .hero-title { font-size: 72px; }
     .back-row { padding: 20px 48px; }
-    .card-grid { grid-template-columns: repeat(3, 1fr); padding: 28px 48px; gap: 16px; }
+    .card-grid { grid-template-columns: repeat(3, 1fr); padding: 28px 48px; gap: 12px; }
     .recipe-list { padding: 0 48px; }
     .form-body { padding: 24px 48px; }
     .tabs { padding: 0 48px; }
@@ -216,27 +210,27 @@ const STYLES = `
   }
 
   @media (min-width: 1024px) {
-    .hero { padding: 80px 80px 64px; }
-    .hero-sm { padding: 60px 80px 48px; }
-    .hero-title { font-size: 52px; }
+    .hero { padding: 96px 80px 72px; }
+    .hero-sm { padding: 72px 80px 56px; }
+    .hero-title { font-size: 104px; }
     .back-row { padding: 24px 80px; }
-    .card-grid { grid-template-columns: repeat(4, 1fr); padding: 40px 80px; gap: 20px; max-width: 1280px; margin: 0 auto; }
-    .recipe-list { padding: 0 80px; display: grid; grid-template-columns: 1fr 1fr; align-items: start; }
+    .card-grid { grid-template-columns: repeat(4, 1fr); padding: 40px 80px; gap: 12px; max-width: 1280px; margin: 0 auto; }
+    .recipe-list { padding: 0 80px; display: grid; grid-template-columns: 1fr 1fr; align-items: start; gap: 8px; }
     .form-body { padding: 32px 80px; }
     .tabs { padding: 0 80px; }
-    .detail-hero { padding: 80px 80px 56px; }
+    .detail-hero { padding: 96px 80px 64px; }
     .detail-section { padding: 32px 80px; max-width: 900px; }
     .checklist-progress { margin: 0 80px; }
     .cook-header { max-width: 720px; padding: 28px 24px 0; }
     .cook-steps { max-width: 720px; }
     .cook-footer { max-width: 720px; }
-    .cook-current-text { font-size: 28px; }
-    .done-title { font-size: 44px; }
-    .cookbook-card-name { font-size: 17px; }
+    .cook-current-text { font-size: 48px; }
+    .done-title { font-size: 88px; }
+    .cookbook-card-name { font-size: 26px; }
   }
 `;
 
-const COOKBOOK_COLORS = ['#1C1A17','#2D5A27','#C4956A','#5B4FCF','#B5473A','#2A6B8C','#7A4B9C','#3D6B4F'];
+const COOKBOOK_COLORS = ['#111111','#1a3a1a','#8B1A0A','#1a1a3a','#2A6B8C','#3D6B4F','#5B4FCF','#7A4B9C'];
 const COOKBOOK_EMOJIS = ['📖','🍳','🥗','🍝','🍜','🥘','🍕','🌮','🍣','🥩','🥐','🧁','🫕','🍲','🥦','🍱'];
 
 function generateId() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
@@ -251,7 +245,7 @@ function useLocalStorage(key, initial) {
 }
 
 const SAMPLE_DATA = [{
-  id: 'sample-1', name: 'Italian Nights', emoji: '🍝', color: '#2D5A27',
+  id: 'sample-1', name: 'Italian Nights', emoji: '🍝', color: '#111111',
   recipes: [{
     id: 'sample-r1', name: 'Spaghetti Carbonara',
     description: 'Classic Roman pasta with egg, pecorino, guanciale and black pepper.',
@@ -278,13 +272,13 @@ function HomeScreen({ cookbooks, onOpenCookbook, onNewCookbook }) {
   return (
     <div className="screen">
       <div className="hero safe-top">
-        <div className="hero-label">Yes Chef</div>
-        <h1 className="serif hero-title">What are we<br/>cooking tonight?</h1>
+        <div className="hero-label">Your recipes</div>
+        <h1 className="hero-title">Yes Chef</h1>
       </div>
       <div className="scroll-body">
         <div className="card-grid">
           {cookbooks.map(cb => (
-            <div key={cb.id} className="cookbook-card" style={{ background: cb.color }} onClick={() => onOpenCookbook(cb.id)}>
+            <div key={cb.id} className="cookbook-card" onClick={() => onOpenCookbook(cb.id)}>
               <span className="cookbook-card-emoji">{cb.emoji}</span>
               <div>
                 <div className="cookbook-card-name">{cb.name}</div>
@@ -312,10 +306,10 @@ function NewCookbookScreen({ onBack, onSave }) {
       <div className="back-row safe-top">
         <button className="back-btn" onClick={onBack}>← Back</button>
       </div>
-      <div className="hero hero-sm" style={{ background: color }}>
-        <div className="cookbook-preview" style={{ background: color }}>
+      <div className="hero hero-sm">
+        <div className="cookbook-preview">
           <span style={{ fontSize: 36 }}>{emoji}</span>
-          <span style={{ fontSize: 14, fontWeight: 600, color: 'white', marginTop: 8, textAlign: 'center', padding: '0 8px' }}>{name || 'My Cookbook'}</span>
+          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 14, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'white', marginTop: 8, textAlign: 'center', padding: '0 8px' }}>{name || 'My Cookbook'}</span>
         </div>
       </div>
       <div className="form-body scroll-body">
@@ -331,14 +325,6 @@ function NewCookbookScreen({ onBack, onSave }) {
             ))}
           </div>
         </div>
-        <div className="form-field">
-          <label className="form-label">Color</label>
-          <div className="color-grid">
-            {COOKBOOK_COLORS.map(c => (
-              <button key={c} className={`color-btn${color === c ? ' selected' : ''}`} style={{ background: c }} onClick={() => setColor(c)} />
-            ))}
-          </div>
-        </div>
         <button className="btn btn-primary btn-full" disabled={!name.trim()} onClick={() => onSave({ name: name.trim(), emoji, color })}>
           Create Cookbook
         </button>
@@ -350,18 +336,18 @@ function NewCookbookScreen({ onBack, onSave }) {
 function CookbookScreen({ cookbook, onBack, onOpenRecipe, onNewRecipe }) {
   return (
     <div className="screen">
-      <div className="hero hero-sm safe-top" style={{ background: cookbook.color }}>
-        <div style={{ marginBottom: 12, cursor: 'pointer', color: 'rgba(253,250,245,0.7)', display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }} onClick={onBack}>← Back</div>
+      <div className="hero hero-sm safe-top">
+        <div style={{ marginBottom: 12, cursor: 'pointer', color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }} onClick={onBack}>← Back</div>
         <div style={{ fontSize: 36 }}>{cookbook.emoji}</div>
-        <h1 className="serif" style={{ fontSize: 26, marginTop: 8, color: 'white' }}>{cookbook.name}</h1>
-        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, marginTop: 4 }}>{cookbook.recipes.length} recipe{cookbook.recipes.length !== 1 ? 's' : ''}</p>
+        <h1 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', fontSize: 40, marginTop: 8, color: 'white', letterSpacing: '0.01em', lineHeight: 0.95 }}>{cookbook.name}</h1>
+        <p style={{ color: 'var(--red)', fontSize: 13, marginTop: 6, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{cookbook.recipes.length} recipe{cookbook.recipes.length !== 1 ? 's' : ''}</p>
       </div>
       <div className="scroll-body pb-safe">
         <div style={{ padding: 20 }}>
           <button className="btn btn-primary btn-full" onClick={onNewRecipe}>+ Add Recipe</button>
         </div>
         {cookbook.recipes.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--muted)' }}>
+          <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--gray2)' }}>
             <p style={{ fontSize: 32, marginBottom: 8 }}>🍳</p>
             <p>No recipes yet. Add your first one!</p>
           </div>
@@ -374,7 +360,7 @@ function CookbookScreen({ cookbook, onBack, onOpenRecipe, onNewRecipe }) {
                 <div className="recipe-card-meta">{r.time} min · {r.difficulty} · {r.servings} servings</div>
                 {r.cookedCount > 0 && <div className="recipe-card-cooked">Cooked {r.cookedCount}×</div>}
               </div>
-              <span style={{ color: 'var(--muted)', fontSize: 18 }}>›</span>
+              <span style={{ color: 'var(--gray2)', fontSize: 18 }}>›</span>
             </div>
           ))}
         </div>
@@ -416,10 +402,10 @@ function NewRecipeScreen({ onBack, onSave }) {
     <div className="form-screen">
       <div className="back-row safe-top">
         <button className="back-btn" onClick={onBack}>← Back</button>
-        <button className="btn btn-amber btn-sm" style={{ marginLeft: 'auto' }} disabled={!canSave} onClick={handleSave}>Save</button>
+        <button className="btn btn-red btn-sm" style={{ marginLeft: 'auto' }} disabled={!canSave} onClick={handleSave}>Save</button>
       </div>
-      <div style={{ padding: '0 20px 12px' }}>
-        <input className="form-input" placeholder="Recipe name" value={name} onChange={e => setName(e.target.value)} style={{ fontSize: 20, fontWeight: 600, border: 'none', padding: '4px 0', background: 'transparent', borderBottom: '2px solid var(--border)', borderRadius: 0, width: '100%' }} />
+      <div style={{ padding: '0 20px 12px', borderBottom: '2px solid var(--black)' }}>
+        <input className="form-input" placeholder="Recipe name" value={name} onChange={e => setName(e.target.value)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 24, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.02em', border: 'none', padding: '12px 0', background: 'transparent', width: '100%' }} />
       </div>
       <div className="tabs">
         {['Details', 'Ingredients', 'Steps'].map((t, i) => (
@@ -466,15 +452,15 @@ function NewRecipeScreen({ onBack, onSave }) {
         {tab === 2 && <>
           <div className="dynamic-list">
             {steps.map((step, idx) => (
-              <div key={step.id} style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 12, padding: 12 }}>
+              <div key={step.id} style={{ background: 'white', border: '2px solid var(--black)', borderRadius: 0, padding: 12 }}>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
                   <div className="step-num">{idx + 1}</div>
                   <textarea className="form-input form-textarea" placeholder={`Step ${idx + 1}...`} value={step.text} onChange={e => updateStep(step.id, 'text', e.target.value)} style={{ flex: 1, minHeight: 70, fontSize: 14 }} />
                   {steps.length > 1 && <button className="remove-btn" onClick={() => removeStep(step.id)}>×</button>}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, color: 'var(--muted)' }}>
-                    <input type="checkbox" checked={step.hasTimer} onChange={e => updateStep(step.id, 'hasTimer', e.target.checked)} style={{ accentColor: 'var(--amber)' }} />
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, color: 'var(--gray2)' }}>
+                    <input type="checkbox" checked={step.hasTimer} onChange={e => updateStep(step.id, 'hasTimer', e.target.checked)} style={{ accentColor: 'var(--red)' }} />
                     Timer
                   </label>
                   {step.hasTimer && (
@@ -494,10 +480,10 @@ function NewRecipeScreen({ onBack, onSave }) {
 function RecipeDetailScreen({ recipe, cookbook, onBack, onStartCook }) {
   return (
     <div className="screen">
-      <div className="detail-hero safe-top" style={{ background: cookbook.color }}>
-        <div style={{ marginBottom: 12, cursor: 'pointer', color: 'rgba(253,250,245,0.7)', display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }} onClick={onBack}>← {cookbook.name}</div>
-        <h1 className="serif" style={{ fontSize: 26, color: 'white', lineHeight: 1.2 }}>{recipe.name}</h1>
-        {recipe.description && <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14, marginTop: 6 }}>{recipe.description}</p>}
+      <div className="detail-hero safe-top">
+        <div style={{ marginBottom: 12, cursor: 'pointer', color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }} onClick={onBack}>← {cookbook.name}</div>
+        <h1 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', fontSize: 40, color: 'white', lineHeight: 0.95, letterSpacing: '0.01em' }}>{recipe.name}</h1>
+        {recipe.description && <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 14, marginTop: 8 }}>{recipe.description}</p>}
         <div className="detail-meta">
           <span className="detail-meta-item">⏱ {recipe.time} min</span>
           <span className="detail-meta-item">📊 {recipe.difficulty}</span>
@@ -522,13 +508,13 @@ function RecipeDetailScreen({ recipe, cookbook, onBack, onStartCook }) {
               <div className="step-num">{idx + 1}</div>
               <div>
                 <div style={{ fontSize: 14, lineHeight: 1.5 }}>{step.text}</div>
-                {step.timer && <div style={{ fontSize: 12, color: 'var(--amber)', marginTop: 4 }}>⏱ {step.timer} min timer</div>}
+                {step.timer && <div style={{ fontSize: 12, color: 'var(--red)', marginTop: 4 }}>⏱ {step.timer} min timer</div>}
               </div>
             </div>
           ))}
         </div>
         <div style={{ padding: '0 20px 40px' }}>
-          <button className="btn btn-primary btn-full" style={{ height: 52, fontSize: 16 }} onClick={onStartCook}>Start Cooking</button>
+          <button className="btn btn-primary btn-full" style={{ height: 52, fontSize: 18 }} onClick={onStartCook}>Start Cooking</button>
         </div>
       </div>
     </div>
@@ -554,19 +540,19 @@ function PrepChecklistScreen({ recipe, onBack, onStart }) {
   return (
     <div className="screen">
       <div className="hero safe-top">
-        <div style={{ marginBottom: 12, cursor: 'pointer', color: 'rgba(253,250,245,0.7)', display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }} onClick={onBack}>← Back</div>
+        <div style={{ marginBottom: 12, cursor: 'pointer', color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }} onClick={onBack}>← Back</div>
         <div className="hero-label">Before we start</div>
-        <h1 className="serif hero-title">Grab your<br/>ingredients</h1>
+        <h1 className="hero-title">Grab your<br/>ingredients</h1>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', padding: '16px 20px 8px' }}>
-        <span style={{ fontSize: 13, color: 'var(--muted)', flex: 1 }}>Servings</span>
+      <div style={{ display: 'flex', alignItems: 'center', padding: '16px 20px 8px', borderBottom: '1px solid var(--gray2)' }}>
+        <span style={{ fontSize: 13, color: 'var(--gray2)', flex: 1, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Servings</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button style={{ width: 32, height: 32, borderRadius: '50%', border: '1.5px solid var(--border)', background: 'white', cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setServings(s => Math.max(1, s - 1))}>−</button>
-          <span style={{ fontSize: 16, fontWeight: 600, minWidth: 20, textAlign: 'center' }}>{servings}</span>
-          <button style={{ width: 32, height: 32, borderRadius: '50%', border: '1.5px solid var(--border)', background: 'white', cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setServings(s => s + 1)}>+</button>
+          <button style={{ width: 32, height: 32, borderRadius: 0, border: '2px solid var(--black)', background: 'white', cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setServings(s => Math.max(1, s - 1))}>−</button>
+          <span style={{ fontSize: 18, fontWeight: 700, fontFamily: "'Barlow Condensed', sans-serif", minWidth: 20, textAlign: 'center' }}>{servings}</span>
+          <button style={{ width: 32, height: 32, borderRadius: 0, border: '2px solid var(--black)', background: 'white', cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setServings(s => s + 1)}>+</button>
         </div>
       </div>
-      <div className="checklist-progress">
+      <div className="checklist-progress" style={{ margin: '8px 20px' }}>
         <div className="checklist-progress-fill" style={{ width: `${(checkedCount / recipe.ingredients.length) * 100}%` }} />
       </div>
       <div className="scroll-body">
@@ -584,7 +570,7 @@ function PrepChecklistScreen({ recipe, onBack, onStart }) {
           ))}
         </div>
         <div style={{ padding: '8px 20px 40px' }}>
-          <button className="btn btn-primary btn-full" style={{ height: 52, fontSize: 16 }} disabled={!allChecked} onClick={() => onStart(servings)}>
+          <button className="btn btn-primary btn-full" style={{ height: 52, fontSize: 18 }} disabled={!allChecked} onClick={() => onStart(servings)}>
             {allChecked ? "Let's Cook! →" : `${checkedCount} of ${recipe.ingredients.length} confirmed`}
           </button>
         </div>
@@ -616,7 +602,7 @@ function TimerWidget({ minutes }) {
   return (
     <div className="timer-widget">
       <div>
-        <div style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(253,250,245,0.4)', marginBottom: 2 }}>Timer</div>
+        <div style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, color: 'rgba(255,255,255,0.6)', marginBottom: 2 }}>Timer</div>
         <div className={`timer-display${running ? ' running' : done ? ' done' : ''}`}>{done ? 'Done!' : fmt(seconds)}</div>
       </div>
       <button className={`timer-start-btn${running ? ' running' : ''}`} onClick={toggle}>
@@ -634,9 +620,9 @@ function CookModeScreen({ recipe, onDone }) {
     return (
       <div className="done-screen">
         <div className="done-emoji">🎉</div>
-        <h1 className="serif done-title">Bon appétit!</h1>
+        <h1 className="done-title">Bon appétit!</h1>
         <p className="done-sub">{recipe.name} is ready.</p>
-        <button className="btn btn-amber" style={{ width: '100%', maxWidth: 280, height: 52, fontSize: 16 }} onClick={onDone}>Finish & mark as cooked</button>
+        <button className="btn btn-red" style={{ width: '100%', maxWidth: 280, height: 52, fontSize: 18 }} onClick={onDone}>Finish & mark as cooked</button>
       </div>
     );
   }
@@ -661,7 +647,7 @@ function CookModeScreen({ recipe, onDone }) {
         )}
         <div className="cook-current">
           <div className="cook-step-label">Step {stepIdx + 1} of {steps.length}</div>
-          <p className="serif cook-current-text">{current.text}</p>
+          <p className="cook-current-text">{current.text}</p>
           {current.timer && <TimerWidget minutes={current.timer} />}
         </div>
         {next && (
@@ -675,7 +661,7 @@ function CookModeScreen({ recipe, onDone }) {
         <div className="cook-nav">
           <button className="cook-nav-btn" disabled={stepIdx === 0} onClick={() => setStepIdx(i => i - 1)}>←</button>
           <div style={{ flex: 1 }}>
-            <button className="btn btn-amber btn-full" onClick={() => setStepIdx(i => i + 1)}>
+            <button className="btn btn-red btn-full" onClick={() => setStepIdx(i => i + 1)}>
               {stepIdx === steps.length - 1 ? 'Finish' : 'Next step →'}
             </button>
           </div>
