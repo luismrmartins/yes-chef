@@ -35,6 +35,8 @@ const STYLES = `
   .btn-primary:disabled { background: var(--gray2); cursor: not-allowed; }
   .btn-red { background: var(--red); color: var(--white); }
   .btn-red:hover { background: #c41f07; }
+  .btn-black { background: var(--black); color: var(--white); }
+  .btn-black:hover { background: #333; }
   .btn-ghost { background: transparent; color: var(--black); border: 2px solid var(--black); border-radius: 4px; }
   .btn-ghost:hover { background: var(--gray); }
   .btn-sm { padding: 8px 16px; font-size: 14px; }
@@ -43,10 +45,17 @@ const STYLES = `
   .screen { min-height: 100vh; display: flex; flex-direction: column; }
   .safe-top { padding-top: env(safe-area-inset-top, 0px); }
 
+  /* Home screen — full red */
+  .screen-home { background: var(--red); }
+  .screen-home .hero { background: var(--red); }
+  .screen-home .scroll-body { background: var(--red); }
+  .screen-home .hero-label { color: rgba(255,255,255,0.75); }
+  .screen-home .hero-title { color: var(--white); }
+
   .hero { background: var(--black); color: var(--white); padding: 48px 24px 36px; }
   .hero-sm { padding: 36px 24px 28px; }
   .hero-label { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--red); margin-bottom: 8px; font-weight: 700; }
-  .hero-title { font-family: 'Barlow Condensed', sans-serif; font-size: 56px; line-height: 0.92; font-weight: 700; text-transform: uppercase; letter-spacing: -0.01em; }
+  .hero-title { font-family: 'Barlow Condensed', sans-serif; font-size: 56px; line-height: 0.92; font-weight: 700; text-transform: uppercase; letter-spacing: -0.01em; color: var(--white); }
 
   .back-row { display: flex; align-items: center; gap: 8px; padding: 16px 20px; border-bottom: 2px solid var(--black); }
   .back-btn { background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; color: var(--black); font-size: 13px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
@@ -60,16 +69,15 @@ const STYLES = `
     transition: opacity 0.15s ease;
   }
   .cookbook-card:hover { opacity: 0.82; }
-  .cookbook-card-emoji { font-size: 28px; position: absolute; top: 16px; left: 16px; }
   .cookbook-card-name { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 700; color: white; line-height: 1.0; text-transform: uppercase; letter-spacing: 0.02em; }
   .cookbook-card-count { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; color: var(--red); margin-top: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
   .new-cookbook-card {
     border-radius: 0; aspect-ratio: 3/4; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 8px; border: 2px solid var(--black);
-    cursor: pointer; background: var(--white); transition: all 0.15s;
+    align-items: center; justify-content: center; gap: 8px;
+    cursor: pointer; background: var(--black); transition: all 0.15s;
   }
-  .new-cookbook-card:hover { background: var(--gray); }
-  .new-cookbook-card span { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; color: var(--black); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+  .new-cookbook-card:hover { background: #222; }
+  .new-cookbook-card span { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; color: var(--white); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
 
   .recipe-list { padding: 0 20px; display: flex; flex-direction: column; gap: 8px; }
   .recipe-card {
@@ -98,11 +106,8 @@ const STYLES = `
   .tab { padding: 12px 16px; font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; border: none; background: none; color: var(--gray2); border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.15s; }
   .tab.active { color: var(--black); border-bottom-color: var(--red); }
 
-  .emoji-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-  .emoji-btn { font-size: 24px; padding: 8px; border-radius: 0; border: 2px solid transparent; cursor: pointer; background: var(--gray); transition: all 0.1s; }
-  .emoji-btn.selected { border-color: var(--red); background: white; }
   .color-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
-  .color-btn { width: 36px; height: 36px; border-radius: 0; border: 3px solid transparent; cursor: pointer; transition: all 0.1s; }
+  .color-btn { width: 44px; height: 44px; border-radius: 0; border: 3px solid transparent; cursor: pointer; transition: all 0.1s; }
   .color-btn.selected { border-color: white; box-shadow: 0 0 0 2px var(--black); }
 
   .dynamic-list { display: flex; flex-direction: column; gap: 10px; }
@@ -111,10 +116,11 @@ const STYLES = `
   .remove-btn:hover { color: var(--red); }
 
   .cookbook-preview {
-    border-radius: 0; aspect-ratio: 3/4; max-width: 140px;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    margin: 0 auto; background: var(--black);
+    border-radius: 0; aspect-ratio: 3/4; max-width: 120px;
+    display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-end;
+    margin: 0 auto; background: var(--black); padding: 14px;
   }
+  .cookbook-preview-name { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: 0.02em; line-height: 1; }
 
   .detail-hero { background: var(--black); color: var(--white); padding: 36px 24px 28px; }
   .detail-meta { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
@@ -175,14 +181,12 @@ const STYLES = `
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
   }
   .timer-display { font-family: 'Barlow Condensed', sans-serif; font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; color: white; }
-  .timer-display.running { color: white; }
   .timer-display.done { color: var(--black); }
   .timer-start-btn { padding: 8px 16px; border-radius: 0; border: 2px solid white; background: transparent; color: white; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: 0.08em; transition: all 0.15s; }
   .timer-start-btn:hover { background: white; color: var(--red); }
   .timer-start-btn.running { border-color: rgba(255,255,255,0.4); color: rgba(255,255,255,0.4); }
 
   .done-screen { background: var(--black); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--white); padding: 40px 24px; text-align: center; }
-  .done-emoji { font-size: 64px; margin-bottom: 24px; }
   .done-title { font-family: 'Barlow Condensed', sans-serif; font-size: 64px; margin-bottom: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: -0.01em; line-height: 0.95; }
   .done-sub { color: rgba(255,255,255,0.5); font-size: 16px; margin-bottom: 40px; }
 
@@ -230,8 +234,7 @@ const STYLES = `
   }
 `;
 
-const COOKBOOK_COLORS = ['#111111','#1a3a1a','#8B1A0A','#1a1a3a','#2A6B8C','#3D6B4F','#5B4FCF','#7A4B9C'];
-const COOKBOOK_EMOJIS = ['📖','🍳','🥗','🍝','🍜','🥘','🍕','🌮','🍣','🥩','🥐','🧁','🫕','🍲','🥦','🍱'];
+const COOKBOOK_COLORS = ['#111111','#1a1a2e','#1a3a1a','#3a1a1a','#2A6B8C','#5B4FCF','#7A4B9C','#8B1A0A'];
 
 function generateId() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
 
@@ -245,7 +248,7 @@ function useLocalStorage(key, initial) {
 }
 
 const SAMPLE_DATA = [{
-  id: 'sample-1', name: 'Italian Nights', emoji: '🍝', color: '#111111',
+  id: 'sample-1', name: 'Italian Nights', color: '#111111',
   recipes: [{
     id: 'sample-r1', name: 'Spaghetti Carbonara',
     description: 'Classic Roman pasta with egg, pecorino, guanciale and black pepper.',
@@ -270,16 +273,15 @@ const SAMPLE_DATA = [{
 
 function HomeScreen({ cookbooks, onOpenCookbook, onNewCookbook }) {
   return (
-    <div className="screen">
+    <div className="screen screen-home">
       <div className="hero safe-top">
-        <div className="hero-label">Your recipes</div>
+        <div className="hero-label">Your cookbooks</div>
         <h1 className="hero-title">Yes Chef</h1>
       </div>
       <div className="scroll-body">
         <div className="card-grid">
           {cookbooks.map(cb => (
             <div key={cb.id} className="cookbook-card" onClick={() => onOpenCookbook(cb.id)}>
-              <span className="cookbook-card-emoji">{cb.emoji}</span>
               <div>
                 <div className="cookbook-card-name">{cb.name}</div>
                 <div className="cookbook-card-count">{cb.recipes.length} recipe{cb.recipes.length !== 1 ? 's' : ''}</div>
@@ -298,7 +300,6 @@ function HomeScreen({ cookbooks, onOpenCookbook, onNewCookbook }) {
 
 function NewCookbookScreen({ onBack, onSave }) {
   const [name, setName] = useState('');
-  const [emoji, setEmoji] = useState('📖');
   const [color, setColor] = useState(COOKBOOK_COLORS[0]);
 
   return (
@@ -306,10 +307,9 @@ function NewCookbookScreen({ onBack, onSave }) {
       <div className="back-row safe-top">
         <button className="back-btn" onClick={onBack}>← Back</button>
       </div>
-      <div className="hero hero-sm">
-        <div className="cookbook-preview">
-          <span style={{ fontSize: 36 }}>{emoji}</span>
-          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 14, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'white', marginTop: 8, textAlign: 'center', padding: '0 8px' }}>{name || 'My Cookbook'}</span>
+      <div className="hero hero-sm" style={{ background: color }}>
+        <div className="cookbook-preview" style={{ background: color, border: '1px solid rgba(255,255,255,0.15)' }}>
+          <div className="cookbook-preview-name">{name || 'My Cookbook'}</div>
         </div>
       </div>
       <div className="form-body scroll-body">
@@ -318,14 +318,14 @@ function NewCookbookScreen({ onBack, onSave }) {
           <input className="form-input" placeholder="e.g. Date Night" value={name} onChange={e => setName(e.target.value)} />
         </div>
         <div className="form-field">
-          <label className="form-label">Emoji</label>
-          <div className="emoji-grid">
-            {COOKBOOK_EMOJIS.map(e => (
-              <button key={e} className={`emoji-btn${emoji === e ? ' selected' : ''}`} onClick={() => setEmoji(e)}>{e}</button>
+          <label className="form-label">Color</label>
+          <div className="color-grid">
+            {COOKBOOK_COLORS.map(c => (
+              <button key={c} className={`color-btn${color === c ? ' selected' : ''}`} style={{ background: c }} onClick={() => setColor(c)} />
             ))}
           </div>
         </div>
-        <button className="btn btn-primary btn-full" disabled={!name.trim()} onClick={() => onSave({ name: name.trim(), emoji, color })}>
+        <button className="btn btn-primary btn-full" disabled={!name.trim()} onClick={() => onSave({ name: name.trim(), color })}>
           Create Cookbook
         </button>
       </div>
@@ -338,8 +338,7 @@ function CookbookScreen({ cookbook, onBack, onOpenRecipe, onNewRecipe }) {
     <div className="screen">
       <div className="hero hero-sm safe-top">
         <div style={{ marginBottom: 12, cursor: 'pointer', color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }} onClick={onBack}>← Back</div>
-        <div style={{ fontSize: 36 }}>{cookbook.emoji}</div>
-        <h1 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', fontSize: 40, marginTop: 8, color: 'white', letterSpacing: '0.01em', lineHeight: 0.95 }}>{cookbook.name}</h1>
+        <h1 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', fontSize: 40, color: 'white', letterSpacing: '0.01em', lineHeight: 0.95 }}>{cookbook.name}</h1>
         <p style={{ color: 'var(--red)', fontSize: 13, marginTop: 6, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{cookbook.recipes.length} recipe{cookbook.recipes.length !== 1 ? 's' : ''}</p>
       </div>
       <div className="scroll-body pb-safe">
@@ -348,7 +347,6 @@ function CookbookScreen({ cookbook, onBack, onOpenRecipe, onNewRecipe }) {
         </div>
         {cookbook.recipes.length === 0 && (
           <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--gray2)' }}>
-            <p style={{ fontSize: 32, marginBottom: 8 }}>🍳</p>
             <p>No recipes yet. Add your first one!</p>
           </div>
         )}
@@ -485,10 +483,10 @@ function RecipeDetailScreen({ recipe, cookbook, onBack, onStartCook }) {
         <h1 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', fontSize: 40, color: 'white', lineHeight: 0.95, letterSpacing: '0.01em' }}>{recipe.name}</h1>
         {recipe.description && <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 14, marginTop: 8 }}>{recipe.description}</p>}
         <div className="detail-meta">
-          <span className="detail-meta-item">⏱ {recipe.time} min</span>
-          <span className="detail-meta-item">📊 {recipe.difficulty}</span>
-          <span className="detail-meta-item">🍽 {recipe.servings} servings</span>
-          {recipe.cookedCount > 0 && <span className="detail-meta-item">♻️ Cooked {recipe.cookedCount}×</span>}
+          <span className="detail-meta-item">{recipe.time} min</span>
+          <span className="detail-meta-item">{recipe.difficulty}</span>
+          <span className="detail-meta-item">{recipe.servings} servings</span>
+          {recipe.cookedCount > 0 && <span className="detail-meta-item">Cooked {recipe.cookedCount}×</span>}
         </div>
       </div>
       <div className="scroll-body pb-safe">
@@ -508,7 +506,7 @@ function RecipeDetailScreen({ recipe, cookbook, onBack, onStartCook }) {
               <div className="step-num">{idx + 1}</div>
               <div>
                 <div style={{ fontSize: 14, lineHeight: 1.5 }}>{step.text}</div>
-                {step.timer && <div style={{ fontSize: 12, color: 'var(--red)', marginTop: 4 }}>⏱ {step.timer} min timer</div>}
+                {step.timer && <div style={{ fontSize: 12, color: 'var(--red)', marginTop: 4 }}>{step.timer} min timer</div>}
               </div>
             </div>
           ))}
@@ -571,7 +569,7 @@ function PrepChecklistScreen({ recipe, onBack, onStart }) {
         </div>
         <div style={{ padding: '8px 20px 40px' }}>
           <button className="btn btn-primary btn-full" style={{ height: 52, fontSize: 18 }} disabled={!allChecked} onClick={() => onStart(servings)}>
-            {allChecked ? "Let's Cook! →" : `${checkedCount} of ${recipe.ingredients.length} confirmed`}
+            {allChecked ? "Let's Cook!" : `${checkedCount} of ${recipe.ingredients.length} confirmed`}
           </button>
         </div>
       </div>
@@ -603,7 +601,7 @@ function TimerWidget({ minutes }) {
     <div className="timer-widget">
       <div>
         <div style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, color: 'rgba(255,255,255,0.6)', marginBottom: 2 }}>Timer</div>
-        <div className={`timer-display${running ? ' running' : done ? ' done' : ''}`}>{done ? 'Done!' : fmt(seconds)}</div>
+        <div className={`timer-display${done ? ' done' : ''}`}>{done ? 'Done!' : fmt(seconds)}</div>
       </div>
       <button className={`timer-start-btn${running ? ' running' : ''}`} onClick={toggle}>
         {done ? 'Reset' : running ? 'Pause' : 'Start'}
@@ -619,7 +617,6 @@ function CookModeScreen({ recipe, onDone }) {
   if (stepIdx >= steps.length) {
     return (
       <div className="done-screen">
-        <div className="done-emoji">🎉</div>
         <h1 className="done-title">Bon appétit!</h1>
         <p className="done-sub">{recipe.name} is ready.</p>
         <button className="btn btn-red" style={{ width: '100%', maxWidth: 280, height: 52, fontSize: 18 }} onClick={onDone}>Finish & mark as cooked</button>
