@@ -52,6 +52,11 @@ const STYLES = `
   .screen-home .hero-label { color: rgba(255,255,255,0.75); }
   .screen-home .hero-title { color: var(--white); }
 
+  /* Cookbook screen — full red */
+  .screen-cookbook { background: var(--red); }
+  .screen-cookbook .hero { background: var(--red); }
+  .screen-cookbook .scroll-body { background: var(--red); }
+
   .hero { background: var(--black); color: var(--white); padding: 48px 24px 36px; }
   .hero-sm { padding: 36px 24px 28px; }
   .hero-label { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--red); margin-bottom: 8px; font-weight: 700; }
@@ -79,16 +84,13 @@ const STYLES = `
   .new-cookbook-card:hover { background: #222; }
   .new-cookbook-card span { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; color: var(--white); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
 
-  .recipe-list { padding: 0 20px; display: flex; flex-direction: column; gap: 8px; }
-  .recipe-card {
-    border-radius: 0; padding: 16px; background: var(--white);
-    border: 2px solid var(--black); cursor: pointer; transition: all 0.15s;
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .recipe-card:hover { background: var(--gray); }
-  .recipe-card-info h3 { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; line-height: 1; }
-  .recipe-card-meta { font-size: 12px; color: var(--gray2); margin-top: 4px; }
-  .recipe-card-cooked { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; color: var(--red); font-weight: 700; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .recipe-list-flat { display: flex; flex-direction: column; }
+  .recipe-row { padding: 20px 24px; cursor: pointer; transition: opacity 0.15s; border-bottom: 1px solid rgba(255,255,255,0.2); }
+  .recipe-row:first-child { border-top: 1px solid rgba(255,255,255,0.2); }
+  .recipe-row:hover { opacity: 0.7; }
+  .recipe-row-name { font-family: 'Barlow Condensed', sans-serif; font-size: 32px; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: 0.01em; line-height: 1; }
+  .recipe-row-meta { font-size: 13px; color: rgba(255,255,255,0.5); margin-top: 5px; }
+  .recipe-row-cooked { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; color: rgba(255,255,255,0.65); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 4px; }
 
   .form-screen { background: var(--white); min-height: 100vh; }
   .form-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
@@ -199,7 +201,8 @@ const STYLES = `
     .hero-title { font-size: 72px; }
     .back-row { padding: 20px 48px; }
     .card-grid { grid-template-columns: repeat(3, 1fr); padding: 28px 48px; gap: 12px; }
-    .recipe-list { padding: 0 48px; }
+    .recipe-list-flat { padding: 0; }
+    .recipe-row { padding: 24px 48px; }
     .form-body { padding: 24px 48px; }
     .tabs { padding: 0 48px; }
     .detail-hero { padding: 48px 48px 36px; }
@@ -219,7 +222,8 @@ const STYLES = `
     .hero-title { font-size: 104px; }
     .back-row { padding: 24px 80px; }
     .card-grid { grid-template-columns: repeat(4, 1fr); padding: 40px 80px; gap: 12px; max-width: 1280px; margin: 0 auto; }
-    .recipe-list { padding: 0 80px; display: grid; grid-template-columns: 1fr 1fr; align-items: start; gap: 8px; }
+    .recipe-row { padding: 28px 80px; }
+    .recipe-row-name { font-size: 40px; }
     .form-body { padding: 32px 80px; }
     .tabs { padding: 0 80px; }
     .detail-hero { padding: 96px 80px 64px; }
@@ -335,32 +339,30 @@ function NewCookbookScreen({ onBack, onSave }) {
 
 function CookbookScreen({ cookbook, onBack, onOpenRecipe, onNewRecipe }) {
   return (
-    <div className="screen">
+    <div className="screen screen-cookbook">
       <div className="hero hero-sm safe-top">
         <div style={{ marginBottom: 12, cursor: 'pointer', color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }} onClick={onBack}>← Back</div>
         <h1 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', fontSize: 40, color: 'white', letterSpacing: '0.01em', lineHeight: 0.95 }}>{cookbook.name}</h1>
-        <p style={{ color: 'var(--red)', fontSize: 13, marginTop: 6, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{cookbook.recipes.length} recipe{cookbook.recipes.length !== 1 ? 's' : ''}</p>
+        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, marginTop: 6, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{cookbook.recipes.length} recipe{cookbook.recipes.length !== 1 ? 's' : ''}</p>
       </div>
-      <div className="scroll-body pb-safe">
-        <div style={{ padding: 20 }}>
-          <button className="btn btn-primary btn-full" onClick={onNewRecipe}>+ Add Recipe</button>
-        </div>
-        {cookbook.recipes.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--gray2)' }}>
-            <p>No recipes yet. Add your first one!</p>
+      <div className="scroll-body" style={{ display: 'flex', flexDirection: 'column' }}>
+        {cookbook.recipes.length === 0 ? (
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.4)', fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: 14 }}>
+            No recipes yet
+          </div>
+        ) : (
+          <div className="recipe-list-flat">
+            {cookbook.recipes.map(r => (
+              <div key={r.id} className="recipe-row" onClick={() => onOpenRecipe(r.id)}>
+                <div className="recipe-row-name">{r.name}</div>
+                <div className="recipe-row-meta">{r.time} min · {r.difficulty} · {r.servings} servings</div>
+                {r.cookedCount > 0 && <div className="recipe-row-cooked">Cooked {r.cookedCount}×</div>}
+              </div>
+            ))}
           </div>
         )}
-        <div className="recipe-list">
-          {cookbook.recipes.map(r => (
-            <div key={r.id} className="recipe-card" onClick={() => onOpenRecipe(r.id)}>
-              <div className="recipe-card-info">
-                <h3>{r.name}</h3>
-                <div className="recipe-card-meta">{r.time} min · {r.difficulty} · {r.servings} servings</div>
-                {r.cookedCount > 0 && <div className="recipe-card-cooked">Cooked {r.cookedCount}×</div>}
-              </div>
-              <span style={{ color: 'var(--gray2)', fontSize: 18 }}>›</span>
-            </div>
-          ))}
+        <div style={{ padding: '24px 24px 40px', marginTop: 'auto' }}>
+          <button className="btn btn-black btn-full" style={{ height: 52, fontSize: 18 }} onClick={onNewRecipe}>+ Add Recipe</button>
         </div>
       </div>
     </div>
