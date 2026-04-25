@@ -29,7 +29,7 @@ const STYLES = `
 
   .serif { font-family: 'Playfair Display', serif; }
 
-  .app { max-width: 430px; margin: 0 auto; min-height: 100vh; position: relative; overflow-x: hidden; }
+  .app { width: 100%; margin: 0 auto; min-height: 100vh; position: relative; overflow-x: hidden; }
 
   .btn {
     display: inline-flex; align-items: center; justify-content: center;
@@ -194,6 +194,46 @@ const STYLES = `
 
   .scroll-body { overflow-y: auto; flex: 1; }
   .pb-safe { padding-bottom: 40px; }
+
+  @media (min-width: 640px) {
+    .hero { padding: 56px 48px 44px; }
+    .hero-sm { padding: 44px 48px 32px; }
+    .hero-title { font-size: 38px; }
+    .back-row { padding: 20px 48px; }
+    .card-grid { grid-template-columns: repeat(3, 1fr); padding: 28px 48px; gap: 16px; }
+    .recipe-list { padding: 0 48px; }
+    .form-body { padding: 24px 48px; }
+    .tabs { padding: 0 48px; }
+    .detail-hero { padding: 48px 48px 36px; }
+    .detail-section { padding: 24px 48px; }
+    .checklist-progress { margin: 0 48px; }
+    .cook-screen { align-items: center; }
+    .cook-header { width: 100%; max-width: 640px; }
+    .cook-steps { max-width: 640px; width: 100%; }
+    .cook-footer { width: 100%; max-width: 640px; }
+    .done-screen { padding: 60px 48px; }
+    .form-screen { max-width: 680px; margin: 0 auto; width: 100%; }
+  }
+
+  @media (min-width: 1024px) {
+    .hero { padding: 80px 80px 64px; }
+    .hero-sm { padding: 60px 80px 48px; }
+    .hero-title { font-size: 52px; }
+    .back-row { padding: 24px 80px; }
+    .card-grid { grid-template-columns: repeat(4, 1fr); padding: 40px 80px; gap: 20px; max-width: 1280px; margin: 0 auto; }
+    .recipe-list { padding: 0 80px; display: grid; grid-template-columns: 1fr 1fr; align-items: start; }
+    .form-body { padding: 32px 80px; }
+    .tabs { padding: 0 80px; }
+    .detail-hero { padding: 80px 80px 56px; }
+    .detail-section { padding: 32px 80px; max-width: 900px; }
+    .checklist-progress { margin: 0 80px; }
+    .cook-header { max-width: 720px; padding: 28px 24px 0; }
+    .cook-steps { max-width: 720px; }
+    .cook-footer { max-width: 720px; }
+    .cook-current-text { font-size: 28px; }
+    .done-title { font-size: 44px; }
+    .cookbook-card-name { font-size: 17px; }
+  }
 `;
 
 const COOKBOOK_COLORS = ['#1C1A17','#2D5A27','#C4956A','#5B4FCF','#B5473A','#2A6B8C','#7A4B9C','#3D6B4F'];
