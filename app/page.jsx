@@ -45,18 +45,35 @@ const STYLES = `
   .screen { min-height: 100vh; display: flex; flex-direction: column; }
   .safe-top { padding-top: env(safe-area-inset-top, 0px); }
 
-  /* Home screen — full red */
-  .screen-home { background: var(--red); }
-  .screen-home .hero { background: var(--red); }
-  .screen-home .scroll-body { background: var(--red); }
-  .screen-home .hero-label { color: rgba(255,255,255,0.75); }
-  .screen-home .hero-title { color: var(--white); }
+  /* Red screens */
+  .screen-red { background: var(--red); }
 
-  /* Cookbook screen — full red */
-  .screen-cookbook { background: var(--red); }
-  .screen-cookbook .hero { background: var(--red); }
-  .screen-cookbook .scroll-body { background: var(--red); }
+  /* Page header (replaces .hero on red screens) */
+  .page-header { padding: 48px 24px 28px; }
+  .page-header.safe-top { padding-top: max(48px, calc(env(safe-area-inset-top, 0px) + 16px)); }
+  .page-header-back { display: flex; align-items: center; gap: 6px; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.5); cursor: pointer; margin-bottom: 16px; background: none; border: none; padding: 0; }
+  .page-header-back:hover { color: rgba(255,255,255,0.85); }
+  .page-header-title { font-family: 'Barlow Condensed', sans-serif; font-size: 56px; font-weight: 700; text-transform: uppercase; letter-spacing: -0.01em; line-height: 0.92; color: var(--white); }
+  .page-header-sub { font-size: 15px; color: rgba(255,255,255,0.6); margin-top: 8px; }
+  .page-header-meta { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.55); margin-top: 8px; }
 
+  /* Flat list — shared between cookbook list and recipe list */
+  .flat-list { display: flex; flex-direction: column; }
+  .flat-row {
+    display: flex; align-items: center; padding: 20px 24px; cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,0.15); transition: opacity 0.15s;
+  }
+  .flat-row:first-child { border-top: 1px solid rgba(255,255,255,0.15); }
+  .flat-row:hover { opacity: 0.65; }
+  .flat-row-info { flex: 1; min-width: 0; }
+  .flat-row-name { font-family: 'Barlow Condensed', sans-serif; font-size: 32px; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: 0.01em; line-height: 1; }
+  .flat-row-meta { font-size: 13px; color: rgba(255,255,255,0.5); margin-top: 5px; }
+  .flat-row-badge { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; color: rgba(255,255,255,0.55); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 4px; }
+  .flat-row-arrow { color: rgba(255,255,255,0.3); font-size: 20px; flex-shrink: 0; margin-left: 12px; }
+  .flat-row-action { display: flex; align-items: center; padding: 20px 24px; cursor: pointer; color: rgba(255,255,255,0.5); font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; gap: 8px; transition: opacity 0.15s; border-top: 1px solid rgba(255,255,255,0.15); }
+  .flat-row-action:hover { opacity: 0.7; }
+
+  /* Standard dark hero for non-red screens */
   .hero { background: var(--black); color: var(--white); padding: 48px 24px 36px; }
   .hero-sm { padding: 36px 24px 28px; }
   .hero-label { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--red); margin-bottom: 8px; font-weight: 700; }
@@ -65,32 +82,6 @@ const STYLES = `
   .back-row { display: flex; align-items: center; gap: 8px; padding: 16px 20px; border-bottom: 2px solid var(--black); }
   .back-btn { background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; color: var(--black); font-size: 13px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
   .back-btn:hover { color: var(--red); }
-
-  .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 20px; }
-  .cookbook-card {
-    border-radius: 0; aspect-ratio: 3/4; display: flex; flex-direction: column;
-    justify-content: flex-end; padding: 16px; cursor: pointer; position: relative; overflow: hidden;
-    background: var(--black);
-    transition: opacity 0.15s ease;
-  }
-  .cookbook-card:hover { opacity: 0.82; }
-  .cookbook-card-name { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 700; color: white; line-height: 1.0; text-transform: uppercase; letter-spacing: 0.02em; }
-  .cookbook-card-count { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; color: var(--red); margin-top: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
-  .new-cookbook-card {
-    border-radius: 0; aspect-ratio: 3/4; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 8px;
-    cursor: pointer; background: var(--black); transition: all 0.15s;
-  }
-  .new-cookbook-card:hover { background: #222; }
-  .new-cookbook-card span { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; color: var(--white); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
-
-  .recipe-list-flat { display: flex; flex-direction: column; }
-  .recipe-row { padding: 20px 24px; cursor: pointer; transition: opacity 0.15s; border-bottom: 1px solid rgba(255,255,255,0.2); }
-  .recipe-row:first-child { border-top: 1px solid rgba(255,255,255,0.2); }
-  .recipe-row:hover { opacity: 0.7; }
-  .recipe-row-name { font-family: 'Barlow Condensed', sans-serif; font-size: 32px; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: 0.01em; line-height: 1; }
-  .recipe-row-meta { font-size: 13px; color: rgba(255,255,255,0.5); margin-top: 5px; }
-  .recipe-row-cooked { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; color: rgba(255,255,255,0.65); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 4px; }
 
   .form-screen { background: var(--white); min-height: 100vh; }
   .form-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
@@ -178,8 +169,7 @@ const STYLES = `
   .cook-nav-btn:disabled { opacity: 0.2; cursor: not-allowed; }
 
   .timer-widget {
-    background: var(--red);
-    border-radius: 0; padding: 12px 16px; margin-top: 16px;
+    background: var(--red); border-radius: 0; padding: 12px 16px; margin-top: 16px;
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
   }
   .timer-display { font-family: 'Barlow Condensed', sans-serif; font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; color: white; }
@@ -196,13 +186,12 @@ const STYLES = `
   .pb-safe { padding-bottom: 40px; }
 
   @media (min-width: 640px) {
-    .hero { padding: 64px 48px 48px; }
-    .hero-sm { padding: 48px 48px 36px; }
-    .hero-title { font-size: 72px; }
+    .page-header { padding: 64px 48px 36px; }
+    .page-header-title { font-size: 72px; }
+    .flat-row { padding: 24px 48px; }
+    .flat-row-action { padding: 24px 48px; }
+    .flat-row-name { font-size: 36px; }
     .back-row { padding: 20px 48px; }
-    .card-grid { grid-template-columns: repeat(3, 1fr); padding: 28px 48px; gap: 12px; }
-    .recipe-list-flat { padding: 0; }
-    .recipe-row { padding: 24px 48px; }
     .form-body { padding: 24px 48px; }
     .tabs { padding: 0 48px; }
     .detail-hero { padding: 48px 48px 36px; }
@@ -217,13 +206,12 @@ const STYLES = `
   }
 
   @media (min-width: 1024px) {
-    .hero { padding: 96px 80px 72px; }
-    .hero-sm { padding: 72px 80px 56px; }
-    .hero-title { font-size: 104px; }
+    .page-header { padding: 96px 80px 48px; }
+    .page-header-title { font-size: 104px; }
+    .flat-row { padding: 28px 80px; }
+    .flat-row-action { padding: 28px 80px; }
+    .flat-row-name { font-size: 44px; }
     .back-row { padding: 24px 80px; }
-    .card-grid { grid-template-columns: repeat(4, 1fr); padding: 40px 80px; gap: 12px; max-width: 1280px; margin: 0 auto; }
-    .recipe-row { padding: 28px 80px; }
-    .recipe-row-name { font-size: 40px; }
     .form-body { padding: 32px 80px; }
     .tabs { padding: 0 80px; }
     .detail-hero { padding: 96px 80px 64px; }
@@ -234,7 +222,6 @@ const STYLES = `
     .cook-footer { max-width: 720px; }
     .cook-current-text { font-size: 48px; }
     .done-title { font-size: 88px; }
-    .cookbook-card-name { font-size: 26px; }
   }
 `;
 
@@ -251,49 +238,176 @@ function useLocalStorage(key, initial) {
   return [value, setValue];
 }
 
-const SAMPLE_DATA = [{
-  id: 'sample-1', name: 'Italian Nights', color: '#111111',
-  recipes: [{
-    id: 'sample-r1', name: 'Spaghetti Carbonara',
-    description: 'Classic Roman pasta with egg, pecorino, guanciale and black pepper.',
-    time: 25, difficulty: 'Medium', servings: 2, cookedCount: 0,
-    ingredients: [
-      { id: 'i1', name: 'Spaghetti', qty: '200g' },
-      { id: 'i2', name: 'Guanciale or pancetta', qty: '150g' },
-      { id: 'i3', name: 'Egg yolks', qty: '4' },
-      { id: 'i4', name: 'Pecorino Romano', qty: '60g grated' },
-      { id: 'i5', name: 'Black pepper', qty: 'generous' },
-    ],
-    steps: [
-      { id: 's1', text: 'Bring a large pot of well-salted water to a boil. Cook spaghetti until al dente, about 8-10 minutes.', timer: null },
-      { id: 's2', text: 'Cook guanciale in a large pan over medium heat until crispy and fat has rendered out.', timer: 7 },
-      { id: 's3', text: 'In a bowl, whisk together egg yolks and grated pecorino. Season generously with cracked black pepper.', timer: null },
-      { id: 's4', text: 'Reserve 1 cup pasta water, drain pasta. Add pasta to the pan with guanciale, off the heat.', timer: null },
-      { id: 's5', text: 'Add egg mixture, tossing quickly and adding pasta water a little at a time until you have a creamy sauce. Work fast — no scrambled eggs.', timer: null },
-      { id: 's6', text: 'Serve immediately with more pecorino and cracked black pepper.', timer: null },
+const SAMPLE_DATA = [
+  {
+    id: 'sample-1', name: 'Italian Nights', color: '#111111',
+    recipes: [
+      {
+        id: 'sample-r1', name: 'Spaghetti Carbonara',
+        description: 'Classic Roman pasta with egg, pecorino, guanciale and black pepper.',
+        time: 25, difficulty: 'Medium', servings: 2, cookedCount: 0,
+        ingredients: [
+          { id: 'i1', name: 'Spaghetti', qty: '200g' },
+          { id: 'i2', name: 'Guanciale or pancetta', qty: '150g' },
+          { id: 'i3', name: 'Egg yolks', qty: '4' },
+          { id: 'i4', name: 'Pecorino Romano', qty: '60g grated' },
+          { id: 'i5', name: 'Black pepper', qty: 'generous' },
+        ],
+        steps: [
+          { id: 's1', text: 'Bring a large pot of well-salted water to a boil. Cook spaghetti until al dente, about 8-10 minutes.', timer: null },
+          { id: 's2', text: 'Cook guanciale in a large pan over medium heat until crispy and fat has rendered out.', timer: 7 },
+          { id: 's3', text: 'In a bowl, whisk together egg yolks and grated pecorino. Season generously with cracked black pepper.', timer: null },
+          { id: 's4', text: 'Reserve 1 cup pasta water, drain pasta. Add pasta to the pan with guanciale, off the heat.', timer: null },
+          { id: 's5', text: 'Add egg mixture, tossing quickly and adding pasta water a little at a time until you have a creamy sauce. Work fast — no scrambled eggs.', timer: null },
+          { id: 's6', text: 'Serve immediately with more pecorino and cracked black pepper.', timer: null },
+        ]
+      },
+      {
+        id: 'sample-r2', name: 'Cacio e Pepe',
+        description: 'The simplest Roman pasta. Four ingredients, perfect technique.',
+        time: 20, difficulty: 'Medium', servings: 2, cookedCount: 0,
+        ingredients: [
+          { id: 'i1', name: 'Tonnarelli or spaghetti', qty: '400g' },
+          { id: 'i2', name: 'Pecorino Romano', qty: '200g finely grated' },
+          { id: 'i3', name: 'Black pepper', qty: '2 tsp freshly cracked' },
+          { id: 'i4', name: 'Salt', qty: 'to taste' },
+        ],
+        steps: [
+          { id: 's1', text: 'Cook pasta in well-salted boiling water until 2 minutes before al dente. Reserve plenty of pasta water.', timer: null },
+          { id: 's2', text: 'Toast black pepper in a large dry pan until fragrant, about 1 minute.', timer: 1 },
+          { id: 's3', text: 'Add a ladle of pasta water to the pepper and let it reduce slightly.', timer: null },
+          { id: 's4', text: 'Add the pasta and finish cooking in the pan, tossing constantly over medium heat.', timer: null },
+          { id: 's5', text: 'Remove from heat. Add pecorino in three additions, tossing and adding small splashes of pasta water to create a glossy, creamy sauce.', timer: null },
+          { id: 's6', text: 'Serve immediately with extra pecorino and cracked pepper. Speed is everything.', timer: null },
+        ]
+      },
+      {
+        id: 'sample-r3', name: 'Ribollita',
+        description: 'Tuscan bread and bean soup — thick, hearty, and better the next day.',
+        time: 60, difficulty: 'Easy', servings: 4, cookedCount: 0,
+        ingredients: [
+          { id: 'i1', name: 'Cannellini beans', qty: '400g cooked' },
+          { id: 'i2', name: 'Cavolo nero', qty: '300g' },
+          { id: 'i3', name: 'Stale bread', qty: '4 thick slices' },
+          { id: 'i4', name: 'Onion', qty: '1 large' },
+          { id: 'i5', name: 'Carrots', qty: '2' },
+          { id: 'i6', name: 'Celery', qty: '2 stalks' },
+          { id: 'i7', name: 'Canned tomatoes', qty: '400g' },
+          { id: 'i8', name: 'Garlic', qty: '3 cloves' },
+          { id: 'i9', name: 'Olive oil', qty: '4 tbsp' },
+          { id: 'i10', name: 'Parmesan rind', qty: '1 piece (optional)' },
+        ],
+        steps: [
+          { id: 's1', text: 'Soften onion, carrot, and celery in olive oil for 10 minutes over medium heat.', timer: 10 },
+          { id: 's2', text: 'Add garlic and cook for 1 minute, then add tomatoes and simmer 10 minutes.', timer: 10 },
+          { id: 's3', text: 'Add beans — mash half with a spoon for body — and the parmesan rind if using.', timer: null },
+          { id: 's4', text: 'Add cavolo nero and enough water to cover generously. Simmer 20 minutes.', timer: 20 },
+          { id: 's5', text: 'Tear in the stale bread, stir well, and simmer 10 more minutes until thick.', timer: 10 },
+          { id: 's6', text: 'Rest off heat for 10 minutes. Season generously.', timer: 10 },
+          { id: 's7', text: 'Serve in deep bowls with a heavy pour of your best olive oil over the top.', timer: null },
+        ]
+      },
+      {
+        id: 'sample-r4', name: 'Tiramisu',
+        description: 'The classic. Needs 4 hours chilling — plan ahead.',
+        time: 30, difficulty: 'Medium', servings: 6, cookedCount: 0,
+        ingredients: [
+          { id: 'i1', name: 'Mascarpone', qty: '500g' },
+          { id: 'i2', name: 'Eggs, separated', qty: '6' },
+          { id: 'i3', name: 'Caster sugar', qty: '6 tbsp' },
+          { id: 'i4', name: 'Strong espresso', qty: '300ml' },
+          { id: 'i5', name: 'Savoiardi biscuits', qty: '200g' },
+          { id: 'i6', name: 'Marsala or dark rum', qty: '2 tbsp' },
+          { id: 'i7', name: 'Cocoa powder', qty: 'for dusting' },
+          { id: 'i8', name: 'Salt', qty: 'pinch' },
+        ],
+        steps: [
+          { id: 's1', text: 'Whisk egg yolks with sugar in a bowl until pale, thick, and tripled in volume.', timer: null },
+          { id: 's2', text: 'Fold in mascarpone until smooth and lump-free.', timer: null },
+          { id: 's3', text: 'Whisk egg whites with a pinch of salt to stiff peaks, then fold gently into the mascarpone mixture in three additions.', timer: null },
+          { id: 's4', text: 'Mix espresso with marsala in a shallow bowl. Cool to room temperature.', timer: null },
+          { id: 's5', text: 'Dip each biscuit for 1-2 seconds only — they should be soaked but not falling apart. Layer in a dish, then spoon over half the cream. Repeat.', timer: null },
+          { id: 's6', text: 'Dust heavily with cocoa and refrigerate for at least 4 hours, ideally overnight.', timer: null },
+        ]
+      },
+      {
+        id: 'sample-r5', name: 'Osso Buco',
+        description: 'Braised Milanese veal shanks with gremolata. A Sunday project.',
+        time: 90, difficulty: 'Hard', servings: 4, cookedCount: 0,
+        ingredients: [
+          { id: 'i1', name: 'Veal shin cross-cuts', qty: '4 thick pieces' },
+          { id: 'i2', name: 'Onion', qty: '1 large' },
+          { id: 'i3', name: 'Celery', qty: '2 stalks' },
+          { id: 'i4', name: 'Carrots', qty: '2' },
+          { id: 'i5', name: 'Dry white wine', qty: '200ml' },
+          { id: 'i6', name: 'Canned tomatoes', qty: '400g' },
+          { id: 'i7', name: 'Beef stock', qty: '500ml' },
+          { id: 'i8', name: 'Lemon zest and garlic', qty: 'for gremolata' },
+          { id: 'i9', name: 'Flat-leaf parsley', qty: 'handful' },
+          { id: 'i10', name: 'Olive oil', qty: '3 tbsp' },
+        ],
+        steps: [
+          { id: 's1', text: 'Dust veal in seasoned flour and sear in hot oil until deeply golden on all sides. Remove and set aside.', timer: null },
+          { id: 's2', text: 'In the same pan, cook onion, celery, and carrot over medium heat for 8 minutes until soft.', timer: 8 },
+          { id: 's3', text: 'Add wine and reduce by half, scraping up any browned bits.', timer: 3 },
+          { id: 's4', text: 'Return veal. Add tomatoes and stock — liquid should come halfway up the meat.', timer: null },
+          { id: 's5', text: 'Cover and braise on the lowest possible heat for 1.5 hours until the meat is giving and nearly falling off the bone.', timer: 90 },
+          { id: 's6', text: 'Meanwhile, finely mix lemon zest, 1 garlic clove, and parsley for the gremolata.', timer: null },
+          { id: 's7', text: 'Remove the veal. Reduce the sauce over high heat until glossy and coating.', timer: null },
+          { id: 's8', text: 'Return the veal to the sauce, scatter gremolata over the top, and serve with risotto milanese or soft polenta.', timer: null },
+        ]
+      },
+      {
+        id: 'sample-r6', name: 'Focaccia',
+        description: 'Olive oil-drenched Ligurian flatbread. Easy but needs time.',
+        time: 45, difficulty: 'Easy', servings: 8, cookedCount: 0,
+        ingredients: [
+          { id: 'i1', name: 'Strong white bread flour', qty: '500g' },
+          { id: 'i2', name: 'Instant yeast', qty: '7g' },
+          { id: 'i3', name: 'Fine salt', qty: '10g' },
+          { id: 'i4', name: 'Warm water', qty: '400ml' },
+          { id: 'i5', name: 'Olive oil', qty: '6 tbsp, plus extra' },
+          { id: 'i6', name: 'Flaky sea salt', qty: 'for topping' },
+        ],
+        steps: [
+          { id: 's1', text: 'Mix flour, yeast, and salt. Add warm water and 4 tbsp olive oil. Mix to a rough dough.', timer: null },
+          { id: 's2', text: 'Knead for 10 minutes until smooth and elastic, or 7 minutes in a stand mixer.', timer: 10 },
+          { id: 's3', text: 'Place in an oiled bowl, cover, and prove for 1.5 hours until doubled in size.', timer: 90 },
+          { id: 's4', text: 'Tip into a well-oiled 30x40cm baking tray. Stretch to fill. Dimple all over with your fingers.', timer: null },
+          { id: 's5', text: 'Drizzle with 2 tbsp olive oil, scatter flaky salt generously, and prove for 30 minutes more.', timer: 30 },
+          { id: 's6', text: 'Bake at 220°C / 425°F for 20-25 minutes until deep golden and pulling from the edges.', timer: 22 },
+          { id: 's7', text: 'Drizzle more olive oil over while still hot. Rest 10 minutes before cutting.', timer: 10 },
+        ]
+      },
     ]
-  }]
-}];
+  },
+  { id: 'sample-2', name: 'Fast & Furious', color: '#8B1A0A', recipes: [] },
+  { id: 'sample-3', name: 'Sunday Roasts', color: '#1a3a1a', recipes: [] },
+  { id: 'sample-4', name: 'Vegetarian', color: '#2A6B8C', recipes: [] },
+  { id: 'sample-5', name: 'Breakfast & Brunch', color: '#5B4FCF', recipes: [] },
+  { id: 'sample-6', name: 'Baking', color: '#1a1a2e', recipes: [] },
+];
 
 function HomeScreen({ cookbooks, onOpenCookbook, onNewCookbook }) {
   return (
-    <div className="screen screen-home">
-      <div className="hero safe-top">
-        <div className="hero-label">Your cookbooks</div>
-        <h1 className="hero-title">Yes Chef</h1>
+    <div className="screen screen-red">
+      <div className="page-header safe-top">
+        <h1 className="page-header-title">Yes Chef</h1>
+        <p className="page-header-sub">What are we cooking tonight?</p>
       </div>
       <div className="scroll-body">
-        <div className="card-grid">
+        <div className="flat-list">
           {cookbooks.map(cb => (
-            <div key={cb.id} className="cookbook-card" onClick={() => onOpenCookbook(cb.id)}>
-              <div>
-                <div className="cookbook-card-name">{cb.name}</div>
-                <div className="cookbook-card-count">{cb.recipes.length} recipe{cb.recipes.length !== 1 ? 's' : ''}</div>
+            <div key={cb.id} className="flat-row" onClick={() => onOpenCookbook(cb.id)}>
+              <div className="flat-row-info">
+                <div className="flat-row-name">{cb.name}</div>
+                <div className="flat-row-meta">{cb.recipes.length} recipe{cb.recipes.length !== 1 ? 's' : ''}</div>
               </div>
+              <span className="flat-row-arrow">›</span>
             </div>
           ))}
-          <div className="new-cookbook-card" onClick={onNewCookbook}>
-            <span style={{ fontSize: 28 }}>+</span>
+          <div className="flat-row-action" onClick={onNewCookbook}>
+            <span>+</span>
             <span>New cookbook</span>
           </div>
         </div>
@@ -339,11 +453,11 @@ function NewCookbookScreen({ onBack, onSave }) {
 
 function CookbookScreen({ cookbook, onBack, onOpenRecipe, onNewRecipe }) {
   return (
-    <div className="screen screen-cookbook">
-      <div className="hero hero-sm safe-top">
-        <div style={{ marginBottom: 12, cursor: 'pointer', color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }} onClick={onBack}>← Back</div>
-        <h1 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', fontSize: 40, color: 'white', letterSpacing: '0.01em', lineHeight: 0.95 }}>{cookbook.name}</h1>
-        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, marginTop: 6, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{cookbook.recipes.length} recipe{cookbook.recipes.length !== 1 ? 's' : ''}</p>
+    <div className="screen screen-red">
+      <div className="page-header safe-top">
+        <button className="page-header-back" onClick={onBack}>← Back</button>
+        <h1 className="page-header-title">{cookbook.name}</h1>
+        <p className="page-header-meta">{cookbook.recipes.length} recipe{cookbook.recipes.length !== 1 ? 's' : ''}</p>
       </div>
       <div className="scroll-body" style={{ display: 'flex', flexDirection: 'column' }}>
         {cookbook.recipes.length === 0 ? (
@@ -351,12 +465,15 @@ function CookbookScreen({ cookbook, onBack, onOpenRecipe, onNewRecipe }) {
             No recipes yet
           </div>
         ) : (
-          <div className="recipe-list-flat">
+          <div className="flat-list">
             {cookbook.recipes.map(r => (
-              <div key={r.id} className="recipe-row" onClick={() => onOpenRecipe(r.id)}>
-                <div className="recipe-row-name">{r.name}</div>
-                <div className="recipe-row-meta">{r.time} min · {r.difficulty} · {r.servings} servings</div>
-                {r.cookedCount > 0 && <div className="recipe-row-cooked">Cooked {r.cookedCount}×</div>}
+              <div key={r.id} className="flat-row" onClick={() => onOpenRecipe(r.id)}>
+                <div className="flat-row-info">
+                  <div className="flat-row-name">{r.name}</div>
+                  <div className="flat-row-meta">{r.time} min · {r.difficulty} · {r.servings} servings</div>
+                  {r.cookedCount > 0 && <div className="flat-row-badge">Cooked {r.cookedCount}×</div>}
+                </div>
+                <span className="flat-row-arrow">›</span>
               </div>
             ))}
           </div>
