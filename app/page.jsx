@@ -180,8 +180,8 @@ const STYLES = `
   .shopping-group-header { font-family: 'Courier Prime', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--red); padding: 16px 0 8px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; }
   .shopping-group-header:hover { opacity: 0.7; }
   .shopping-group-toggle { font-size: 9px; opacity: 0.6; }
-  .shopping-recipe-header { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; color: #888; padding: 8px 0 4px; margin-top: 4px; letter-spacing: 0.01em; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; }
-  .shopping-recipe-header:hover { color: #555; }
+  .shopping-recipe-header { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; color: #666; padding: 10px 0 6px; margin-top: 2px; border-top: 1px solid #F0F0F0; letter-spacing: 0.01em; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; }
+  .shopping-recipe-header:hover { color: var(--black); }
   .shopping-item { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid #EEEEEE; cursor: pointer; transition: opacity 0.15s; }
   .shopping-item:hover { opacity: 0.7; }
   .shopping-item.done .shopping-item-name { text-decoration: line-through; color: #CCC; }
@@ -403,7 +403,7 @@ function HomeScreen({ cookbooks, favouriteRecipes, shoppingList, onOpenCookbook,
                     <div key={recipeName}>
                       <div className="shopping-recipe-header" onClick={() => toggleRecipe(rKey)}>
                         <span>{recipeName}</span>
-                        <span style={{ fontSize: 9, opacity: 0.5 }}>{collapsedRecipes[rKey] ? '▶' : '▼'}</span>
+                        <span className="shopping-group-toggle">{collapsedRecipes[rKey] ? '▶' : '▼'}</span>
                       </div>
                       {!collapsedRecipes[rKey] && recipeItems.map(item => (
                         <div key={item.id} className={`shopping-item${item.checked ? ' done' : ''}`} onClick={() => onToggleShoppingItem(item.id, item.checked)}>
