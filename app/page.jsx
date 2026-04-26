@@ -177,7 +177,9 @@ const STYLES = `
   .notes-field:focus { border-bottom-color: var(--red); }
 
   .shopping-group { padding: 0 28px; }
-  .shopping-group-header { font-family: 'Courier Prime', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--red); padding: 16px 0 8px; }
+  .shopping-group-header { font-family: 'Courier Prime', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--red); padding: 16px 0 8px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; }
+  .shopping-group-header:hover { opacity: 0.7; }
+  .shopping-group-toggle { font-size: 9px; opacity: 0.6; }
   .shopping-recipe-header { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; color: #888; padding: 8px 0 4px; margin-top: 4px; letter-spacing: 0.01em; }
   .shopping-item { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid #EEEEEE; cursor: pointer; transition: opacity 0.15s; }
   .shopping-item:hover { opacity: 0.7; }
@@ -324,6 +326,9 @@ const PRIORITY_ORDER = ['today', 'this_week', 'eventually'];
 const PRIORITY_LABELS = { today: 'Today', this_week: 'This Week', eventually: 'Eventually' };
 
 function HomeScreen({ cookbooks, favouriteRecipes, shoppingList, onOpenCookbook, onNewCookbook, onOpenRecipe, onToggleShoppingItem, onDeleteShoppingItem, onClearShoppingList }) {
+  const [collapsed, setCollapsed] = useState({});
+  const togglePriority = (p) => setCollapsed(prev => ({ ...prev, [p]: !prev[p] }));
+
   const byPriority = PRIORITY_ORDER.map(p => {
     const items = shoppingList.filter(i => (i.priority || 'eventually') === p);
     const byRecipe = items.reduce((acc, item) => {
@@ -385,8 +390,11 @@ function HomeScreen({ cookbooks, favouriteRecipes, shoppingList, onOpenCookbook,
             <>
               {byPriority.map(({ priority, label, byRecipe }) => (
                 <div key={priority} className="shopping-group">
-                  <div className="shopping-group-header">{label}</div>
-                  {Object.entries(byRecipe).map(([recipeName, recipeItems]) => (
+                  <div className="shopping-group-header" onClick={() => togglePriority(priority)}>
+                    <span>{label}</span>
+                    <span className="shopping-group-toggle">{collapsed[priority] ? '▶' : '▼'}</span>
+                  </div>
+                  {!collapsed[priority] && Object.entries(byRecipe).map(([recipeName, recipeItems]) => (
                     <div key={recipeName}>
                       <div className="shopping-recipe-header">{recipeName}</div>
                       {recipeItems.map(item => (
