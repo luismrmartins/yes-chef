@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import { getCookbooks, createCookbook, getRecipes, createRecipe, incrementCookedCount } from '../lib/db';
 
 const STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap');
@@ -45,10 +46,8 @@ const STYLES = `
   .screen { min-height: 100vh; display: flex; flex-direction: column; }
   .safe-top { padding-top: env(safe-area-inset-top, 0px); }
 
-  /* Red screens */
   .screen-red { background: var(--red); }
 
-  /* Page header (replaces .hero on red screens) */
   .page-header { padding: 48px 24px 28px; }
   .page-header.safe-top { padding-top: max(48px, calc(env(safe-area-inset-top, 0px) + 16px)); }
   .page-header-back { display: flex; align-items: center; gap: 6px; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.5); cursor: pointer; margin-bottom: 16px; background: none; border: none; padding: 0; }
@@ -57,12 +56,8 @@ const STYLES = `
   .page-header-sub { font-size: 15px; color: rgba(255,255,255,0.6); margin-top: 8px; }
   .page-header-meta { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.55); margin-top: 8px; }
 
-  /* Flat list — shared between cookbook list and recipe list */
   .flat-list { display: flex; flex-direction: column; }
-  .flat-row {
-    display: flex; align-items: center; padding: 20px 24px; cursor: pointer;
-    border-bottom: 1px solid rgba(255,255,255,0.15); transition: opacity 0.15s;
-  }
+  .flat-row { display: flex; align-items: center; padding: 20px 24px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.15); transition: opacity 0.15s; }
   .flat-row:first-child { border-top: 1px solid rgba(255,255,255,0.15); }
   .flat-row:hover { opacity: 0.65; }
   .flat-row-info { flex: 1; min-width: 0; }
@@ -73,7 +68,9 @@ const STYLES = `
   .flat-row-action { display: flex; align-items: center; padding: 20px 24px; cursor: pointer; color: rgba(255,255,255,0.5); font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; gap: 8px; transition: opacity 0.15s; border-top: 1px solid rgba(255,255,255,0.15); }
   .flat-row-action:hover { opacity: 0.7; }
 
-  /* Standard dark hero for non-red screens */
+  .loading-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--red); }
+  .loading-text { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(255,255,255,0.6); }
+
   .hero { background: var(--black); color: var(--white); padding: 48px 24px 36px; }
   .hero-sm { padding: 36px 24px 28px; }
   .hero-label { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--red); margin-bottom: 8px; font-weight: 700; }
@@ -139,7 +136,7 @@ const STYLES = `
   .checklist-item.checked .check-circle { background: var(--red); border-color: var(--red); }
   .ci-name { font-size: 15px; font-weight: 500; }
   .ci-qty { font-size: 12px; color: var(--gray2); margin-top: 1px; }
-  .checklist-progress { height: 4px; background: var(--gray2); margin: 0 20px; overflow: hidden; }
+  .checklist-progress { height: 4px; background: var(--gray2); overflow: hidden; }
   .checklist-progress-fill { height: 100%; background: var(--red); transition: width 0.3s ease; }
 
   .cook-screen { background: var(--black); min-height: 100vh; display: flex; flex-direction: column; color: var(--white); }
@@ -229,174 +226,6 @@ const COOKBOOK_COLORS = ['#111111','#1a1a2e','#1a3a1a','#3a1a1a','#2A6B8C','#5B4
 
 function generateId() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
 
-const DATA_VERSION = '3';
-
-function useLocalStorage(key, initial) {
-  const [value, setValue] = useState(() => {
-    try {
-      if (localStorage.getItem(key + '_v') !== DATA_VERSION) {
-        localStorage.removeItem(key);
-        localStorage.setItem(key + '_v', DATA_VERSION);
-        return initial;
-      }
-      const s = localStorage.getItem(key);
-      return s ? JSON.parse(s) : initial;
-    } catch { return initial; }
-  });
-  useEffect(() => { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} }, [key, value]);
-  return [value, setValue];
-}
-
-const SAMPLE_DATA = [
-  {
-    id: 'sample-1', name: 'Italian Nights', color: '#111111',
-    recipes: [
-      {
-        id: 'sample-r1', name: 'Spaghetti Carbonara',
-        description: 'Classic Roman pasta with egg, pecorino, guanciale and black pepper.',
-        time: 25, difficulty: 'Medium', servings: 2, cookedCount: 0,
-        ingredients: [
-          { id: 'i1', name: 'Spaghetti', qty: '200g' },
-          { id: 'i2', name: 'Guanciale or pancetta', qty: '150g' },
-          { id: 'i3', name: 'Egg yolks', qty: '4' },
-          { id: 'i4', name: 'Pecorino Romano', qty: '60g grated' },
-          { id: 'i5', name: 'Black pepper', qty: 'generous' },
-        ],
-        steps: [
-          { id: 's1', text: 'Bring a large pot of well-salted water to a boil. Cook spaghetti until al dente, about 8-10 minutes.', timer: null },
-          { id: 's2', text: 'Cook guanciale in a large pan over medium heat until crispy and fat has rendered out.', timer: 7 },
-          { id: 's3', text: 'In a bowl, whisk together egg yolks and grated pecorino. Season generously with cracked black pepper.', timer: null },
-          { id: 's4', text: 'Reserve 1 cup pasta water, drain pasta. Add pasta to the pan with guanciale, off the heat.', timer: null },
-          { id: 's5', text: 'Add egg mixture, tossing quickly and adding pasta water a little at a time until you have a creamy sauce. Work fast — no scrambled eggs.', timer: null },
-          { id: 's6', text: 'Serve immediately with more pecorino and cracked black pepper.', timer: null },
-        ]
-      },
-      {
-        id: 'sample-r2', name: 'Cacio e Pepe',
-        description: 'The simplest Roman pasta. Four ingredients, perfect technique.',
-        time: 20, difficulty: 'Medium', servings: 2, cookedCount: 0,
-        ingredients: [
-          { id: 'i1', name: 'Tonnarelli or spaghetti', qty: '400g' },
-          { id: 'i2', name: 'Pecorino Romano', qty: '200g finely grated' },
-          { id: 'i3', name: 'Black pepper', qty: '2 tsp freshly cracked' },
-          { id: 'i4', name: 'Salt', qty: 'to taste' },
-        ],
-        steps: [
-          { id: 's1', text: 'Cook pasta in well-salted boiling water until 2 minutes before al dente. Reserve plenty of pasta water.', timer: null },
-          { id: 's2', text: 'Toast black pepper in a large dry pan until fragrant, about 1 minute.', timer: 1 },
-          { id: 's3', text: 'Add a ladle of pasta water to the pepper and let it reduce slightly.', timer: null },
-          { id: 's4', text: 'Add the pasta and finish cooking in the pan, tossing constantly over medium heat.', timer: null },
-          { id: 's5', text: 'Remove from heat. Add pecorino in three additions, tossing and adding small splashes of pasta water to create a glossy, creamy sauce.', timer: null },
-          { id: 's6', text: 'Serve immediately with extra pecorino and cracked pepper. Speed is everything.', timer: null },
-        ]
-      },
-      {
-        id: 'sample-r3', name: 'Ribollita',
-        description: 'Tuscan bread and bean soup — thick, hearty, and better the next day.',
-        time: 60, difficulty: 'Easy', servings: 4, cookedCount: 0,
-        ingredients: [
-          { id: 'i1', name: 'Cannellini beans', qty: '400g cooked' },
-          { id: 'i2', name: 'Cavolo nero', qty: '300g' },
-          { id: 'i3', name: 'Stale bread', qty: '4 thick slices' },
-          { id: 'i4', name: 'Onion', qty: '1 large' },
-          { id: 'i5', name: 'Carrots', qty: '2' },
-          { id: 'i6', name: 'Celery', qty: '2 stalks' },
-          { id: 'i7', name: 'Canned tomatoes', qty: '400g' },
-          { id: 'i8', name: 'Garlic', qty: '3 cloves' },
-          { id: 'i9', name: 'Olive oil', qty: '4 tbsp' },
-          { id: 'i10', name: 'Parmesan rind', qty: '1 piece (optional)' },
-        ],
-        steps: [
-          { id: 's1', text: 'Soften onion, carrot, and celery in olive oil for 10 minutes over medium heat.', timer: 10 },
-          { id: 's2', text: 'Add garlic and cook for 1 minute, then add tomatoes and simmer 10 minutes.', timer: 10 },
-          { id: 's3', text: 'Add beans — mash half with a spoon for body — and the parmesan rind if using.', timer: null },
-          { id: 's4', text: 'Add cavolo nero and enough water to cover generously. Simmer 20 minutes.', timer: 20 },
-          { id: 's5', text: 'Tear in the stale bread, stir well, and simmer 10 more minutes until thick.', timer: 10 },
-          { id: 's6', text: 'Rest off heat for 10 minutes. Season generously.', timer: 10 },
-          { id: 's7', text: 'Serve in deep bowls with a heavy pour of your best olive oil over the top.', timer: null },
-        ]
-      },
-      {
-        id: 'sample-r4', name: 'Tiramisu',
-        description: 'The classic. Needs 4 hours chilling — plan ahead.',
-        time: 30, difficulty: 'Medium', servings: 6, cookedCount: 0,
-        ingredients: [
-          { id: 'i1', name: 'Mascarpone', qty: '500g' },
-          { id: 'i2', name: 'Eggs, separated', qty: '6' },
-          { id: 'i3', name: 'Caster sugar', qty: '6 tbsp' },
-          { id: 'i4', name: 'Strong espresso', qty: '300ml' },
-          { id: 'i5', name: 'Savoiardi biscuits', qty: '200g' },
-          { id: 'i6', name: 'Marsala or dark rum', qty: '2 tbsp' },
-          { id: 'i7', name: 'Cocoa powder', qty: 'for dusting' },
-          { id: 'i8', name: 'Salt', qty: 'pinch' },
-        ],
-        steps: [
-          { id: 's1', text: 'Whisk egg yolks with sugar in a bowl until pale, thick, and tripled in volume.', timer: null },
-          { id: 's2', text: 'Fold in mascarpone until smooth and lump-free.', timer: null },
-          { id: 's3', text: 'Whisk egg whites with a pinch of salt to stiff peaks, then fold gently into the mascarpone mixture in three additions.', timer: null },
-          { id: 's4', text: 'Mix espresso with marsala in a shallow bowl. Cool to room temperature.', timer: null },
-          { id: 's5', text: 'Dip each biscuit for 1-2 seconds only — they should be soaked but not falling apart. Layer in a dish, then spoon over half the cream. Repeat.', timer: null },
-          { id: 's6', text: 'Dust heavily with cocoa and refrigerate for at least 4 hours, ideally overnight.', timer: null },
-        ]
-      },
-      {
-        id: 'sample-r5', name: 'Osso Buco',
-        description: 'Braised Milanese veal shanks with gremolata. A Sunday project.',
-        time: 90, difficulty: 'Hard', servings: 4, cookedCount: 0,
-        ingredients: [
-          { id: 'i1', name: 'Veal shin cross-cuts', qty: '4 thick pieces' },
-          { id: 'i2', name: 'Onion', qty: '1 large' },
-          { id: 'i3', name: 'Celery', qty: '2 stalks' },
-          { id: 'i4', name: 'Carrots', qty: '2' },
-          { id: 'i5', name: 'Dry white wine', qty: '200ml' },
-          { id: 'i6', name: 'Canned tomatoes', qty: '400g' },
-          { id: 'i7', name: 'Beef stock', qty: '500ml' },
-          { id: 'i8', name: 'Lemon zest and garlic', qty: 'for gremolata' },
-          { id: 'i9', name: 'Flat-leaf parsley', qty: 'handful' },
-          { id: 'i10', name: 'Olive oil', qty: '3 tbsp' },
-        ],
-        steps: [
-          { id: 's1', text: 'Dust veal in seasoned flour and sear in hot oil until deeply golden on all sides. Remove and set aside.', timer: null },
-          { id: 's2', text: 'In the same pan, cook onion, celery, and carrot over medium heat for 8 minutes until soft.', timer: 8 },
-          { id: 's3', text: 'Add wine and reduce by half, scraping up any browned bits.', timer: 3 },
-          { id: 's4', text: 'Return veal. Add tomatoes and stock — liquid should come halfway up the meat.', timer: null },
-          { id: 's5', text: 'Cover and braise on the lowest possible heat for 1.5 hours until the meat is giving and nearly falling off the bone.', timer: 90 },
-          { id: 's6', text: 'Meanwhile, finely mix lemon zest, 1 garlic clove, and parsley for the gremolata.', timer: null },
-          { id: 's7', text: 'Remove the veal. Reduce the sauce over high heat until glossy and coating.', timer: null },
-          { id: 's8', text: 'Return the veal to the sauce, scatter gremolata over the top, and serve with risotto milanese or soft polenta.', timer: null },
-        ]
-      },
-      {
-        id: 'sample-r6', name: 'Focaccia',
-        description: 'Olive oil-drenched Ligurian flatbread. Easy but needs time.',
-        time: 45, difficulty: 'Easy', servings: 8, cookedCount: 0,
-        ingredients: [
-          { id: 'i1', name: 'Strong white bread flour', qty: '500g' },
-          { id: 'i2', name: 'Instant yeast', qty: '7g' },
-          { id: 'i3', name: 'Fine salt', qty: '10g' },
-          { id: 'i4', name: 'Warm water', qty: '400ml' },
-          { id: 'i5', name: 'Olive oil', qty: '6 tbsp, plus extra' },
-          { id: 'i6', name: 'Flaky sea salt', qty: 'for topping' },
-        ],
-        steps: [
-          { id: 's1', text: 'Mix flour, yeast, and salt. Add warm water and 4 tbsp olive oil. Mix to a rough dough.', timer: null },
-          { id: 's2', text: 'Knead for 10 minutes until smooth and elastic, or 7 minutes in a stand mixer.', timer: 10 },
-          { id: 's3', text: 'Place in an oiled bowl, cover, and prove for 1.5 hours until doubled in size.', timer: 90 },
-          { id: 's4', text: 'Tip into a well-oiled 30x40cm baking tray. Stretch to fill. Dimple all over with your fingers.', timer: null },
-          { id: 's5', text: 'Drizzle with 2 tbsp olive oil, scatter flaky salt generously, and prove for 30 minutes more.', timer: 30 },
-          { id: 's6', text: 'Bake at 220°C / 425°F for 20-25 minutes until deep golden and pulling from the edges.', timer: 22 },
-          { id: 's7', text: 'Drizzle more olive oil over while still hot. Rest 10 minutes before cutting.', timer: 10 },
-        ]
-      },
-    ]
-  },
-  { id: 'sample-2', name: 'Fast & Furious', color: '#8B1A0A', recipes: [] },
-  { id: 'sample-3', name: 'Sunday Roasts', color: '#1a3a1a', recipes: [] },
-  { id: 'sample-4', name: 'Vegetarian', color: '#2A6B8C', recipes: [] },
-  { id: 'sample-5', name: 'Breakfast & Brunch', color: '#5B4FCF', recipes: [] },
-  { id: 'sample-6', name: 'Baking', color: '#1a1a2e', recipes: [] },
-];
-
 function HomeScreen({ cookbooks, onOpenCookbook, onNewCookbook }) {
   return (
     <div className="screen screen-red">
@@ -410,7 +239,9 @@ function HomeScreen({ cookbooks, onOpenCookbook, onNewCookbook }) {
             <div key={cb.id} className="flat-row" onClick={() => onOpenCookbook(cb.id)}>
               <div className="flat-row-info">
                 <div className="flat-row-name">{cb.name}</div>
-                <div className="flat-row-meta">{cb.recipes.length} recipe{cb.recipes.length !== 1 ? 's' : ''}</div>
+                {cb.recipeCount !== undefined && (
+                  <div className="flat-row-meta">{cb.recipeCount} recipe{cb.recipeCount !== 1 ? 's' : ''}</div>
+                )}
               </div>
               <span className="flat-row-arrow">›</span>
             </div>
@@ -425,7 +256,7 @@ function HomeScreen({ cookbooks, onOpenCookbook, onNewCookbook }) {
   );
 }
 
-function NewCookbookScreen({ onBack, onSave }) {
+function NewCookbookScreen({ onBack, onSave, saving }) {
   const [name, setName] = useState('');
   const [color, setColor] = useState(COOKBOOK_COLORS[0]);
 
@@ -452,8 +283,8 @@ function NewCookbookScreen({ onBack, onSave }) {
             ))}
           </div>
         </div>
-        <button className="btn btn-primary btn-full" disabled={!name.trim()} onClick={() => onSave({ name: name.trim(), color })}>
-          Create Cookbook
+        <button className="btn btn-primary btn-full" disabled={!name.trim() || saving} onClick={() => onSave({ name: name.trim(), color })}>
+          {saving ? 'Creating...' : 'Create Cookbook'}
         </button>
       </div>
     </div>
@@ -461,21 +292,30 @@ function NewCookbookScreen({ onBack, onSave }) {
 }
 
 function CookbookScreen({ cookbook, onBack, onOpenRecipe, onNewRecipe }) {
+  const recipes = cookbook.recipes;
+  const isLoading = recipes === null;
+
   return (
     <div className="screen screen-red">
       <div className="page-header safe-top">
         <button className="page-header-back" onClick={onBack}>← Back</button>
         <h1 className="page-header-title">{cookbook.name}</h1>
-        <p className="page-header-meta">{cookbook.recipes.length} recipe{cookbook.recipes.length !== 1 ? 's' : ''}</p>
+        {!isLoading && (
+          <p className="page-header-meta">{recipes.length} recipe{recipes.length !== 1 ? 's' : ''}</p>
+        )}
       </div>
       <div className="scroll-body" style={{ display: 'flex', flexDirection: 'column' }}>
-        {cookbook.recipes.length === 0 ? (
+        {isLoading ? (
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span className="loading-text">Loading...</span>
+          </div>
+        ) : recipes.length === 0 ? (
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.4)', fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: 14 }}>
             No recipes yet
           </div>
         ) : (
           <div className="flat-list">
-            {cookbook.recipes.map(r => (
+            {recipes.map(r => (
               <div key={r.id} className="flat-row" onClick={() => onOpenRecipe(r.id)}>
                 <div className="flat-row-info">
                   <div className="flat-row-name">{r.name}</div>
@@ -495,7 +335,7 @@ function CookbookScreen({ cookbook, onBack, onOpenRecipe, onNewRecipe }) {
   );
 }
 
-function NewRecipeScreen({ onBack, onSave }) {
+function NewRecipeScreen({ onBack, onSave, saving }) {
   const [tab, setTab] = useState(0);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -528,7 +368,9 @@ function NewRecipeScreen({ onBack, onSave }) {
     <div className="form-screen">
       <div className="back-row safe-top">
         <button className="back-btn" onClick={onBack}>← Back</button>
-        <button className="btn btn-red btn-sm" style={{ marginLeft: 'auto' }} disabled={!canSave} onClick={handleSave}>Save</button>
+        <button className="btn btn-red btn-sm" style={{ marginLeft: 'auto' }} disabled={!canSave || saving} onClick={handleSave}>
+          {saving ? 'Saving...' : 'Save'}
+        </button>
       </div>
       <div style={{ padding: '0 20px 12px', borderBottom: '2px solid var(--black)' }}>
         <input className="form-input" placeholder="Recipe name" value={name} onChange={e => setName(e.target.value)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 24, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.02em', border: 'none', padding: '12px 0', background: 'transparent', width: '100%' }} />
@@ -620,8 +462,8 @@ function RecipeDetailScreen({ recipe, cookbook, onBack, onStartCook }) {
       <div className="scroll-body pb-safe">
         <div className="detail-section">
           <h2>Ingredients</h2>
-          {recipe.ingredients.map(ing => (
-            <div key={ing.id} className="ingredient-item">
+          {recipe.ingredients.map((ing, idx) => (
+            <div key={ing.id || idx} className="ingredient-item">
               <span>{ing.name}</span>
               <span className="ingredient-qty">{ing.qty}</span>
             </div>
@@ -630,7 +472,7 @@ function RecipeDetailScreen({ recipe, cookbook, onBack, onStartCook }) {
         <div className="detail-section">
           <h2>Steps</h2>
           {recipe.steps.map((step, idx) => (
-            <div key={step.id} className="step-preview">
+            <div key={step.id || idx} className="step-preview">
               <div className="step-num">{idx + 1}</div>
               <div>
                 <div style={{ fontSize: 14, lineHeight: 1.5 }}>{step.text}</div>
@@ -652,8 +494,8 @@ function PrepChecklistScreen({ recipe, onBack, onStart }) {
   const [servings, setServings] = useState(recipe.servings);
   const scale = servings / recipe.servings;
   const toggle = id => setChecked(p => ({ ...p, [id]: !p[id] }));
-  const allChecked = recipe.ingredients.every(i => checked[i.id]);
-  const checkedCount = recipe.ingredients.filter(i => checked[i.id]).length;
+  const allChecked = recipe.ingredients.every((_, i) => checked[i]);
+  const checkedCount = recipe.ingredients.filter((_, i) => checked[i]).length;
 
   function scaleQty(qty) {
     if (!qty || scale === 1) return qty;
@@ -683,10 +525,10 @@ function PrepChecklistScreen({ recipe, onBack, onStart }) {
       </div>
       <div className="scroll-body">
         <div style={{ padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {recipe.ingredients.map(ing => (
-            <div key={ing.id} className={`checklist-item${checked[ing.id] ? ' checked' : ''}`} onClick={() => toggle(ing.id)}>
+          {recipe.ingredients.map((ing, idx) => (
+            <div key={ing.id || idx} className={`checklist-item${checked[idx] ? ' checked' : ''}`} onClick={() => toggle(idx)}>
               <div className="check-circle">
-                {checked[ing.id] && <span style={{ color: 'white', fontSize: 14, fontWeight: 700 }}>✓</span>}
+                {checked[idx] && <span style={{ color: 'white', fontSize: 14, fontWeight: 700 }}>✓</span>}
               </div>
               <div style={{ flex: 1 }}>
                 <div className="ci-name">{ing.name}</div>
@@ -765,11 +607,7 @@ function CookModeScreen({ recipe, onDone }) {
         </div>
       </div>
       <div className="cook-steps">
-        {prev && (
-          <div className="cook-prev">
-            <div className="cook-prev-text">{prev.text}</div>
-          </div>
-        )}
+        {prev && <div className="cook-prev"><div className="cook-prev-text">{prev.text}</div></div>}
         <div className="cook-current">
           <div className="cook-step-label">Step {stepIdx + 1} of {steps.length}</div>
           <p className="cook-current-text">{current.text}</p>
@@ -798,46 +636,97 @@ function CookModeScreen({ recipe, onDone }) {
 }
 
 export default function App() {
-  const [cookbooks, setCookbooks] = useLocalStorage('yeschef-cookbooks', SAMPLE_DATA);
+  const [cookbooks, setCookbooks] = useState([]);
+  const [recipesMap, setRecipesMap] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [screen, setScreen] = useState({ name: 'home' });
 
-  const navigate = (name, params = {}) => setScreen({ name, ...params });
-  const getCookbook = id => cookbooks.find(cb => cb.id === id);
-  const getRecipe = (cbId, rId) => getCookbook(cbId)?.recipes.find(r => r.id === rId);
-  const updateCookbook = (cbId, fn) => setCookbooks(prev => prev.map(cb => cb.id === cbId ? fn(cb) : cb));
+  useEffect(() => {
+    getCookbooks().then(data => {
+      setCookbooks(data);
+      setLoading(false);
+    });
+  }, []);
 
-  const handleNewCookbook = data => {
-    const newCb = { id: generateId(), recipes: [], ...data };
-    setCookbooks(p => [...p, newCb]);
-    navigate('cookbook', { cbId: newCb.id });
+  const navigate = (name, params = {}) => {
+    setScreen({ name, ...params });
+    if (name === 'cookbook' && params.cbId && recipesMap[params.cbId] === undefined) {
+      setRecipesMap(prev => ({ ...prev, [params.cbId]: null }));
+      getRecipes(params.cbId).then(recipes => {
+        setRecipesMap(prev => ({ ...prev, [params.cbId]: recipes }));
+      });
+    }
   };
 
-  const handleNewRecipe = (cbId, data) => {
-    const newRecipe = { id: generateId(), cookedCount: 0, ...data };
-    updateCookbook(cbId, cb => ({ ...cb, recipes: [...cb.recipes, newRecipe] }));
-    navigate('recipe', { cbId, rId: newRecipe.id });
+  const getCookbook = id => {
+    const cb = cookbooks.find(c => c.id === id);
+    if (!cb) return null;
+    return { ...cb, recipes: recipesMap[id] ?? null };
   };
 
-  const handleMarkCooked = (cbId, rId) => {
-    updateCookbook(cbId, cb => ({
-      ...cb,
-      recipes: cb.recipes.map(r => r.id === rId ? { ...r, cookedCount: (r.cookedCount || 0) + 1 } : r)
+  const getRecipe = (cbId, rId) => (recipesMap[cbId] || []).find(r => r.id === rId);
+
+  const handleNewCookbook = async ({ name, color }) => {
+    setSaving(true);
+    try {
+      const newCb = await createCookbook(name, color);
+      setCookbooks(p => [...p, newCb]);
+      setRecipesMap(prev => ({ ...prev, [newCb.id]: [] }));
+      setScreen({ name: 'cookbook', cbId: newCb.id });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleNewRecipe = async (cbId, data) => {
+    setSaving(true);
+    try {
+      const newRecipe = await createRecipe(cbId, data);
+      setRecipesMap(prev => ({ ...prev, [cbId]: [...(prev[cbId] || []), newRecipe] }));
+      setCookbooks(prev => prev.map(cb =>
+        cb.id === cbId ? { ...cb, recipeCount: (cb.recipeCount || 0) + 1 } : cb
+      ));
+      setScreen({ name: 'recipe', cbId, rId: newRecipe.id });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleMarkCooked = async (cbId, rId) => {
+    await incrementCookedCount(rId);
+    setRecipesMap(prev => ({
+      ...prev,
+      [cbId]: (prev[cbId] || []).map(r =>
+        r.id === rId ? { ...r, cookedCount: (r.cookedCount || 0) + 1 } : r
+      ),
     }));
-    navigate('cookbook', { cbId });
+    setScreen({ name: 'cookbook', cbId });
   };
 
   const { name: s, cbId, rId } = screen;
   const cb = cbId ? getCookbook(cbId) : null;
   const recipe = (cbId && rId) ? getRecipe(cbId, rId) : null;
 
+  if (loading) {
+    return (
+      <>
+        <style>{STYLES}</style>
+        <div className="loading-screen">
+          <span className="loading-text">Yes Chef</span>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <style>{STYLES}</style>
       <div className="app">
         {s === 'home' && <HomeScreen cookbooks={cookbooks} onOpenCookbook={id => navigate('cookbook', { cbId: id })} onNewCookbook={() => navigate('new-cookbook')} />}
-        {s === 'new-cookbook' && <NewCookbookScreen onBack={() => navigate('home')} onSave={handleNewCookbook} />}
+        {s === 'new-cookbook' && <NewCookbookScreen onBack={() => navigate('home')} onSave={handleNewCookbook} saving={saving} />}
         {s === 'cookbook' && cb && <CookbookScreen cookbook={cb} onBack={() => navigate('home')} onOpenRecipe={rId => navigate('recipe', { cbId, rId })} onNewRecipe={() => navigate('new-recipe', { cbId })} />}
-        {s === 'new-recipe' && cb && <NewRecipeScreen onBack={() => navigate('cookbook', { cbId })} onSave={data => handleNewRecipe(cbId, data)} />}
+        {s === 'new-recipe' && cb && <NewRecipeScreen onBack={() => navigate('cookbook', { cbId })} onSave={data => handleNewRecipe(cbId, data)} saving={saving} />}
         {s === 'recipe' && cb && recipe && <RecipeDetailScreen recipe={recipe} cookbook={cb} onBack={() => navigate('cookbook', { cbId })} onStartCook={() => navigate('prep', { cbId, rId })} />}
         {s === 'prep' && cb && recipe && <PrepChecklistScreen recipe={recipe} onBack={() => navigate('recipe', { cbId, rId })} onStart={() => navigate('cook', { cbId, rId })} />}
         {s === 'cook' && recipe && <CookModeScreen recipe={recipe} onDone={() => handleMarkCooked(cbId, rId)} />}
