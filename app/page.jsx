@@ -180,7 +180,8 @@ const STYLES = `
   .shopping-group-header { font-family: 'Courier Prime', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--red); padding: 16px 0 8px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; }
   .shopping-group-header:hover { opacity: 0.7; }
   .shopping-group-toggle { font-size: 9px; opacity: 0.6; }
-  .shopping-recipe-header { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; color: #888; padding: 8px 0 4px; margin-top: 4px; letter-spacing: 0.01em; }
+  .shopping-recipe-header { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; color: #888; padding: 8px 0 4px; margin-top: 4px; letter-spacing: 0.01em; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; }
+  .shopping-recipe-header:hover { color: #555; }
   .shopping-item { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid #EEEEEE; cursor: pointer; transition: opacity 0.15s; }
   .shopping-item:hover { opacity: 0.7; }
   .shopping-item.done .shopping-item-name { text-decoration: line-through; color: #CCC; }
@@ -327,7 +328,9 @@ const PRIORITY_LABELS = { today: 'Today', this_week: 'This Week', eventually: 'E
 
 function HomeScreen({ cookbooks, favouriteRecipes, shoppingList, onOpenCookbook, onNewCookbook, onOpenRecipe, onToggleShoppingItem, onDeleteShoppingItem, onClearShoppingList }) {
   const [collapsed, setCollapsed] = useState({});
+  const [collapsedRecipes, setCollapsedRecipes] = useState({});
   const togglePriority = (p) => setCollapsed(prev => ({ ...prev, [p]: !prev[p] }));
+  const toggleRecipe = (key) => setCollapsedRecipes(prev => ({ ...prev, [key]: !prev[key] }));
 
   const byPriority = PRIORITY_ORDER.map(p => {
     const items = shoppingList.filter(i => (i.priority || 'eventually') === p);
@@ -394,10 +397,15 @@ function HomeScreen({ cookbooks, favouriteRecipes, shoppingList, onOpenCookbook,
                     <span>{label}</span>
                     <span className="shopping-group-toggle">{collapsed[priority] ? '▶' : '▼'}</span>
                   </div>
-                  {!collapsed[priority] && Object.entries(byRecipe).map(([recipeName, recipeItems]) => (
+                  {!collapsed[priority] && Object.entries(byRecipe).map(([recipeName, recipeItems]) => {
+                    const rKey = `${priority}:${recipeName}`;
+                    return (
                     <div key={recipeName}>
-                      <div className="shopping-recipe-header">{recipeName}</div>
-                      {recipeItems.map(item => (
+                      <div className="shopping-recipe-header" onClick={() => toggleRecipe(rKey)}>
+                        <span>{recipeName}</span>
+                        <span style={{ fontSize: 9, opacity: 0.5 }}>{collapsedRecipes[rKey] ? '▶' : '▼'}</span>
+                      </div>
+                      {!collapsedRecipes[rKey] && recipeItems.map(item => (
                         <div key={item.id} className={`shopping-item${item.checked ? ' done' : ''}`} onClick={() => onToggleShoppingItem(item.id, item.checked)}>
                           <span className="shopping-item-name">{item.ingredient_name}</span>
                           <div className="shopping-item-right">
@@ -407,7 +415,7 @@ function HomeScreen({ cookbooks, favouriteRecipes, shoppingList, onOpenCookbook,
                         </div>
                       ))}
                     </div>
-                  ))}
+                  );})
                 </div>
               ))}
               <div style={{ padding: '12px 28px 32px', textAlign: 'center' }}>
