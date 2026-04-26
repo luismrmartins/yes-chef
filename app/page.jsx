@@ -20,9 +20,9 @@ const STYLES = `
     --gray2: #CCCCCC;
   }
 
-  body { font-family: 'DM Sans', sans-serif; background: #F2F2F0; color: var(--black); min-height: 100vh; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--white); color: var(--black); min-height: 100vh; }
 
-  .app { width: 100%; max-width: 680px; margin: 0 auto; min-height: 100vh; position: relative; overflow-x: hidden; background: var(--white); box-shadow: 0 0 60px rgba(0,0,0,0.07); }
+  .app { width: 100%; min-height: 100vh; position: relative; overflow-x: hidden; background: var(--white); }
 
   .btn {
     display: inline-flex; align-items: center; justify-content: center;
@@ -225,21 +225,20 @@ const STYLES = `
     .checklist-progress { margin: 8px 36px; }
     .done-screen { padding: 60px 36px; }
     .done-title { font-size: 72px; }
-    .home-cb-grid { grid-template-columns: 1fr 1fr; }
+    .home-cb-grid { gap: 8px; }
     .home-section-label { padding: 16px 36px 8px; }
     .home-fav-row { padding: 11px 36px; }
     .home-shopping-header { padding: 0 36px; }
   }
 
-  /* ── App wide mode (two-panel cookbook) ─────────────── */
-  .app.app-wide { max-width: 1100px; }
-
   /* ── Home: cookbook buttons ─────────────────────────── */
-  .home-cb-grid { display: grid; grid-template-columns: 1fr; gap: 8px; padding: 4px 28px 4px; }
-  .home-cb-btn { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 13px 20px; border: 1.5px solid var(--black); border-radius: 100px; background: transparent; cursor: pointer; text-align: left; color: var(--black); transition: all 0.12s; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .home-cb-grid { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 28px 4px; }
+  .home-cb-btn { font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 10px 18px; border: 1.5px solid var(--black); border-radius: 100px; background: transparent; cursor: pointer; text-align: left; color: var(--black); transition: all 0.12s; display: flex; align-items: baseline; gap: 6px; }
   .home-cb-btn:hover { background: var(--black); color: var(--white); }
+  .home-cb-btn:hover .cb-btn-count { color: rgba(255,255,255,0.55); }
   .home-cb-btn.cb-new { border-color: #CCC; border-style: dashed; color: #AAA; }
   .home-cb-btn.cb-new:hover { background: var(--black); color: var(--white); border-color: var(--black); border-style: solid; }
+  .cb-btn-count { font-family: 'Courier Prime', monospace; font-size: 10px; color: #999; font-weight: 400; text-transform: none; letter-spacing: 0; }
 
   /* ── Home: sections ─────────────────────────────────── */
   .home-section { margin-top: 8px; border-top: 1px solid #EEEEEE; }
@@ -317,13 +316,13 @@ function StarRating({ value, onChange }) {
   );
 }
 
+const PRIORITY_ORDER = ['today', 'this_week', 'eventually'];
+const PRIORITY_LABELS = { today: 'Today', this_week: 'This Week', eventually: 'Eventually' };
+
 function HomeScreen({ cookbooks, favouriteRecipes, shoppingList, onOpenCookbook, onNewCookbook, onOpenRecipe, onToggleShoppingItem, onClearShoppingList }) {
-  const grouped = shoppingList.reduce((acc, item) => {
-    const key = item.recipe_name || 'Other';
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(item);
-    return acc;
-  }, {});
+  const byPriority = PRIORITY_ORDER
+    .map(p => ({ priority: p, label: PRIORITY_LABELS[p], items: shoppingList.filter(i => (i.priority || 'eventually') === p) }))
+    .filter(g => g.items.length > 0);
   const unchecked = shoppingList.filter(i => !i.checked).length;
 
   return (
@@ -342,9 +341,12 @@ function HomeScreen({ cookbooks, favouriteRecipes, shoppingList, onOpenCookbook,
         {/* Cookbook buttons */}
         <div className="home-cb-grid">
           {cookbooks.map(cb => (
-            <button key={cb.id} className="home-cb-btn" onClick={() => onOpenCookbook(cb.id)}>{cb.name}</button>
+            <button key={cb.id} className="home-cb-btn" onClick={() => onOpenCookbook(cb.id)}>
+              {cb.name}
+              <span className="cb-btn-count">{cb.recipeCount ?? 0}</span>
+            </button>
           ))}
-          <button className="home-cb-btn cb-new" onClick={onNewCookbook}>+ New Cookbook</button>
+          <button className="home-cb-btn cb-new" onClick={onNewCookbook}>+ New</button>
         </div>
 
         {/* Favourites */}
@@ -370,9 +372,9 @@ function HomeScreen({ cookbooks, favouriteRecipes, shoppingList, onOpenCookbook,
             <div style={{ padding: '8px 28px 28px', fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#CCC', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Nothing to buy yet</div>
           ) : (
             <>
-              {Object.entries(grouped).map(([recipeName, items]) => (
-                <div key={recipeName} className="shopping-group">
-                  <div className="shopping-group-header">{recipeName}</div>
+              {byPriority.map(({ priority, label, items }) => (
+                <div key={priority} className="shopping-group">
+                  <div className="shopping-group-header">{label}</div>
                   {items.map(item => (
                     <div key={item.id} className={`shopping-item${item.checked ? ' done' : ''}`} onClick={() => onToggleShoppingItem(item.id, item.checked)}>
                       <span className="shopping-item-name">{item.ingredient_name}</span>
@@ -415,7 +417,7 @@ function NewCookbookScreen({ onBack, onSave, saving }) {
   );
 }
 
-function CookbookScreen({ cookbook, onBack, onNewRecipe, onStartCook, favouriteIds, onToggleFavourite, onAddToCookbook, onAddToShoppingList, shoppingRecipeIds, initialRecipeId }) {
+function CookbookScreen({ cookbook, onBack, onNewRecipe, onStartCook, favouriteIds, onToggleFavourite, onAddToCookbook, onOpenAddToList, shoppingRecipeIds, initialRecipeId }) {
   const [selectedId, setSelectedId] = useState(initialRecipeId || null);
   const recipes = cookbook.recipes || [];
   const isLoading = cookbook.recipes === null;
@@ -469,7 +471,7 @@ function CookbookScreen({ cookbook, onBack, onNewRecipe, onStartCook, favouriteI
             isFavourite={favouriteIds.has(selectedRecipe.id)}
             onToggleFavourite={onToggleFavourite}
             onAddToCookbook={onAddToCookbook}
-            onAddToShoppingList={onAddToShoppingList}
+            onOpenAddToList={onOpenAddToList}
             inShoppingList={shoppingRecipeIds.has(selectedRecipe.id)}
             mobileBackToList={() => setSelectedId(null)}
           />
@@ -599,15 +601,7 @@ function NewRecipeScreen({ onBack, onSave, saving }) {
   );
 }
 
-function RecipeDetailScreen({ recipe, cookbook, onBack, onStartCook, isFavourite, onToggleFavourite, onAddToCookbook, onAddToShoppingList, inShoppingList, mobileBackToList }) {
-  const [shopAdded, setShopAdded] = useState(inShoppingList);
-
-  const handleShop = () => {
-    if (!shopAdded) {
-      onAddToShoppingList(recipe);
-      setShopAdded(true);
-    }
-  };
+function RecipeDetailScreen({ recipe, cookbook, onBack, onStartCook, isFavourite, onToggleFavourite, onAddToCookbook, onOpenAddToList, inShoppingList, mobileBackToList }) {
 
   return (
     <div className="screen">
@@ -649,9 +643,9 @@ function RecipeDetailScreen({ recipe, cookbook, onBack, onStartCook, isFavourite
           <span className="recipe-action-icon">＋</span>
           <span className="recipe-action-label">Add to Cookbook</span>
         </button>
-        <button className={`recipe-action-btn${shopAdded ? ' active' : ''}`} onClick={handleShop}>
-          <span className="recipe-action-icon" style={shopAdded ? { color: 'var(--red)' } : {}}>🛒</span>
-          <span className="recipe-action-label">{shopAdded ? 'Added' : 'Want to Cook'}</span>
+        <button className={`recipe-action-btn${inShoppingList ? ' active' : ''}`} onClick={() => !inShoppingList && onOpenAddToList(recipe)}>
+          <span className="recipe-action-icon" style={inShoppingList ? { color: 'var(--red)' } : {}}>{inShoppingList ? '✓' : '+'}</span>
+          <span className="recipe-action-label">{inShoppingList ? 'On List' : 'Add to List'}</span>
         </button>
       </div>
 
@@ -705,6 +699,31 @@ function AddToCookbookSheet({ cookbooks, currentCbId, onSelect, onClose }) {
             <span>+</span><span>New Cookbook</span>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function AddToListSheet({ recipe, onSelect, onClose }) {
+  const options = [
+    { value: 'today', label: 'Today', sub: 'Shopping today' },
+    { value: 'this_week', label: 'This Week', sub: 'Planning ahead' },
+    { value: 'eventually', label: 'Eventually', sub: 'Someday soon' },
+  ];
+  return (
+    <div className="sheet-overlay" onClick={onClose}>
+      <div className="sheet" onClick={e => e.stopPropagation()}>
+        <div className="sheet-handle" />
+        <div className="sheet-title">When are you cooking this?</div>
+        {options.map(({ value, label, sub }) => (
+          <div key={value} className="flat-row" onClick={() => onSelect(value)}>
+            <div className="flat-row-info">
+              <div className="flat-row-name">{label}</div>
+              <div className="flat-row-meta">{sub}</div>
+            </div>
+            <span className="flat-row-arrow">›</span>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -1005,10 +1024,15 @@ export default function App() {
     setRecipesMap(prev => ({ ...prev, [cookbookId]: undefined }));
   };
 
-  const handleAddToShoppingList = async (recipe) => {
-    await addToShoppingList(recipe.id, recipe.name, recipe.ingredients);
+  const handleOpenAddToList = (recipe) => {
+    setSheet({ type: 'addToList', recipe });
+  };
+
+  const handleAddToShoppingList = async (recipe, priority) => {
+    await addToShoppingList(recipe.id, recipe.name, recipe.ingredients, priority);
     const updated = await getShoppingList();
     setShoppingList(updated);
+    setSheet(null);
   };
 
   const handleToggleShoppingItem = async (id, currentChecked) => {
@@ -1059,7 +1083,7 @@ export default function App() {
   return (
     <>
       <style>{STYLES}</style>
-      <div className={`app${s === 'cookbook' ? ' app-wide' : ''}`}>
+      <div className="app">
         {s === 'home' && (
           <HomeScreen
             cookbooks={cookbooks}
@@ -1082,7 +1106,7 @@ export default function App() {
             favouriteIds={favouriteIds}
             onToggleFavourite={handleToggleFavourite}
             onAddToCookbook={handleOpenAddToCookbook}
-            onAddToShoppingList={handleAddToShoppingList}
+            onOpenAddToList={handleOpenAddToList}
             shoppingRecipeIds={shoppingRecipeIds}
             initialRecipeId={rId || null}
           />
@@ -1096,7 +1120,7 @@ export default function App() {
             isFavourite={favouriteIds.has(recipe.id)}
             onToggleFavourite={handleToggleFavourite}
             onAddToCookbook={handleOpenAddToCookbook}
-            onAddToShoppingList={handleAddToShoppingList}
+            onOpenAddToList={handleOpenAddToList}
             inShoppingList={shoppingRecipeIds.has(recipe.id)}
           />
         )}
@@ -1107,6 +1131,9 @@ export default function App() {
 
         {sheet?.type === 'addToCookbook' && (
           <AddToCookbookSheet cookbooks={cookbooks} currentCbId={sheet.currentCbId} onSelect={handleSelectCookbookForAdd} onClose={() => setSheet(null)} />
+        )}
+        {sheet?.type === 'addToList' && (
+          <AddToListSheet recipe={sheet.recipe} onSelect={(priority) => handleAddToShoppingList(sheet.recipe, priority)} onClose={() => setSheet(null)} />
         )}
       </div>
     </>
