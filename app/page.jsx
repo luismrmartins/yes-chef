@@ -229,10 +229,19 @@ const COOKBOOK_COLORS = ['#111111','#1a1a2e','#1a3a1a','#3a1a1a','#2A6B8C','#5B4
 
 function generateId() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
 
+const DATA_VERSION = '3';
+
 function useLocalStorage(key, initial) {
   const [value, setValue] = useState(() => {
-    try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : initial; }
-    catch { return initial; }
+    try {
+      if (localStorage.getItem(key + '_v') !== DATA_VERSION) {
+        localStorage.removeItem(key);
+        localStorage.setItem(key + '_v', DATA_VERSION);
+        return initial;
+      }
+      const s = localStorage.getItem(key);
+      return s ? JSON.parse(s) : initial;
+    } catch { return initial; }
   });
   useEffect(() => { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} }, [key, value]);
   return [value, setValue];
