@@ -401,9 +401,9 @@ function HomeScreen({ cookbooks, favouriteRecipes, shoppingList, onOpenCookbook,
                     const rKey = `${priority}:${recipeName}`;
                     return (
                     <div key={recipeName}>
-                      <div className="shopping-recipe-header" onClick={() => toggleRecipe(rKey)}>
+                      <div className="shopping-recipe-header" onClick={() => toggleRecipe(rKey)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span>{recipeName}</span>
-                        <span className="shopping-group-toggle">{collapsedRecipes[rKey] ? '▶' : '▼'}</span>
+                        <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: 11, color: '#999' }}>{collapsedRecipes[rKey] ? '▶' : '▼'}</span>
                       </div>
                       {!collapsedRecipes[rKey] && recipeItems.map(item => (
                         <div key={item.id} className={`shopping-item${item.checked ? ' done' : ''}`} onClick={() => onToggleShoppingItem(item.id, item.checked)}>
