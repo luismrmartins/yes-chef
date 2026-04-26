@@ -192,13 +192,19 @@ const STYLES = `
 
   .cookbook-shelf { display: flex; overflow-x: auto; gap: 12px; padding: 4px 24px 24px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
   .cookbook-shelf::-webkit-scrollbar { display: none; }
-  .cookbook-card { flex-shrink: 0; width: 140px; height: 180px; display: flex; flex-direction: column; justify-content: flex-end; padding: 14px; cursor: pointer; scroll-snap-align: start; transition: opacity 0.15s; background: var(--black); }
-  .cookbook-card:hover { opacity: 0.82; }
-  .cookbook-card-name { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: 0.02em; line-height: 1.1; }
-  .cookbook-card-count { font-family: 'Courier Prime', monospace; font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 5px; }
-  .cookbook-card-new { background: transparent; border: 2px dashed #DDD; align-items: center; justify-content: center; gap: 6px; }
+  .cookbook-card { flex-shrink: 0; width: 140px; height: 180px; display: flex; flex-direction: column; justify-content: flex-end; padding: 14px; cursor: pointer; scroll-snap-align: start; transition: opacity 0.15s; background: transparent; border: 2px solid var(--black); border-radius: 14px; }
+  .cookbook-card:hover { opacity: 0.72; }
+  .cookbook-card-name { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; color: var(--black); text-transform: uppercase; letter-spacing: 0.02em; line-height: 1.1; }
+  .cookbook-card-count { font-family: 'Courier Prime', monospace; font-size: 11px; color: #999; margin-top: 5px; }
+  .cookbook-card-new { background: transparent; border: 2px dashed #DDD; border-radius: 14px; align-items: center; justify-content: center; gap: 6px; }
   .cookbook-card-new-icon { font-size: 28px; color: #CCC; line-height: 1; }
   .cookbook-card-new-label { font-family: 'Courier Prime', monospace; font-size: 11px; color: #BBB; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  .tag-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .tag-pill { font-family: 'Courier Prime', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; padding: 4px 10px; border-radius: 100px; border: 1.5px solid #DDD; color: #888; cursor: pointer; background: transparent; transition: all 0.12s; }
+  .tag-pill:hover { border-color: var(--black); color: var(--black); }
+  .tag-pill.active { border-color: var(--red); color: var(--red); background: transparent; }
+  .tag-pill-display { font-family: 'Courier Prime', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; padding: 3px 8px; border-radius: 100px; border: 1.5px solid #DDD; color: #999; }
 
   .section-label { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--black); padding: 20px 24px 0; }
 
@@ -246,6 +252,7 @@ const STYLES = `
 `;
 
 const COOKBOOK_COLORS = ['#111111','#1a1a2e','#1a3a1a','#3a1a1a','#2A6B8C','#5B4FCF','#7A4B9C','#8B1A0A'];
+const PRESET_TAGS = ['Vegan', 'Vegetarian', 'Spicy', 'Sweet', 'Quick', 'Comfort', 'Healthy', 'Gluten-free', 'Dairy-free', 'Low-carb'];
 
 function generateId() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
 
@@ -295,14 +302,14 @@ function HomeScreen({ cookbooks, favouriteIds, shoppingList, onOpenCookbook, onN
         <div className="section-label" style={{ marginBottom: 12 }}>Cookbooks</div>
         <div className="cookbook-shelf">
           {hasFavourites && (
-            <div className="cookbook-card" style={{ background: '#111' }} onClick={() => onOpenCookbook('favourites')}>
+            <div className="cookbook-card" style={{ borderColor: 'var(--red)' }} onClick={() => onOpenCookbook('favourites')}>
               <div style={{ fontSize: 22, color: 'var(--red)', marginBottom: 6 }}>♥</div>
-              <div className="cookbook-card-name">Favourites</div>
+              <div className="cookbook-card-name" style={{ color: 'var(--red)' }}>Favourites</div>
               <div className="cookbook-card-count">{favouriteIds.size} recipe{favouriteIds.size !== 1 ? 's' : ''}</div>
             </div>
           )}
           {cookbooks.map(cb => (
-            <div key={cb.id} className="cookbook-card" style={{ background: cb.color || '#111' }} onClick={() => onOpenCookbook(cb.id)}>
+            <div key={cb.id} className="cookbook-card" style={{ borderColor: cb.color || 'var(--black)' }} onClick={() => onOpenCookbook(cb.id)}>
               <div className="cookbook-card-name">{cb.name}</div>
               <div className="cookbook-card-count">{cb.recipeCount ?? 0} recipe{(cb.recipeCount ?? 0) !== 1 ? 's' : ''}</div>
             </div>
@@ -410,6 +417,11 @@ function CookbookScreen({ cookbook, onBack, onOpenRecipe, onNewRecipe }) {
                   <div className="flat-row-name">{r.name}</div>
                   <div className="flat-row-meta">{r.time} min · {r.difficulty} · {r.servings} servings</div>
                   {r.cookedCount > 0 && <div className="flat-row-badge">Cooked {r.cookedCount}×</div>}
+                  {r.tags?.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
+                      {r.tags.map(tag => <span key={tag} className="tag-pill-display">{tag}</span>)}
+                    </div>
+                  )}
                 </div>
                 <span className="flat-row-arrow">›</span>
               </div>
@@ -431,8 +443,10 @@ function NewRecipeScreen({ onBack, onSave, saving }) {
   const [time, setTime] = useState('');
   const [difficulty, setDifficulty] = useState('Easy');
   const [servings, setServings] = useState(2);
+  const [tags, setTags] = useState([]);
   const [ingredients, setIngredients] = useState([{ id: generateId(), name: '', qty: '' }]);
   const [steps, setSteps] = useState([{ id: generateId(), text: '', timer: null, hasTimer: false }]);
+  const toggleTag = (tag) => setTags(p => p.includes(tag) ? p.filter(t => t !== tag) : [...p, tag]);
 
   const addIngredient = () => setIngredients(p => [...p, { id: generateId(), name: '', qty: '' }]);
   const removeIngredient = id => setIngredients(p => p.filter(i => i.id !== id));
@@ -444,7 +458,7 @@ function NewRecipeScreen({ onBack, onSave, saving }) {
 
   const handleSave = () => onSave({
     name: name.trim(), description: description.trim(),
-    time: parseInt(time) || 30, difficulty, servings,
+    time: parseInt(time) || 30, difficulty, servings, tags,
     ingredients: ingredients.filter(i => i.name.trim()),
     steps: steps.filter(s => s.text.trim()).map(s => ({ ...s, timer: s.hasTimer ? (parseInt(s.timer) || null) : null })),
   });
@@ -486,6 +500,14 @@ function NewRecipeScreen({ onBack, onSave, saving }) {
             <div style={{ display: 'flex', gap: 8 }}>
               {['Easy', 'Medium', 'Hard'].map(d => (
                 <button key={d} className={`btn btn-sm${difficulty === d ? ' btn-primary' : ' btn-ghost'}`} onClick={() => setDifficulty(d)}>{d}</button>
+              ))}
+            </div>
+          </div>
+          <div className="form-field">
+            <label className="form-label">Tags</label>
+            <div className="tag-pills">
+              {PRESET_TAGS.map(tag => (
+                <button key={tag} className={`tag-pill${tags.includes(tag) ? ' active' : ''}`} onClick={() => toggleTag(tag)}>{tag}</button>
               ))}
             </div>
           </div>
@@ -549,6 +571,11 @@ function RecipeDetailScreen({ recipe, cookbook, onBack, onStartCook, isFavourite
         </div>
         <h1 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', fontSize: 40, color: 'var(--black)', lineHeight: 0.95, letterSpacing: '0.01em' }}>{recipe.name}</h1>
         {recipe.description && <p style={{ color: '#888', fontSize: 14, marginTop: 8 }}>{recipe.description}</p>}
+        {recipe.tags?.length > 0 && (
+          <div className="tag-pills" style={{ marginTop: 10 }}>
+            {recipe.tags.map(tag => <span key={tag} className="tag-pill-display">{tag}</span>)}
+          </div>
+        )}
         <div className="detail-meta">
           <span className="detail-meta-item">{recipe.time} min</span>
           <span className="detail-meta-item">{recipe.difficulty}</span>
