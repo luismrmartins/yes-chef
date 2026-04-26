@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { getCookbooks, createCookbook, getRecipes, createRecipe, incrementCookedCount } from '../lib/db';
 
 const STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -50,8 +50,8 @@ const STYLES = `
 
   .page-header { padding: 48px 24px 28px; }
   .page-header.safe-top { padding-top: max(48px, calc(env(safe-area-inset-top, 0px) + 16px)); }
-  .page-header-back { display: flex; align-items: center; gap: 6px; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.5); cursor: pointer; margin-bottom: 16px; background: none; border: none; padding: 0; }
-  .page-header-back:hover { color: rgba(255,255,255,0.85); }
+  .page-header-back { display: flex; align-items: center; gap: 0; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.5); cursor: pointer; margin-bottom: 16px; background: none; border: none; padding: 0; }
+  .page-header-back:hover { opacity: 0.8; }
   .page-header-title { font-family: 'Barlow Condensed', sans-serif; font-size: 56px; font-weight: 700; text-transform: uppercase; letter-spacing: -0.01em; line-height: 0.92; color: var(--white); }
   .page-header-sub { font-size: 15px; color: rgba(255,255,255,0.6); margin-top: 8px; }
   .page-header-meta { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.55); margin-top: 8px; }
@@ -69,7 +69,9 @@ const STYLES = `
   .flat-row-action:hover { opacity: 0.7; }
 
   .loading-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--red); }
-  .loading-text { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(255,255,255,0.6); }
+  .loading-logo { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 64px; text-transform: uppercase; letter-spacing: -0.02em; line-height: 0.85; }
+  .loading-logo .yes { display: block; color: var(--red); }
+  .loading-logo .chef { display: block; color: var(--white); }
 
   .hero { background: var(--black); color: var(--white); padding: 48px 24px 36px; }
   .hero-sm { padding: 36px 24px 28px; }
@@ -141,7 +143,9 @@ const STYLES = `
 
   .cook-screen { background: var(--black); min-height: 100vh; display: flex; flex-direction: column; color: var(--white); }
   .cook-header { padding: 20px 20px 0; display: flex; align-items: center; justify-content: space-between; }
-  .cook-title { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; color: rgba(255,255,255,0.4); font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; }
+  .cook-logo { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 20px; text-transform: uppercase; letter-spacing: -0.02em; line-height: 0.85; display: inline-flex; flex-direction: column; align-items: flex-start; }
+  .cook-logo .yes { color: var(--red); font-size: 16px; }
+  .cook-logo .chef { color: rgba(255,255,255,0.6); font-size: 16px; }
   .cook-dots { display: flex; gap: 6px; }
   .cook-dot { width: 6px; height: 6px; border-radius: 0; background: rgba(255,255,255,0.2); transition: all 0.2s; }
   .cook-dot.active { background: var(--red); width: 18px; }
@@ -230,7 +234,12 @@ function HomeScreen({ cookbooks, onOpenCookbook, onNewCookbook }) {
   return (
     <div className="screen screen-red">
       <div className="page-header safe-top">
-        <h1 className="page-header-title">Yes Chef</h1>
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: 'clamp(64px, 12vw, 88px)', textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 0.85 }}>
+            <div style={{ color: 'var(--red)' }}>YES</div>
+            <div style={{ color: 'var(--white)' }}>CHEF</div>
+          </div>
+        </div>
         <p className="page-header-sub">What are we cooking tonight?</p>
       </div>
       <div className="scroll-body">
@@ -298,7 +307,12 @@ function CookbookScreen({ cookbook, onBack, onOpenRecipe, onNewRecipe }) {
   return (
     <div className="screen screen-red">
       <div className="page-header safe-top">
-        <button className="page-header-back" onClick={onBack}>← Back</button>
+        <button className="page-header-back" onClick={onBack}>
+          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: 24, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 0.85, display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', verticalAlign: 'middle', marginRight: 8 }}>
+            <span style={{ color: 'var(--red)', fontSize: 18 }}>YES</span>
+            <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 18 }}>CHEF</span>
+          </div>
+        </button>
         <h1 className="page-header-title">{cookbook.name}</h1>
         {!isLoading && (
           <p className="page-header-meta">{recipes.length} recipe{recipes.length !== 1 ? 's' : ''}</p>
@@ -449,7 +463,13 @@ function RecipeDetailScreen({ recipe, cookbook, onBack, onStartCook }) {
   return (
     <div className="screen">
       <div className="detail-hero safe-top">
-        <div style={{ marginBottom: 12, cursor: 'pointer', color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }} onClick={onBack}>← {cookbook.name}</div>
+        <div style={{ marginBottom: 12, cursor: 'pointer', color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }} onClick={onBack}>
+          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: 20, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 0.85, display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+            <span style={{ color: 'var(--red)', fontSize: 16 }}>YES</span>
+            <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 16 }}>CHEF</span>
+          </div>
+          <span>/ {cookbook.name}</span>
+        </div>
         <h1 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', fontSize: 40, color: 'white', lineHeight: 0.95, letterSpacing: '0.01em' }}>{recipe.name}</h1>
         {recipe.description && <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 14, marginTop: 8 }}>{recipe.description}</p>}
         <div className="detail-meta">
@@ -508,7 +528,13 @@ function PrepChecklistScreen({ recipe, onBack, onStart }) {
   return (
     <div className="screen">
       <div className="hero safe-top">
-        <div style={{ marginBottom: 12, cursor: 'pointer', color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }} onClick={onBack}>← Back</div>
+        <div style={{ marginBottom: 12, cursor: 'pointer', color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }} onClick={onBack}>
+          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: 20, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 0.85, display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+            <span style={{ color: 'var(--red)', fontSize: 16 }}>YES</span>
+            <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 16 }}>CHEF</span>
+          </div>
+          <span>/ Back</span>
+        </div>
         <div className="hero-label">Before we start</div>
         <h1 className="hero-title">Grab your<br/>ingredients</h1>
       </div>
@@ -601,7 +627,10 @@ function CookModeScreen({ recipe, onDone }) {
   return (
     <div className="cook-screen">
       <div className="cook-header safe-top">
-        <span className="cook-title">{recipe.name}</span>
+        <div className="cook-logo">
+          <span className="yes">YES</span>
+          <span className="chef">CHEF</span>
+        </div>
         <div className="cook-dots">
           {steps.map((_, i) => <div key={i} className={`cook-dot${i === stepIdx ? ' active' : i < stepIdx ? ' done' : ''}`} />)}
         </div>
@@ -713,7 +742,10 @@ export default function App() {
       <>
         <style>{STYLES}</style>
         <div className="loading-screen">
-          <span className="loading-text">Yes Chef</span>
+          <div className="loading-logo">
+            <span className="yes">YES</span>
+            <span className="chef">CHEF</span>
+          </div>
         </div>
       </>
     );
