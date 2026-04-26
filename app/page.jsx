@@ -181,9 +181,12 @@ const STYLES = `
   .shopping-item { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid #EEEEEE; cursor: pointer; transition: opacity 0.15s; }
   .shopping-item:hover { opacity: 0.7; }
   .shopping-item.done .shopping-item-name { text-decoration: line-through; color: #CCC; }
-  .shopping-item.done .shopping-item-qty { color: #DDD; }
-  .shopping-item-name { font-size: 15px; }
+  .shopping-item-name { font-size: 15px; flex: 1; min-width: 0; }
+  .shopping-item-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
   .shopping-item-qty { font-family: 'Courier Prime', monospace; font-size: 13px; color: #888; }
+  .shopping-item-delete { background: none; border: none; cursor: pointer; color: #CCC; font-size: 17px; padding: 0; line-height: 1; }
+  .shopping-item-delete:hover { color: #999; }
+  .shopping-item.done .shopping-item-qty { color: #DDD; }
 
   .sheet-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 200; display: flex; align-items: flex-end; }
   .sheet { background: white; width: 100%; max-height: 75vh; overflow-y: auto; }
@@ -378,8 +381,10 @@ function HomeScreen({ cookbooks, favouriteRecipes, shoppingList, onOpenCookbook,
                   {items.map(item => (
                     <div key={item.id} className={`shopping-item${item.checked ? ' done' : ''}`} onClick={() => onToggleShoppingItem(item.id, item.checked)}>
                       <span className="shopping-item-name">{item.ingredient_name}</span>
-                      <span className="shopping-item-qty">{item.qty}</span>
-                      <button onClick={e => { e.stopPropagation(); onDeleteShoppingItem(item.id); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#CCC', fontSize: 16, padding: '0 0 0 12px', lineHeight: 1, flexShrink: 0 }}>×</button>
+                      <div className="shopping-item-right">
+                        <span className="shopping-item-qty">{item.qty}</span>
+                        <button className="shopping-item-delete" onClick={e => { e.stopPropagation(); onDeleteShoppingItem(item.id); }}>×</button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -733,8 +738,9 @@ function AddToListSheet({ recipe, onSelect, onClose }) {
 function PrepChecklistScreen({ recipe, onBack, onStart }) {
   const [checked, setChecked] = useState({});
   const [servings, setServings] = useState(recipe.servings);
+  const [showWarning, setShowWarning] = useState(false);
   const scale = servings / recipe.servings;
-  const toggle = idx => setChecked(p => ({ ...p, [idx]: !p[idx] }));
+  const toggle = idx => { setChecked(p => ({ ...p, [idx]: !p[idx] })); setShowWarning(false); };
   const allChecked = recipe.ingredients.every((_, i) => checked[i]);
   const checkedCount = recipe.ingredients.filter((_, i) => checked[i]).length;
 
@@ -782,9 +788,21 @@ function PrepChecklistScreen({ recipe, onBack, onStart }) {
           ))}
         </div>
         <div style={{ padding: '8px 20px 40px' }}>
-          <button className="btn btn-primary btn-full" style={{ height: 52, fontSize: 18 }} disabled={!allChecked} onClick={() => onStart(servings)}>
-            {allChecked ? "Let's Cook!" : `${checkedCount} of ${recipe.ingredients.length} confirmed`}
-          </button>
+          {showWarning ? (
+            <div style={{ background: '#FFF5F2', borderLeft: '3px solid var(--red)', padding: '16px', marginBottom: 12 }}>
+              <p style={{ fontSize: 14, lineHeight: 1.55, color: 'var(--black)', marginBottom: 14 }}>
+                It looks like you haven't confirmed all your ingredients. Do you still want to continue?
+              </p>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn btn-primary" style={{ flex: 1, height: 44, fontSize: 15 }} onClick={() => onStart(servings)}>Continue anyway</button>
+                <button className="btn btn-ghost" style={{ flex: 1, height: 44, fontSize: 15 }} onClick={() => setShowWarning(false)}>Go back</button>
+              </div>
+            </div>
+          ) : (
+            <button className="btn btn-primary btn-full" style={{ height: 52, fontSize: 18 }} onClick={() => allChecked ? onStart(servings) : setShowWarning(true)}>
+              {allChecked ? "Let's Cook!" : `${checkedCount} of ${recipe.ingredients.length} confirmed`}
+            </button>
+          )}
         </div>
       </div>
     </div>
