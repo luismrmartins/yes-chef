@@ -87,7 +87,7 @@ const STYLES = `
   .form-input:focus { border-color: var(--red); }
   .form-textarea { resize: vertical; min-height: 80px; }
 
-  .tabs { display: flex; padding: 0 20px; border-bottom: 2px solid var(--black); }
+  .tabs { display: flex; padding: 0 28px; border-bottom: 2px solid var(--black); }
   .tab { padding: 12px 16px; font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; border: none; background: none; color: var(--gray2); border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.15s; }
   .tab.active { color: var(--black); border-bottom-color: var(--red); }
 
@@ -225,6 +225,60 @@ const STYLES = `
     .checklist-progress { margin: 8px 36px; }
     .done-screen { padding: 60px 36px; }
     .done-title { font-size: 72px; }
+    .home-cb-grid { grid-template-columns: 1fr 1fr; }
+    .home-section-label { padding: 16px 36px 8px; }
+    .home-fav-row { padding: 11px 36px; }
+    .home-shopping-header { padding: 0 36px; }
+  }
+
+  /* ── App wide mode (two-panel cookbook) ─────────────── */
+  .app.app-wide { max-width: 1100px; }
+
+  /* ── Home: cookbook buttons ─────────────────────────── */
+  .home-cb-grid { display: grid; grid-template-columns: 1fr; gap: 8px; padding: 4px 28px 4px; }
+  .home-cb-btn { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 13px 20px; border: 1.5px solid var(--black); border-radius: 100px; background: transparent; cursor: pointer; text-align: left; color: var(--black); transition: all 0.12s; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .home-cb-btn:hover { background: var(--black); color: var(--white); }
+  .home-cb-btn.cb-new { border-color: #CCC; border-style: dashed; color: #AAA; }
+  .home-cb-btn.cb-new:hover { background: var(--black); color: var(--white); border-color: var(--black); border-style: solid; }
+
+  /* ── Home: sections ─────────────────────────────────── */
+  .home-section { margin-top: 8px; border-top: 1px solid #EEEEEE; }
+  .home-section-label { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: #999; padding: 16px 28px 8px; }
+  .home-fav-row { display: flex; align-items: center; padding: 11px 28px; cursor: pointer; border-bottom: 1px solid #F5F5F5; transition: opacity 0.12s; }
+  .home-fav-row:last-child { border-bottom: none; }
+  .home-fav-row:hover { opacity: 0.7; }
+  .home-fav-name { font-size: 15px; font-weight: 500; color: var(--black); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .home-fav-meta { font-family: 'Courier Prime', monospace; font-size: 11px; color: #BBB; flex-shrink: 0; margin-left: 10px; }
+  .home-shopping-header { display: flex; align-items: center; padding: 0 28px; }
+
+  /* ── Two-panel cookbook layout ──────────────────────── */
+  .cookbook-layout { display: flex; height: 100vh; overflow: hidden; background: var(--white); }
+  .recipe-list-panel { width: 260px; flex-shrink: 0; border-right: 1px solid #EEEEEE; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+  .recipe-detail-panel { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+  .list-panel-header { padding: 24px 20px 14px; border-bottom: 1px solid #EEEEEE; flex-shrink: 0; }
+  .list-panel-back { background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; color: #999; font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 0; margin-bottom: 10px; }
+  .list-panel-back:hover { color: var(--black); }
+  .list-panel-title { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.01em; color: var(--black); line-height: 1; }
+  .list-panel-count { font-family: 'Courier Prime', monospace; font-size: 11px; color: #999; margin-top: 3px; }
+  .recipe-list-rows { flex: 1; overflow-y: auto; }
+  .recipe-list-row { padding: 11px 20px; cursor: pointer; border-bottom: 1px solid #F5F5F5; transition: all 0.1s; }
+  .recipe-list-row:hover { background: #FAFAFA; }
+  .recipe-list-row.active { background: #F5F5F5; border-left: 3px solid var(--red); padding-left: 17px; }
+  .recipe-list-row-name { font-size: 14px; font-weight: 500; color: var(--black); line-height: 1.25; }
+  .recipe-list-row-meta { font-family: 'Courier Prime', monospace; font-size: 10px; color: #BBB; margin-top: 2px; }
+  .list-panel-footer { padding: 12px 16px; border-top: 1px solid #EEEEEE; flex-shrink: 0; }
+  .detail-empty-state { flex: 1; display: flex; align-items: center; justify-content: center; color: #CCC; font-family: 'Courier Prime', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; min-height: 60vh; }
+  .panel-mobile-back { display: none; }
+  .panel-mobile-back-btn { background: none; border: none; cursor: pointer; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #888; padding: 14px 28px; display: block; }
+  .panel-mobile-back-btn:hover { color: var(--black); }
+
+  @media (max-width: 639px) {
+    .cookbook-layout { height: auto; overflow: visible; display: block; }
+    .recipe-list-panel { width: 100%; height: auto; overflow: visible; border-right: none; }
+    .recipe-detail-panel { display: none; }
+    .cookbook-layout.has-detail .recipe-list-panel { display: none; }
+    .cookbook-layout.has-detail .recipe-detail-panel { display: flex; flex-direction: column; min-height: 100vh; }
+    .panel-mobile-back { display: block; border-bottom: 1px solid #EEEEEE; }
   }
 `;
 
@@ -263,8 +317,7 @@ function StarRating({ value, onChange }) {
   );
 }
 
-function HomeScreen({ cookbooks, favouriteIds, shoppingList, onOpenCookbook, onNewCookbook, onToggleShoppingItem, onClearShoppingList }) {
-  const hasFavourites = favouriteIds.size > 0;
+function HomeScreen({ cookbooks, favouriteRecipes, shoppingList, onOpenCookbook, onNewCookbook, onOpenRecipe, onToggleShoppingItem, onClearShoppingList }) {
   const grouped = shoppingList.reduce((acc, item) => {
     const key = item.recipe_name || 'Other';
     if (!acc[key]) acc[key] = [];
@@ -282,44 +335,39 @@ function HomeScreen({ cookbooks, favouriteIds, shoppingList, onOpenCookbook, onN
             <div style={{ color: 'var(--black)' }}>CHEF</div>
           </div>
         </div>
-        <p className="page-header-sub">What are we cooking tonight?</p>
+        <p className="page-header-sub">What are we cooking today?</p>
       </div>
 
       <div className="scroll-body pb-safe">
-        {/* Cookbook shelf */}
-        <div className="section-label" style={{ marginBottom: 12 }}>Cookbooks</div>
-        <div className="cookbook-shelf">
-          {hasFavourites && (
-            <div className="cookbook-card" style={{ borderColor: 'var(--red)' }} onClick={() => onOpenCookbook('favourites')}>
-              <div style={{ fontSize: 18, color: 'var(--red)', marginBottom: 6 }}>♥</div>
-              <div className="cookbook-card-name" style={{ color: 'var(--red)' }}>Favourites</div>
-              <div className="cookbook-card-count">{favouriteIds.size} recipe{favouriteIds.size !== 1 ? 's' : ''}</div>
-            </div>
-          )}
+        {/* Cookbook buttons */}
+        <div className="home-cb-grid">
           {cookbooks.map(cb => (
-            <div key={cb.id} className="cookbook-card" onClick={() => onOpenCookbook(cb.id)}>
-              <div className="cookbook-card-name">{cb.name}</div>
-              <div className="cookbook-card-count">{cb.recipeCount ?? 0} recipe{(cb.recipeCount ?? 0) !== 1 ? 's' : ''}</div>
-            </div>
+            <button key={cb.id} className="home-cb-btn" onClick={() => onOpenCookbook(cb.id)}>{cb.name}</button>
           ))}
-          <div className="cookbook-card cookbook-card-new" onClick={onNewCookbook}>
-            <div className="cookbook-card-new-icon">+</div>
-            <div className="cookbook-card-new-label">New</div>
-          </div>
+          <button className="home-cb-btn cb-new" onClick={onNewCookbook}>+ New Cookbook</button>
         </div>
 
-        {/* Inline shopping list */}
-        <div style={{ borderTop: '1px solid #EEEEEE', marginTop: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', padding: '20px 28px 12px' }}>
-            <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#999', flex: 1 }}>Shopping List</span>
-            {shoppingList.length > 0 && (
-              <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#999' }}>{unchecked} to buy</span>
-            )}
+        {/* Favourites */}
+        {favouriteRecipes.length > 0 && (
+          <div className="home-section">
+            <div className="home-section-label">Favourites</div>
+            {favouriteRecipes.map(r => (
+              <div key={r.id} className="home-fav-row" onClick={() => onOpenRecipe(r)}>
+                <span className="home-fav-name">{r.name}</span>
+                <span className="home-fav-meta">{r.time} min · {r.difficulty}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Shopping list */}
+        <div className="home-section">
+          <div className="home-shopping-header" style={{ paddingTop: 16, paddingBottom: shoppingList.length ? 8 : 0 }}>
+            <span className="home-section-label" style={{ padding: 0, flex: 1 }}>Shopping List</span>
+            {unchecked > 0 && <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#999' }}>{unchecked} to buy</span>}
           </div>
           {shoppingList.length === 0 ? (
-            <div style={{ padding: '4px 28px 32px', fontFamily: "'Courier Prime', monospace", fontSize: 13, color: '#CCC', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Nothing to buy yet
-            </div>
+            <div style={{ padding: '8px 28px 28px', fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#CCC', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Nothing to buy yet</div>
           ) : (
             <>
               {Object.entries(grouped).map(([recipeName, items]) => (
@@ -333,10 +381,8 @@ function HomeScreen({ cookbooks, favouriteIds, shoppingList, onOpenCookbook, onN
                   ))}
                 </div>
               ))}
-              <div style={{ padding: '16px 28px 32px', textAlign: 'center' }}>
-                <button onClick={onClearShoppingList} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#BBB', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  Clear list
-                </button>
+              <div style={{ padding: '12px 28px 32px', textAlign: 'center' }}>
+                <button onClick={onClearShoppingList} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#BBB', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Clear list</button>
               </div>
             </>
           )}
@@ -369,48 +415,69 @@ function NewCookbookScreen({ onBack, onSave, saving }) {
   );
 }
 
-function CookbookScreen({ cookbook, onBack, onOpenRecipe, onNewRecipe }) {
-  const recipes = cookbook.recipes;
-  const isLoading = recipes === null;
+function CookbookScreen({ cookbook, onBack, onNewRecipe, onStartCook, favouriteIds, onToggleFavourite, onAddToCookbook, onAddToShoppingList, shoppingRecipeIds, initialRecipeId }) {
+  const [selectedId, setSelectedId] = useState(initialRecipeId || null);
+  const recipes = cookbook.recipes || [];
+  const isLoading = cookbook.recipes === null;
+  const selectedRecipe = recipes.find(r => r.id === selectedId) || null;
+
+  useEffect(() => {
+    if (!selectedId && recipes.length > 0 && typeof window !== 'undefined' && window.innerWidth >= 640) {
+      setSelectedId(recipes[0].id);
+    }
+  }, [recipes.length]);
+
   return (
-    <div className="screen">
-      <div className="page-header safe-top">
-        <button className="page-header-back" onClick={onBack}>
-          <YesChefLogo chefColor="#888" size={18} />
-        </button>
-        <h1 className="page-header-title">{cookbook.name}</h1>
-        {!isLoading && <p className="page-header-meta">{recipes.length} recipe{recipes.length !== 1 ? 's' : ''}</p>}
-      </div>
-      <div className="scroll-body" style={{ display: 'flex', flexDirection: 'column' }}>
-        {isLoading ? (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#CCC', fontFamily: "'Courier Prime', monospace", fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Loading...</div>
-        ) : recipes.length === 0 ? (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#CCC', fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: 14 }}>No recipes yet</div>
-        ) : (
-          <div className="flat-list">
-            {recipes.map(r => (
-              <div key={r.id} className="flat-row" onClick={() => onOpenRecipe(r.id)}>
-                <div className="flat-row-info">
-                  <div className="flat-row-name">{r.name}</div>
-                  <div className="flat-row-meta">{r.time} min · {r.difficulty} · {r.servings} servings</div>
-                  {r.lastCookedAt
-                    ? <div className="flat-row-badge">Last cooked {timeAgo(r.lastCookedAt)}{r.cookedCount > 1 ? ` · ${r.cookedCount}×` : ''}</div>
-                    : <div className="flat-row-badge" style={{ color: '#DDD' }}>Never cooked</div>
-                  }
-                  {r.tags?.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
-                      {r.tags.map(tag => <span key={tag} className="tag-pill-display">{tag}</span>)}
-                    </div>
-                  )}
-                </div>
-                <span className="flat-row-arrow">›</span>
+    <div className={`cookbook-layout${selectedId ? ' has-detail' : ''}`}>
+      {/* Left panel — recipe list */}
+      <div className="recipe-list-panel">
+        <div className="list-panel-header safe-top">
+          <button className="list-panel-back" onClick={onBack}>
+            <YesChefLogo chefColor="#999" size={13} />
+          </button>
+          <div className="list-panel-title">{cookbook.name}</div>
+          {!isLoading && <div className="list-panel-count">{recipes.length} recipe{recipes.length !== 1 ? 's' : ''}</div>}
+        </div>
+        <div className="recipe-list-rows">
+          {isLoading ? (
+            <div style={{ padding: '20px', color: '#CCC', fontFamily: "'Courier Prime', monospace", fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Loading…</div>
+          ) : recipes.length === 0 ? (
+            <div style={{ padding: '20px', color: '#CCC', fontFamily: "'Courier Prime', monospace", fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em' }}>No recipes yet</div>
+          ) : recipes.map(r => (
+            <div key={r.id} className={`recipe-list-row${selectedId === r.id ? ' active' : ''}`} onClick={() => setSelectedId(r.id)}>
+              <div className="recipe-list-row-name">{r.name}</div>
+              <div className="recipe-list-row-meta">
+                {r.time} min · {r.difficulty}
+                {r.lastCookedAt ? ` · ${timeAgo(r.lastCookedAt)}` : ''}
               </div>
-            ))}
+            </div>
+          ))}
+        </div>
+        <div className="list-panel-footer">
+          <button className="btn btn-black btn-full" style={{ fontSize: 14, height: 40 }} onClick={onNewRecipe}>+ Add Recipe</button>
+        </div>
+      </div>
+
+      {/* Right panel — recipe detail */}
+      <div className="recipe-detail-panel">
+        {selectedRecipe ? (
+          <RecipeDetailScreen
+            recipe={selectedRecipe}
+            cookbook={cookbook}
+            onBack={onBack}
+            onStartCook={() => onStartCook(selectedId)}
+            isFavourite={favouriteIds.has(selectedRecipe.id)}
+            onToggleFavourite={onToggleFavourite}
+            onAddToCookbook={onAddToCookbook}
+            onAddToShoppingList={onAddToShoppingList}
+            inShoppingList={shoppingRecipeIds.has(selectedRecipe.id)}
+            mobileBackToList={() => setSelectedId(null)}
+          />
+        ) : (
+          <div className="detail-empty-state">
+            {isLoading ? 'Loading…' : recipes.length === 0 ? 'Add your first recipe →' : '← Select a recipe'}
           </div>
         )}
-        <div style={{ padding: '24px 24px 40px', marginTop: 'auto' }}>
-          <button className="btn btn-black btn-full" style={{ height: 52, fontSize: 18 }} onClick={onNewRecipe}>+ Add Recipe</button>
-        </div>
       </div>
     </div>
   );
@@ -451,7 +518,7 @@ function NewRecipeScreen({ onBack, onSave, saving }) {
           {saving ? 'Saving...' : 'Save'}
         </button>
       </div>
-      <div style={{ padding: '0 20px 12px', borderBottom: '2px solid var(--black)' }}>
+      <div style={{ padding: '0 28px 12px', borderBottom: '2px solid var(--black)' }}>
         <input className="form-input" placeholder="Recipe name" value={name} onChange={e => setName(e.target.value)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 24, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.02em', border: 'none', padding: '12px 0', background: 'transparent', width: '100%' }} />
       </div>
       <div className="tabs">
@@ -532,7 +599,7 @@ function NewRecipeScreen({ onBack, onSave, saving }) {
   );
 }
 
-function RecipeDetailScreen({ recipe, cookbook, onBack, onStartCook, isFavourite, onToggleFavourite, onAddToCookbook, onAddToShoppingList, inShoppingList }) {
+function RecipeDetailScreen({ recipe, cookbook, onBack, onStartCook, isFavourite, onToggleFavourite, onAddToCookbook, onAddToShoppingList, inShoppingList, mobileBackToList }) {
   const [shopAdded, setShopAdded] = useState(inShoppingList);
 
   const handleShop = () => {
@@ -544,6 +611,11 @@ function RecipeDetailScreen({ recipe, cookbook, onBack, onStartCook, isFavourite
 
   return (
     <div className="screen">
+      {mobileBackToList && (
+        <div className="panel-mobile-back">
+          <button className="panel-mobile-back-btn" onClick={mobileBackToList}>← Recipes</button>
+        </div>
+      )}
       <div className="detail-hero safe-top">
         <div style={{ marginBottom: 12, cursor: 'pointer', color: '#888', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }} onClick={onBack}>
           <YesChefLogo chefColor="#888" size={16} />
@@ -829,15 +901,17 @@ export default function App() {
   const [saving, setSaving] = useState(false);
   const [screen, setScreen] = useState({ name: 'home' });
   const [favouriteIds, setFavouriteIds] = useState(new Set());
+  const [favouriteRecipes, setFavouriteRecipes] = useState([]);
   const [shoppingList, setShoppingList] = useState([]);
   const [sheet, setSheet] = useState(null);
   const [pendingAddRecipeId, setPendingAddRecipeId] = useState(null);
 
   useEffect(() => {
-    Promise.all([getCookbooks(), getFavouriteIds(), getShoppingList()])
-      .then(([cbs, favIds, shop]) => {
+    Promise.all([getCookbooks(), getFavouriteIds(), getFavouriteRecipes(), getShoppingList()])
+      .then(([cbs, favIds, favRecs, shop]) => {
         setCookbooks(cbs);
         setFavouriteIds(new Set(favIds));
+        setFavouriteRecipes(favRecs);
         setShoppingList(shop);
         setLoading(false);
       });
@@ -903,6 +977,15 @@ export default function App() {
       isNowFav ? next.add(recipeId) : next.delete(recipeId);
       return next;
     });
+    if (isNowFav) {
+      let found = null;
+      for (const recipes of Object.values(recipesMap)) {
+        if (Array.isArray(recipes)) { found = recipes.find(r => r.id === recipeId); if (found) break; }
+      }
+      if (found) setFavouriteRecipes(prev => [...prev, found]);
+    } else {
+      setFavouriteRecipes(prev => prev.filter(r => r.id !== recipeId));
+    }
     setRecipesMap(prev => ({ ...prev, favourites: undefined }));
   };
 
@@ -969,18 +1052,46 @@ export default function App() {
     );
   }
 
+  const handleOpenRecipe = (recipe) => {
+    navigate('cookbook', { cbId: recipe.cookbookId, rId: recipe.id });
+  };
+
   return (
     <>
       <style>{STYLES}</style>
-      <div className="app">
-        {s === 'home' && <HomeScreen cookbooks={cookbooks} favouriteIds={favouriteIds} shoppingList={shoppingList} onOpenCookbook={id => navigate('cookbook', { cbId: id })} onNewCookbook={() => navigate('new-cookbook')} onToggleShoppingItem={handleToggleShoppingItem} onClearShoppingList={handleClearShoppingList} />}
+      <div className={`app${s === 'cookbook' ? ' app-wide' : ''}`}>
+        {s === 'home' && (
+          <HomeScreen
+            cookbooks={cookbooks}
+            favouriteRecipes={favouriteRecipes}
+            shoppingList={shoppingList}
+            onOpenCookbook={id => navigate('cookbook', { cbId: id })}
+            onNewCookbook={() => navigate('new-cookbook')}
+            onOpenRecipe={handleOpenRecipe}
+            onToggleShoppingItem={handleToggleShoppingItem}
+            onClearShoppingList={handleClearShoppingList}
+          />
+        )}
         {s === 'new-cookbook' && <NewCookbookScreen onBack={() => navigate('home')} onSave={handleNewCookbook} saving={saving} />}
-        {s === 'cookbook' && cb && <CookbookScreen cookbook={cb} onBack={() => navigate('home')} onOpenRecipe={rId => navigate('recipe', { cbId, rId })} onNewRecipe={() => navigate('new-recipe', { cbId })} />}
+        {s === 'cookbook' && cb && (
+          <CookbookScreen
+            cookbook={cb}
+            onBack={() => navigate('home')}
+            onNewRecipe={() => navigate('new-recipe', { cbId })}
+            onStartCook={(rId) => navigate('prep', { cbId: cb.id, rId })}
+            favouriteIds={favouriteIds}
+            onToggleFavourite={handleToggleFavourite}
+            onAddToCookbook={handleOpenAddToCookbook}
+            onAddToShoppingList={handleAddToShoppingList}
+            shoppingRecipeIds={shoppingRecipeIds}
+            initialRecipeId={rId || null}
+          />
+        )}
         {s === 'new-recipe' && cb && <NewRecipeScreen onBack={() => navigate('cookbook', { cbId })} onSave={data => handleNewRecipe(cbId, data)} saving={saving} />}
         {s === 'recipe' && cb && recipe && (
           <RecipeDetailScreen
             recipe={recipe} cookbook={cb}
-            onBack={() => navigate('cookbook', { cbId })}
+            onBack={() => navigate('cookbook', { cbId, rId })}
             onStartCook={() => navigate('prep', { cbId, rId })}
             isFavourite={favouriteIds.has(recipe.id)}
             onToggleFavourite={handleToggleFavourite}
