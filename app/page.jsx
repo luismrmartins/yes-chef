@@ -3,12 +3,12 @@ import { useState, useEffect, useRef } from 'react';
 import { getCookbooks, createCookbook, getRecipes, createRecipe, incrementCookedCount } from '../lib/db';
 
 const STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;900&family=Courier+Prime:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap');
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --red: #E8260A;
+    --red: #FB3B00;
     --black: #111111;
     --white: #FFFFFF;
     --gray: #F2F2F2;
@@ -32,10 +32,10 @@ const STYLES = `
     transition: all 0.15s ease; text-decoration: none;
   }
   .btn-primary { background: var(--red); color: var(--white); }
-  .btn-primary:hover { background: #c41f07; }
+  .btn-primary:hover { background: #d43200; }
   .btn-primary:disabled { background: var(--gray2); cursor: not-allowed; }
   .btn-red { background: var(--red); color: var(--white); }
-  .btn-red:hover { background: #c41f07; }
+  .btn-red:hover { background: #d43200; }
   .btn-black { background: var(--black); color: var(--white); }
   .btn-black:hover { background: #333; }
   .btn-ghost { background: transparent; color: var(--black); border: 2px solid var(--black); border-radius: 4px; }
@@ -62,11 +62,21 @@ const STYLES = `
   .flat-row:hover { opacity: 0.65; }
   .flat-row-info { flex: 1; min-width: 0; }
   .flat-row-name { font-family: 'Barlow Condensed', sans-serif; font-size: 32px; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: 0.01em; line-height: 1; }
-  .flat-row-meta { font-size: 13px; color: rgba(255,255,255,0.5); margin-top: 5px; }
-  .flat-row-badge { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; color: rgba(255,255,255,0.55); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 4px; }
+  .flat-row-meta { font-family: 'Courier Prime', monospace; font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 5px; }
+  .flat-row-badge { font-family: 'Courier Prime', monospace; font-size: 11px; color: rgba(255,255,255,0.55); margin-top: 4px; }
   .flat-row-arrow { color: rgba(255,255,255,0.3); font-size: 20px; flex-shrink: 0; margin-left: 12px; }
   .flat-row-action { display: flex; align-items: center; padding: 20px 24px; cursor: pointer; color: rgba(255,255,255,0.5); font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; gap: 8px; transition: opacity 0.15s; border-top: 1px solid rgba(255,255,255,0.15); }
   .flat-row-action:hover { opacity: 0.7; }
+
+  .screen-white { background: var(--white); }
+  .screen-white .flat-row { border-bottom: 1px solid #EEEEEE; }
+  .screen-white .flat-row:first-child { border-top: 1px solid #EEEEEE; }
+  .screen-white .flat-row-name { color: var(--black); }
+  .screen-white .flat-row-meta { color: #888888; }
+  .screen-white .flat-row-badge { color: #888888; }
+  .screen-white .flat-row-arrow { color: #CCCCCC; }
+  .screen-white .flat-row-action { color: #888888; border-top: 1px solid #EEEEEE; }
+  .screen-white .page-header-sub { color: #888888; }
 
   .loading-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--red); }
   .loading-logo { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 64px; text-transform: uppercase; letter-spacing: -0.02em; line-height: 0.85; }
@@ -116,28 +126,28 @@ const STYLES = `
 
   .detail-hero { background: var(--black); color: var(--white); padding: 36px 24px 28px; }
   .detail-meta { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
-  .detail-meta-item { font-size: 13px; color: var(--gray2); }
+  .detail-meta-item { font-family: 'Courier Prime', monospace; font-size: 13px; color: var(--gray2); }
   .detail-section { padding: 20px; }
   .detail-section h2 { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--black); margin-bottom: 12px; }
   .ingredient-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--gray2); font-size: 15px; }
-  .ingredient-qty { color: var(--gray2); font-size: 13px; }
+  .ingredient-qty { font-family: 'Courier Prime', monospace; color: var(--gray2); font-size: 13px; }
   .step-preview { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--gray2); }
-  .step-num { width: 24px; height: 24px; border-radius: 0; background: var(--red); color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px; font-family: 'Barlow Condensed', sans-serif; }
+  .step-num { width: 24px; height: 24px; border-radius: 0; background: var(--red); color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px; font-family: 'Courier Prime', monospace; }
 
   .checklist-item {
-    display: flex; align-items: center; gap: 12px; padding: 14px 16px;
-    border-radius: 0; border: 2px solid var(--black); background: white;
+    display: flex; align-items: center; gap: 12px; padding: 14px 0;
+    border-bottom: 1px solid #EEEEEE; background: transparent;
     cursor: pointer; transition: all 0.2s;
   }
-  .checklist-item.checked { background: var(--gray); border-color: var(--gray2); }
+  .checklist-item:first-child { border-top: 1px solid #EEEEEE; }
   .checklist-item.checked .ci-name { text-decoration: line-through; color: var(--gray2); }
   .check-circle {
-    width: 24px; height: 24px; border-radius: 0; border: 2px solid var(--black);
+    width: 22px; height: 22px; border-radius: 0; border: 2px solid var(--black);
     display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: white; transition: all 0.2s;
   }
   .checklist-item.checked .check-circle { background: var(--red); border-color: var(--red); }
   .ci-name { font-size: 15px; font-weight: 500; }
-  .ci-qty { font-size: 12px; color: var(--gray2); margin-top: 1px; }
+  .ci-qty { font-family: 'Courier Prime', monospace; font-size: 12px; color: var(--gray2); margin-top: 1px; }
   .checklist-progress { height: 4px; background: var(--gray2); overflow: hidden; }
   .checklist-progress-fill { height: 100%; background: var(--red); transition: width 0.3s ease; }
 
@@ -154,7 +164,7 @@ const STYLES = `
   .cook-prev { padding: 20px 0 24px; border-bottom: 1px solid rgba(255,255,255,0.08); }
   .cook-prev-text { font-size: 14px; text-decoration: line-through; line-height: 1.5; color: rgba(255,255,255,0.2); }
   .cook-current { padding: 36px 0; flex: 1; display: flex; flex-direction: column; justify-content: center; }
-  .cook-step-label { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--red); margin-bottom: 16px; font-weight: 700; }
+  .cook-step-label { font-family: 'Courier Prime', monospace; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--red); margin-bottom: 16px; font-weight: 700; }
   .cook-current-text { font-family: 'Barlow Condensed', sans-serif; font-size: 36px; line-height: 1.05; font-weight: 700; text-transform: uppercase; }
   .cook-next { padding: 24px 0 20px; border-top: 1px solid rgba(255,255,255,0.08); }
   .cook-next-label { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(255,255,255,0.3); margin-bottom: 8px; font-weight: 700; }
@@ -173,7 +183,7 @@ const STYLES = `
     background: var(--red); border-radius: 0; padding: 12px 16px; margin-top: 16px;
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
   }
-  .timer-display { font-family: 'Barlow Condensed', sans-serif; font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; color: white; }
+  .timer-display { font-family: 'Courier Prime', monospace; font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; color: white; }
   .timer-display.done { color: var(--black); }
   .timer-start-btn { padding: 8px 16px; border-radius: 0; border: 2px solid white; background: transparent; color: white; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: 0.08em; transition: all 0.15s; }
   .timer-start-btn:hover { background: white; color: var(--red); }
@@ -232,12 +242,12 @@ function generateId() { return Math.random().toString(36).slice(2) + Date.now().
 
 function HomeScreen({ cookbooks, onOpenCookbook, onNewCookbook }) {
   return (
-    <div className="screen screen-red">
+    <div className="screen screen-white">
       <div className="page-header safe-top">
         <div style={{ marginBottom: 8 }}>
           <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: 'clamp(64px, 12vw, 88px)', textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 0.85 }}>
             <div style={{ color: 'var(--red)' }}>YES</div>
-            <div style={{ color: 'var(--white)' }}>CHEF</div>
+            <div style={{ color: 'var(--black)' }}>CHEF</div>
           </div>
         </div>
         <p className="page-header-sub">What are we cooking tonight?</p>
@@ -434,7 +444,7 @@ function NewRecipeScreen({ onBack, onSave, saving }) {
         {tab === 2 && <>
           <div className="dynamic-list">
             {steps.map((step, idx) => (
-              <div key={step.id} style={{ background: 'white', border: '2px solid var(--black)', borderRadius: 0, padding: 12 }}>
+              <div key={step.id} style={{ borderBottom: '1px solid #EEEEEE', paddingBottom: 12 }}>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
                   <div className="step-num">{idx + 1}</div>
                   <textarea className="form-input form-textarea" placeholder={`Step ${idx + 1}...`} value={step.text} onChange={e => updateStep(step.id, 'text', e.target.value)} style={{ flex: 1, minHeight: 70, fontSize: 14 }} />
@@ -550,7 +560,7 @@ function PrepChecklistScreen({ recipe, onBack, onStart }) {
         <div className="checklist-progress-fill" style={{ width: `${(checkedCount / recipe.ingredients.length) * 100}%` }} />
       </div>
       <div className="scroll-body">
-        <div style={{ padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ padding: '0 20px' }}>
           {recipe.ingredients.map((ing, idx) => (
             <div key={ing.id || idx} className={`checklist-item${checked[idx] ? ' checked' : ''}`} onClick={() => toggle(idx)}>
               <div className="check-circle">
