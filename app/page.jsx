@@ -4,7 +4,7 @@ import {
   getCookbooks, createCookbook, getRecipes, createRecipe, incrementCookedCount,
   toggleFavourite, getFavouriteIds, getFavouriteRecipes,
   addRecipeToCookbook, addToShoppingList, getShoppingList,
-  toggleShoppingItem, clearShoppingList, saveRecipeFeedback,
+  toggleShoppingItem, deleteShoppingItem, clearShoppingList, saveRecipeFeedback,
 } from '../lib/db';
 
 const STYLES = `
@@ -319,7 +319,7 @@ function StarRating({ value, onChange }) {
 const PRIORITY_ORDER = ['today', 'this_week', 'eventually'];
 const PRIORITY_LABELS = { today: 'Today', this_week: 'This Week', eventually: 'Eventually' };
 
-function HomeScreen({ cookbooks, favouriteRecipes, shoppingList, onOpenCookbook, onNewCookbook, onOpenRecipe, onToggleShoppingItem, onClearShoppingList }) {
+function HomeScreen({ cookbooks, favouriteRecipes, shoppingList, onOpenCookbook, onNewCookbook, onOpenRecipe, onToggleShoppingItem, onDeleteShoppingItem, onClearShoppingList }) {
   const byPriority = PRIORITY_ORDER
     .map(p => ({ priority: p, label: PRIORITY_LABELS[p], items: shoppingList.filter(i => (i.priority || 'eventually') === p) }))
     .filter(g => g.items.length > 0);
@@ -379,6 +379,7 @@ function HomeScreen({ cookbooks, favouriteRecipes, shoppingList, onOpenCookbook,
                     <div key={item.id} className={`shopping-item${item.checked ? ' done' : ''}`} onClick={() => onToggleShoppingItem(item.id, item.checked)}>
                       <span className="shopping-item-name">{item.ingredient_name}</span>
                       <span className="shopping-item-qty">{item.qty}</span>
+                      <button onClick={e => { e.stopPropagation(); onDeleteShoppingItem(item.id); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#CCC', fontSize: 16, padding: '0 0 0 12px', lineHeight: 1, flexShrink: 0 }}>×</button>
                     </div>
                   ))}
                 </div>
@@ -1040,6 +1041,11 @@ export default function App() {
     await toggleShoppingItem(id, currentChecked);
   };
 
+  const handleDeleteShoppingItem = async (id) => {
+    setShoppingList(prev => prev.filter(item => item.id !== id));
+    await deleteShoppingItem(id);
+  };
+
   const handleClearShoppingList = async () => {
     setShoppingList([]);
     await clearShoppingList();
@@ -1093,6 +1099,7 @@ export default function App() {
             onNewCookbook={() => navigate('new-cookbook')}
             onOpenRecipe={handleOpenRecipe}
             onToggleShoppingItem={handleToggleShoppingItem}
+            onDeleteShoppingItem={handleDeleteShoppingItem}
             onClearShoppingList={handleClearShoppingList}
           />
         )}
