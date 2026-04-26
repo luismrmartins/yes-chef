@@ -304,6 +304,8 @@ function timeAgo(dateStr) {
 
 function generateId() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
 
+function ahUrl(name) { return `https://www.ah.nl/zoeken?query=${encodeURIComponent(name)}`; }
+
 function YesChefLogo({ yesColor = 'var(--red)', chefColor = 'var(--black)', size = 18 }) {
   return (
     <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: size, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 0.85, display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start' }}>
@@ -408,6 +410,7 @@ function HomeScreen({ cookbooks, favouriteRecipes, shoppingList, onOpenCookbook,
                           <span className="shopping-item-name">{item.ingredient_name}</span>
                           <div className="shopping-item-right">
                             <span className="shopping-item-qty">{item.qty}</span>
+                            <a href={ahUrl(item.ingredient_name)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontFamily: "'Courier Prime', monospace", fontSize: 11, fontWeight: 700, color: 'var(--red)', textDecoration: 'none' }}>AH →</a>
                             <button className="shopping-item-delete" onClick={e => { e.stopPropagation(); onDeleteShoppingItem(item.id); }}>×</button>
                           </div>
                         </div>
@@ -688,7 +691,10 @@ function RecipeDetailScreen({ recipe, cookbook, onBack, onStartCook, isFavourite
           {recipe.ingredients.map((ing, idx) => (
             <div key={ing.id || idx} className="ingredient-item">
               <span>{ing.name}</span>
-              <span className="ingredient-qty">{ing.qty}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span className="ingredient-qty">{ing.qty}</span>
+                <a href={ahUrl(ing.name)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontFamily: "'Courier Prime', monospace", fontSize: 11, fontWeight: 700, color: 'var(--red)', textDecoration: 'none', flexShrink: 0 }}>AH</a>
+              </div>
             </div>
           ))}
         </div>
@@ -811,6 +817,7 @@ function PrepChecklistScreen({ recipe, onBack, onStart }) {
                 <div className="ci-name">{ing.name}</div>
                 <div className="ci-qty">{scaleQty(ing.qty)}</div>
               </div>
+              <a href={ahUrl(ing.name)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontFamily: "'Courier Prime', monospace", fontSize: 11, fontWeight: 700, color: 'var(--red)', textDecoration: 'none', flexShrink: 0, padding: '4px 2px' }}>AH</a>
             </div>
           ))}
         </div>
