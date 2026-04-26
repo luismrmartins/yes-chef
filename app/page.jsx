@@ -67,8 +67,8 @@ const STYLES = `
 
   .loading-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--white); }
   .loading-logo { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 64px; text-transform: uppercase; letter-spacing: -0.02em; line-height: 0.85; }
-  .loading-logo .yes { display: block; color: var(--red); }
-  .loading-logo .chef { display: block; color: var(--black); }
+  .loading-logo .line1 { display: block; color: var(--red); }
+  .loading-logo .line2 { display: block; color: var(--black); }
 
   .hero { background: var(--white); color: var(--black); padding: 40px 28px 32px; border-bottom: 1px solid #EEEEEE; }
   .hero-sm { padding: 32px 28px 24px; }
@@ -136,8 +136,8 @@ const STYLES = `
   .cook-screen { background: var(--white); min-height: 100vh; display: flex; flex-direction: column; }
   .cook-header { padding: 20px 20px 0; display: flex; align-items: center; justify-content: space-between; }
   .cook-logo { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; text-transform: uppercase; letter-spacing: -0.02em; line-height: 0.85; display: inline-flex; flex-direction: column; align-items: flex-start; }
-  .cook-logo .yes { color: var(--red); font-size: 16px; }
-  .cook-logo .chef { color: #888; font-size: 16px; }
+  .cook-logo .line1 { color: var(--red); font-size: 16px; }
+  .cook-logo .line2 { color: #888; font-size: 16px; }
   .cook-dots { display: flex; gap: 6px; }
   .cook-dot { width: 6px; height: 6px; background: #DDD; transition: all 0.2s; }
   .cook-dot.active { background: var(--red); width: 18px; }
@@ -178,6 +178,7 @@ const STYLES = `
 
   .shopping-group { padding: 0 28px; }
   .shopping-group-header { font-family: 'Courier Prime', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--red); padding: 16px 0 8px; }
+  .shopping-recipe-header { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; color: #888; padding: 8px 0 4px; margin-top: 4px; letter-spacing: 0.01em; }
   .shopping-item { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid #EEEEEE; cursor: pointer; transition: opacity 0.15s; }
   .shopping-item:hover { opacity: 0.7; }
   .shopping-item.done .shopping-item-name { text-decoration: line-through; color: #CCC; }
@@ -303,8 +304,8 @@ function generateId() { return Math.random().toString(36).slice(2) + Date.now().
 function YesChefLogo({ yesColor = 'var(--red)', chefColor = 'var(--black)', size = 18 }) {
   return (
     <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: size, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 0.85, display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-      <span style={{ color: yesColor }}>YES</span>
-      <span style={{ color: chefColor }}>CHEF</span>
+      <span style={{ color: yesColor }}>MISE EN</span>
+      <span style={{ color: chefColor }}>PLACE</span>
     </div>
   );
 }
@@ -323,9 +324,16 @@ const PRIORITY_ORDER = ['today', 'this_week', 'eventually'];
 const PRIORITY_LABELS = { today: 'Today', this_week: 'This Week', eventually: 'Eventually' };
 
 function HomeScreen({ cookbooks, favouriteRecipes, shoppingList, onOpenCookbook, onNewCookbook, onOpenRecipe, onToggleShoppingItem, onDeleteShoppingItem, onClearShoppingList }) {
-  const byPriority = PRIORITY_ORDER
-    .map(p => ({ priority: p, label: PRIORITY_LABELS[p], items: shoppingList.filter(i => (i.priority || 'eventually') === p) }))
-    .filter(g => g.items.length > 0);
+  const byPriority = PRIORITY_ORDER.map(p => {
+    const items = shoppingList.filter(i => (i.priority || 'eventually') === p);
+    const byRecipe = items.reduce((acc, item) => {
+      const key = item.recipe_name || 'Other';
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(item);
+      return acc;
+    }, {});
+    return { priority: p, label: PRIORITY_LABELS[p], byRecipe, count: items.length };
+  }).filter(g => g.count > 0);
   const unchecked = shoppingList.filter(i => !i.checked).length;
 
   return (
@@ -333,8 +341,8 @@ function HomeScreen({ cookbooks, favouriteRecipes, shoppingList, onOpenCookbook,
       <div className="page-header safe-top">
         <div style={{ marginBottom: 6 }}>
           <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: 'clamp(40px, 8vw, 60px)', textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 0.85 }}>
-            <div style={{ color: 'var(--red)' }}>YES</div>
-            <div style={{ color: 'var(--black)' }}>CHEF</div>
+            <div style={{ color: 'var(--red)' }}>MISE EN</div>
+            <div style={{ color: 'var(--black)' }}>PLACE</div>
           </div>
         </div>
         <p className="page-header-sub">What are we cooking today?</p>
@@ -375,16 +383,21 @@ function HomeScreen({ cookbooks, favouriteRecipes, shoppingList, onOpenCookbook,
             <div style={{ padding: '8px 28px 28px', fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#CCC', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Nothing to buy yet</div>
           ) : (
             <>
-              {byPriority.map(({ priority, label, items }) => (
+              {byPriority.map(({ priority, label, byRecipe }) => (
                 <div key={priority} className="shopping-group">
                   <div className="shopping-group-header">{label}</div>
-                  {items.map(item => (
-                    <div key={item.id} className={`shopping-item${item.checked ? ' done' : ''}`} onClick={() => onToggleShoppingItem(item.id, item.checked)}>
-                      <span className="shopping-item-name">{item.ingredient_name}</span>
-                      <div className="shopping-item-right">
-                        <span className="shopping-item-qty">{item.qty}</span>
-                        <button className="shopping-item-delete" onClick={e => { e.stopPropagation(); onDeleteShoppingItem(item.id); }}>×</button>
-                      </div>
+                  {Object.entries(byRecipe).map(([recipeName, recipeItems]) => (
+                    <div key={recipeName}>
+                      <div className="shopping-recipe-header">{recipeName}</div>
+                      {recipeItems.map(item => (
+                        <div key={item.id} className={`shopping-item${item.checked ? ' done' : ''}`} onClick={() => onToggleShoppingItem(item.id, item.checked)}>
+                          <span className="shopping-item-name">{item.ingredient_name}</span>
+                          <div className="shopping-item-right">
+                            <span className="shopping-item-qty">{item.qty}</span>
+                            <button className="shopping-item-delete" onClick={e => { e.stopPropagation(); onDeleteShoppingItem(item.id); }}>×</button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   ))}
                 </div>
@@ -848,7 +861,7 @@ function CookModeScreen({ recipe, onFinish }) {
   return (
     <div className="cook-screen">
       <div className="cook-header safe-top">
-        <div className="cook-logo"><span className="yes">YES</span><span className="chef">CHEF</span></div>
+        <div className="cook-logo"><span className="line1">MISE EN</span><span className="line2">PLACE</span></div>
         <div className="cook-dots">
           {steps.map((_, i) => <div key={i} className={`cook-dot${i === stepIdx ? ' active' : i < stepIdx ? ' done' : ''}`} />)}
         </div>
@@ -1094,7 +1107,7 @@ export default function App() {
       <>
         <style>{STYLES}</style>
         <div className="loading-screen">
-          <div className="loading-logo"><span className="yes">YES</span><span className="chef">CHEF</span></div>
+          <div className="loading-logo"><span className="line1">MISE EN</span><span className="line2">PLACE</span></div>
         </div>
       </>
     );

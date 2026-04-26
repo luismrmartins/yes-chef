@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Yes Chef",
+  title: "Mise en Place",
   description: "Your personal recipe cooking assistant",
 };
 
