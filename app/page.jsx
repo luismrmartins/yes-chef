@@ -190,14 +190,19 @@ const STYLES = `
   .sheet-handle { width: 40px; height: 4px; background: #DDD; border-radius: 2px; margin: 14px auto 4px; }
   .sheet-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; text-transform: uppercase; letter-spacing: 0.04em; padding: 8px 24px 14px; border-bottom: 1px solid #EEEEEE; color: var(--black); }
 
-  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: white; border-top: 1px solid #EEEEEE; display: flex; z-index: 100; }
-  .bottom-nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; border: none; background: none; padding: 0; color: #AAA; transition: color 0.15s; }
-  .bottom-nav-item.active { color: var(--red); }
-  .bottom-nav-icon { font-size: 20px; line-height: 1; }
-  .bottom-nav-label { font-family: 'Courier Prime', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .cookbook-shelf { display: flex; overflow-x: auto; gap: 12px; padding: 4px 24px 24px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .cookbook-shelf::-webkit-scrollbar { display: none; }
+  .cookbook-card { flex-shrink: 0; width: 140px; height: 180px; display: flex; flex-direction: column; justify-content: flex-end; padding: 14px; cursor: pointer; scroll-snap-align: start; transition: opacity 0.15s; background: var(--black); }
+  .cookbook-card:hover { opacity: 0.82; }
+  .cookbook-card-name { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: 0.02em; line-height: 1.1; }
+  .cookbook-card-count { font-family: 'Courier Prime', monospace; font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 5px; }
+  .cookbook-card-new { background: transparent; border: 2px dashed #DDD; align-items: center; justify-content: center; gap: 6px; }
+  .cookbook-card-new-icon { font-size: 28px; color: #CCC; line-height: 1; }
+  .cookbook-card-new-label { font-family: 'Courier Prime', monospace; font-size: 11px; color: #BBB; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  .section-label { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--black); padding: 20px 24px 0; }
 
   .scroll-body { overflow-y: auto; flex: 1; }
-  .pb-nav { padding-bottom: 80px; }
   .pb-safe { padding-bottom: 40px; }
 
   @media (min-width: 640px) {
@@ -253,21 +258,6 @@ function YesChefLogo({ yesColor = 'var(--red)', chefColor = 'var(--black)', size
   );
 }
 
-function BottomNav({ activeTab, onTab }) {
-  return (
-    <nav className="bottom-nav">
-      <button className={`bottom-nav-item${activeTab === 'home' ? ' active' : ''}`} onClick={() => onTab('home')}>
-        <span className="bottom-nav-icon">⊞</span>
-        <span className="bottom-nav-label">Cookbooks</span>
-      </button>
-      <button className={`bottom-nav-item${activeTab === 'shopping' ? ' active' : ''}`} onClick={() => onTab('shopping')}>
-        <span className="bottom-nav-icon">🛒</span>
-        <span className="bottom-nav-label">Shopping</span>
-      </button>
-    </nav>
-  );
-}
-
 function StarRating({ value, onChange }) {
   return (
     <div className="stars">
@@ -278,49 +268,8 @@ function StarRating({ value, onChange }) {
   );
 }
 
-function HomeScreen({ cookbooks, favouriteIds, onOpenCookbook, onNewCookbook, activeTab, onTab }) {
+function HomeScreen({ cookbooks, favouriteIds, shoppingList, onOpenCookbook, onNewCookbook, onToggleShoppingItem, onClearShoppingList }) {
   const hasFavourites = favouriteIds.size > 0;
-  const displayCookbooks = [
-    ...(hasFavourites ? [{ id: 'favourites', name: 'Favourites', isFavourites: true }] : []),
-    ...cookbooks,
-  ];
-  return (
-    <div className="screen">
-      <div className="page-header safe-top">
-        <div style={{ marginBottom: 8 }}>
-          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: 'clamp(64px, 12vw, 88px)', textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 0.85 }}>
-            <div style={{ color: 'var(--red)' }}>YES</div>
-            <div style={{ color: 'var(--black)' }}>CHEF</div>
-          </div>
-        </div>
-        <p className="page-header-sub">What are we cooking tonight?</p>
-      </div>
-      <div className="scroll-body pb-nav">
-        <div className="flat-list">
-          {displayCookbooks.map(cb => (
-            <div key={cb.id} className="flat-row" onClick={() => onOpenCookbook(cb.id)}>
-              <div className="flat-row-info">
-                <div className="flat-row-name" style={cb.isFavourites ? { color: 'var(--red)' } : {}}>
-                  {cb.isFavourites ? '♥ ' : ''}{cb.name}
-                </div>
-                {cb.recipeCount !== undefined && (
-                  <div className="flat-row-meta">{cb.recipeCount} recipe{cb.recipeCount !== 1 ? 's' : ''}</div>
-                )}
-              </div>
-              <span className="flat-row-arrow">›</span>
-            </div>
-          ))}
-          <div className="flat-row-action" onClick={onNewCookbook}>
-            <span>+</span><span>New cookbook</span>
-          </div>
-        </div>
-      </div>
-      <BottomNav activeTab={activeTab} onTab={onTab} />
-    </div>
-  );
-}
-
-function ShoppingListScreen({ shoppingList, onToggleItem, onClear, activeTab, onTab }) {
   const grouped = shoppingList.reduce((acc, item) => {
     const key = item.recipe_name || 'Other';
     if (!acc[key]) acc[key] = [];
@@ -332,38 +281,72 @@ function ShoppingListScreen({ shoppingList, onToggleItem, onClear, activeTab, on
   return (
     <div className="screen">
       <div className="page-header safe-top">
-        <h1 className="page-header-title">Shopping<br/>List</h1>
-        {shoppingList.length > 0 && (
-          <p className="page-header-meta" style={{ marginTop: 10 }}>{unchecked} item{unchecked !== 1 ? 's' : ''} to buy</p>
-        )}
-      </div>
-      <div className="scroll-body pb-nav">
-        {shoppingList.length === 0 ? (
-          <div style={{ padding: '40px 24px', color: '#CCC', fontFamily: "'Courier Prime', monospace", fontSize: 14, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            Nothing to buy yet
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: 'clamp(56px, 10vw, 80px)', textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 0.85 }}>
+            <div style={{ color: 'var(--red)' }}>YES</div>
+            <div style={{ color: 'var(--black)' }}>CHEF</div>
           </div>
-        ) : (
-          <>
-            {Object.entries(grouped).map(([recipeName, items]) => (
-              <div key={recipeName} className="shopping-group">
-                <div className="shopping-group-header">{recipeName}</div>
-                {items.map(item => (
-                  <div key={item.id} className={`shopping-item${item.checked ? ' done' : ''}`} onClick={() => onToggleItem(item.id, item.checked)}>
-                    <span className="shopping-item-name">{item.ingredient_name}</span>
-                    <span className="shopping-item-qty">{item.qty}</span>
-                  </div>
-                ))}
-              </div>
-            ))}
-            <div style={{ padding: '24px 24px 8px', textAlign: 'center' }}>
-              <button onClick={onClear} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#AAA', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                Clear list
-              </button>
-            </div>
-          </>
-        )}
+        </div>
+        <p className="page-header-sub">What are we cooking tonight?</p>
       </div>
-      <BottomNav activeTab={activeTab} onTab={onTab} />
+
+      <div className="scroll-body pb-safe">
+        {/* Cookbook shelf */}
+        <div className="section-label" style={{ marginBottom: 12 }}>Cookbooks</div>
+        <div className="cookbook-shelf">
+          {hasFavourites && (
+            <div className="cookbook-card" style={{ background: '#111' }} onClick={() => onOpenCookbook('favourites')}>
+              <div style={{ fontSize: 22, color: 'var(--red)', marginBottom: 6 }}>♥</div>
+              <div className="cookbook-card-name">Favourites</div>
+              <div className="cookbook-card-count">{favouriteIds.size} recipe{favouriteIds.size !== 1 ? 's' : ''}</div>
+            </div>
+          )}
+          {cookbooks.map(cb => (
+            <div key={cb.id} className="cookbook-card" style={{ background: cb.color || '#111' }} onClick={() => onOpenCookbook(cb.id)}>
+              <div className="cookbook-card-name">{cb.name}</div>
+              <div className="cookbook-card-count">{cb.recipeCount ?? 0} recipe{(cb.recipeCount ?? 0) !== 1 ? 's' : ''}</div>
+            </div>
+          ))}
+          <div className="cookbook-card cookbook-card-new" onClick={onNewCookbook}>
+            <div className="cookbook-card-new-icon">+</div>
+            <div className="cookbook-card-new-label">New</div>
+          </div>
+        </div>
+
+        {/* Inline shopping list */}
+        <div style={{ borderTop: '1px solid #EEEEEE', marginTop: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', padding: '20px 24px 12px' }}>
+            <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 13, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--black)', flex: 1 }}>Shopping List</span>
+            {shoppingList.length > 0 && (
+              <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#888' }}>{unchecked} to buy</span>
+            )}
+          </div>
+          {shoppingList.length === 0 ? (
+            <div style={{ padding: '4px 24px 32px', fontFamily: "'Courier Prime', monospace", fontSize: 13, color: '#CCC', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Nothing to buy yet
+            </div>
+          ) : (
+            <>
+              {Object.entries(grouped).map(([recipeName, items]) => (
+                <div key={recipeName} className="shopping-group">
+                  <div className="shopping-group-header">{recipeName}</div>
+                  {items.map(item => (
+                    <div key={item.id} className={`shopping-item${item.checked ? ' done' : ''}`} onClick={() => onToggleShoppingItem(item.id, item.checked)}>
+                      <span className="shopping-item-name">{item.ingredient_name}</span>
+                      <span className="shopping-item-qty">{item.qty}</span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+              <div style={{ padding: '16px 24px 32px', textAlign: 'center' }}>
+                <button onClick={onClearShoppingList} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#BBB', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  Clear list
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -834,7 +817,6 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [screen, setScreen] = useState({ name: 'home' });
-  const [activeTab, setActiveTab] = useState('home');
   const [favouriteIds, setFavouriteIds] = useState(new Set());
   const [shoppingList, setShoppingList] = useState([]);
   const [sheet, setSheet] = useState(null);
@@ -852,7 +834,6 @@ export default function App() {
 
   const navigate = (name, params = {}) => {
     setScreen({ name, ...params });
-    if (name === 'home' || name === 'shopping') setActiveTab(name);
     if (name === 'cookbook' && params.cbId) {
       if (params.cbId === 'favourites' && recipesMap['favourites'] === undefined) {
         setRecipesMap(prev => ({ ...prev, favourites: null }));
@@ -963,7 +944,7 @@ export default function App() {
   const { name: s, cbId, rId } = screen;
   const cb = cbId ? getCookbook(cbId) : null;
   const recipe = (cbId && rId) ? getRecipe(cbId, rId) : null;
-  const shoppingRecipeIds = new Set(shoppingList.map(i => i.recipe_id));
+  const shoppingRecipeIds = new Set(shoppingList.map(i => i.recipe_id).filter(Boolean));
 
   if (loading) {
     return (
@@ -980,8 +961,7 @@ export default function App() {
     <>
       <style>{STYLES}</style>
       <div className="app">
-        {s === 'home' && <HomeScreen cookbooks={cookbooks} favouriteIds={favouriteIds} onOpenCookbook={id => navigate('cookbook', { cbId: id })} onNewCookbook={() => navigate('new-cookbook')} activeTab={activeTab} onTab={tab => navigate(tab)} />}
-        {s === 'shopping' && <ShoppingListScreen shoppingList={shoppingList} onToggleItem={handleToggleShoppingItem} onClear={handleClearShoppingList} activeTab={activeTab} onTab={tab => navigate(tab)} />}
+        {s === 'home' && <HomeScreen cookbooks={cookbooks} favouriteIds={favouriteIds} shoppingList={shoppingList} onOpenCookbook={id => navigate('cookbook', { cbId: id })} onNewCookbook={() => navigate('new-cookbook')} onToggleShoppingItem={handleToggleShoppingItem} onClearShoppingList={handleClearShoppingList} />}
         {s === 'new-cookbook' && <NewCookbookScreen onBack={() => navigate('home')} onSave={handleNewCookbook} saving={saving} />}
         {s === 'cookbook' && cb && <CookbookScreen cookbook={cb} onBack={() => navigate('home')} onOpenRecipe={rId => navigate('recipe', { cbId, rId })} onNewRecipe={() => navigate('new-recipe', { cbId })} />}
         {s === 'new-recipe' && cb && <NewRecipeScreen onBack={() => navigate('cookbook', { cbId })} onSave={data => handleNewRecipe(cbId, data)} saving={saving} />}
