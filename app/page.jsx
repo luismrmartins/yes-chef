@@ -346,7 +346,7 @@ function HomeScreen({ cookbooks, favouriteRecipes, shoppingList, onOpenCookbook,
 
   return (
     <div className="screen">
-      <div className="page-header safe-top">
+      <div className="page-header safe-top" style={{ textAlign: 'center' }}>
         <div style={{ marginBottom: 6 }}>
           <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: 'clamp(40px, 8vw, 60px)', textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 0.85 }}>
             <div style={{ color: 'var(--red)' }}>MISE EN</div>
