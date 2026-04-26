@@ -32,3 +32,30 @@ create table steps (
   timer integer,
   position integer
 );
+
+create table favourites (
+  id uuid primary key default gen_random_uuid(),
+  recipe_id uuid references recipes(id) on delete cascade,
+  created_at timestamp default now(),
+  unique(recipe_id)
+);
+
+create table shopping_list (
+  id uuid primary key default gen_random_uuid(),
+  recipe_id uuid,
+  recipe_name text,
+  ingredient_name text not null,
+  qty text,
+  checked boolean default false,
+  added_at timestamp default now()
+);
+
+create table recipe_feedback (
+  id uuid primary key default gen_random_uuid(),
+  recipe_id uuid references recipes(id) on delete cascade,
+  cooked_at timestamp default now(),
+  ease_rating integer,
+  taste_rating integer,
+  overall_rating integer,
+  notes text
+);
