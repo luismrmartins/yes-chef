@@ -6,6 +6,7 @@ import {
   addRecipeToCookbook, addToShoppingList, getShoppingList,
   toggleShoppingItem, deleteShoppingItem, clearShoppingList, saveRecipeFeedback,
 } from '../lib/db';
+import { supabase } from '../lib/supabase';
 
 const STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;900&family=Courier+Prime:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap');
@@ -157,6 +158,16 @@ const STYLES = `
   .cook-nav-btn:hover:not(:disabled) { border-color: var(--red); color: var(--red); }
   .cook-nav-btn:disabled { opacity: 0.2; cursor: not-allowed; }
 
+  .auth-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 28px; background: var(--white); }
+  .auth-logo { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 72px; text-transform: uppercase; letter-spacing: -0.02em; line-height: 0.85; text-align: center; margin-bottom: 48px; }
+  .auth-logo .line1 { display: block; color: var(--red); }
+  .auth-logo .line2 { display: block; color: var(--black); }
+  .auth-card { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 14px; }
+  .auth-tabs { display: flex; border-bottom: 2px solid var(--black); margin-bottom: 8px; }
+  .auth-tab { flex: 1; padding: 10px; font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; border: none; background: none; color: var(--gray2); border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.15s; }
+  .auth-tab.active { color: var(--black); border-bottom-color: var(--red); }
+  .auth-error { font-size: 13px; color: var(--red); font-family: 'Courier Prime', monospace; padding: 10px 12px; border: 1px solid var(--red); background: #FFF5F2; }
+
   .timer-widget { background: #FFF5F2; padding: 12px 16px; margin-top: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-left: 3px solid var(--red); }
   .timer-display { font-family: 'Courier Prime', monospace; font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--red); }
   .timer-display.done { color: var(--black); }
@@ -305,6 +316,63 @@ function timeAgo(dateStr) {
 function generateId() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
 
 function ahUrl(name) { return `https://www.ah.nl/zoeken?query=${encodeURIComponent(name)}`; }
+
+function AuthScreen({ onAuth }) {
+  const [mode, setMode] = useState('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      if (mode === 'login') {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
+      }
+      onAuth();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="auth-screen">
+      <div className="auth-logo">
+        <span className="line1">YES</span>
+        <span className="line2">CHEF</span>
+      </div>
+      <div className="auth-card">
+        <div className="auth-tabs">
+          <button className={`auth-tab${mode === 'login' ? ' active' : ''}`} onClick={() => { setMode('login'); setError(''); }}>Sign in</button>
+          <button className={`auth-tab${mode === 'signup' ? ' active' : ''}`} onClick={() => { setMode('signup'); setError(''); }}>Create account</button>
+        </div>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div className="form-field">
+            <label className="form-label">Email</label>
+            <input className="form-input" type="email" value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email" />
+          </div>
+          <div className="form-field">
+            <label className="form-label">Password</label>
+            <input className="form-input" type="password" value={password} onChange={e => setPassword(e.target.value)} required autoComplete={mode === 'login' ? 'current-password' : 'new-password'} minLength={6} />
+          </div>
+          {error && <div className="auth-error">{error}</div>}
+          <button className="btn btn-primary btn-full" type="submit" disabled={loading}>
+            {loading ? '...' : mode === 'login' ? 'Sign in' : 'Create account'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 function YesChefLogo({ yesColor = 'var(--red)', chefColor = 'var(--black)', size = 18 }) {
   return (
@@ -967,6 +1035,7 @@ function FeedbackScreen({ recipe, onSave, onSkip }) {
 }
 
 export default function App() {
+  const [user, setUser] = useState(undefined); // undefined = checking, null = no user
   const [cookbooks, setCookbooks] = useState([]);
   const [recipesMap, setRecipesMap] = useState({});
   const [loading, setLoading] = useState(true);
@@ -979,6 +1048,17 @@ export default function App() {
   const [pendingAddRecipeId, setPendingAddRecipeId] = useState(null);
 
   useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
     Promise.all([getCookbooks(), getFavouriteIds(), getFavouriteRecipes(), getShoppingList()])
       .then(([cbs, favIds, favRecs, shop]) => {
         setCookbooks(cbs);
@@ -987,7 +1067,7 @@ export default function App() {
         setShoppingList(shop);
         setLoading(false);
       });
-  }, []);
+  }, [user]);
 
   const navigate = (name, params = {}) => {
     setScreen({ name, ...params });
@@ -1122,6 +1202,26 @@ export default function App() {
   const cb = cbId ? getCookbook(cbId) : null;
   const recipe = (cbId && rId) ? getRecipe(cbId, rId) : null;
   const shoppingRecipeIds = new Set(shoppingList.map(i => i.recipe_id).filter(Boolean));
+
+  if (user === undefined) {
+    return (
+      <>
+        <style>{STYLES}</style>
+        <div className="loading-screen">
+          <div className="loading-logo"><span className="line1">MISE EN</span><span className="line2">PLACE</span></div>
+        </div>
+      </>
+    );
+  }
+
+  if (!user) {
+    return (
+      <>
+        <style>{STYLES}</style>
+        <AuthScreen onAuth={() => setLoading(true)} />
+      </>
+    );
+  }
 
   if (loading) {
     return (
