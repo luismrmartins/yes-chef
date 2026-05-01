@@ -5,6 +5,7 @@ import {
   toggleFavourite, getFavouriteIds, getFavouriteRecipes,
   addRecipeToCookbook, addToShoppingList, getShoppingList,
   toggleShoppingItem, deleteShoppingItem, clearShoppingList, saveRecipeFeedback,
+  getProfile, saveProfile,
 } from '../lib/db';
 import { supabase } from '../lib/supabase';
 
@@ -157,6 +158,14 @@ const STYLES = `
   .cook-nav-btn { width: 52px; height: 52px; border: 2px solid #DDD; background: transparent; color: var(--black); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; transition: all 0.15s; }
   .cook-nav-btn:hover:not(:disabled) { border-color: var(--red); color: var(--red); }
   .cook-nav-btn:disabled { opacity: 0.2; cursor: not-allowed; }
+
+  .profile-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--black); color: var(--white); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; flex-shrink: 0; transition: opacity 0.15s; }
+  .profile-avatar:hover { opacity: 0.7; }
+  .unit-toggle { display: flex; border: 2px solid var(--black); overflow: hidden; }
+  .unit-btn { flex: 1; padding: 10px; font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; border: none; cursor: pointer; background: var(--white); color: var(--gray2); transition: all 0.15s; }
+  .unit-btn.active { background: var(--black); color: var(--white); }
+  .logout-btn { display: flex; align-items: center; gap: 10px; padding: 18px 28px; border: none; background: none; cursor: pointer; font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--red); border-top: 1px solid #EEEEEE; width: 100%; transition: opacity 0.15s; }
+  .logout-btn:hover { opacity: 0.7; }
 
   .auth-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 28px; background: var(--white); }
   .auth-logo { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 72px; text-transform: uppercase; letter-spacing: -0.02em; line-height: 0.85; text-align: center; margin-bottom: 48px; }
@@ -317,6 +326,96 @@ function generateId() { return Math.random().toString(36).slice(2) + Date.now().
 
 function ahUrl(name) { return `https://www.ah.nl/zoeken?query=${encodeURIComponent(name)}`; }
 
+function ProfileScreen({ user, onBack, onLogout }) {
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState(user?.email || '');
+  const [unitPreference, setUnitPreference] = useState('metric');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    getProfile(user.id).then(profile => {
+      if (profile) {
+        setFirstName(profile.first_name || '');
+        setLastName(profile.last_name || '');
+        setUsername(profile.username || '');
+        setUnitPreference(profile.unit_preference || 'metric');
+      }
+    });
+  }, [user]);
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    if (!username.trim()) { setError('Username is required'); return; }
+    setError(''); setSaving(true); setSuccess(false);
+    try {
+      await saveProfile(user.id, { firstName, lastName, username, unitPreference });
+      if (email !== user.email) {
+        const { error: emailErr } = await supabase.auth.updateUser({ email });
+        if (emailErr) throw emailErr;
+      }
+      setSuccess(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const initials = (firstName?.[0] || email?.[0] || '?').toUpperCase();
+
+  return (
+    <div className="form-screen">
+      <div className="back-row">
+        <button className="back-btn" onClick={onBack}>← Back</button>
+      </div>
+      <div className="page-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 4 }}>
+          <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--black)', color: 'var(--white)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 24 }}>{initials}</div>
+          <div className="page-header-title">Profile</div>
+        </div>
+      </div>
+      <form onSubmit={handleSave}>
+        <div className="form-body">
+          <div style={{ display: 'flex', gap: 12 }}>
+            <div className="form-field" style={{ flex: 1 }}>
+              <label className="form-label">First name</label>
+              <input className="form-input" value={firstName} onChange={e => setFirstName(e.target.value)} autoComplete="given-name" />
+            </div>
+            <div className="form-field" style={{ flex: 1 }}>
+              <label className="form-label">Last name</label>
+              <input className="form-input" value={lastName} onChange={e => setLastName(e.target.value)} autoComplete="family-name" />
+            </div>
+          </div>
+          <div className="form-field">
+            <label className="form-label">Username</label>
+            <input className="form-input" value={username} onChange={e => setUsername(e.target.value)} autoComplete="username" required />
+          </div>
+          <div className="form-field">
+            <label className="form-label">Email</label>
+            <input className="form-input" type="email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" required />
+          </div>
+          <div className="form-field">
+            <label className="form-label">Units</label>
+            <div className="unit-toggle">
+              <button type="button" className={`unit-btn${unitPreference === 'metric' ? ' active' : ''}`} onClick={() => setUnitPreference('metric')}>Metric</button>
+              <button type="button" className={`unit-btn${unitPreference === 'imperial' ? ' active' : ''}`} onClick={() => setUnitPreference('imperial')}>Imperial</button>
+            </div>
+          </div>
+          {error && <div className="auth-error">{error}</div>}
+          {success && <div style={{ fontSize: 13, color: 'green', fontFamily: "'Courier Prime', monospace" }}>Saved.</div>}
+          <button className="btn btn-primary btn-full" type="submit" disabled={saving}>{saving ? '...' : 'Save changes'}</button>
+        </div>
+      </form>
+      <button className="logout-btn" onClick={onLogout}>Sign out</button>
+    </div>
+  );
+}
+
 function AuthScreen({ onAuth }) {
   const [mode, setMode] = useState('login');
   const [email, setEmail] = useState('');
@@ -396,7 +495,7 @@ function StarRating({ value, onChange }) {
 const PRIORITY_ORDER = ['today', 'this_week', 'eventually'];
 const PRIORITY_LABELS = { today: 'Today', this_week: 'This Week', eventually: 'Eventually' };
 
-function HomeScreen({ cookbooks, favouriteRecipes, shoppingList, onOpenCookbook, onNewCookbook, onOpenRecipe, onToggleShoppingItem, onDeleteShoppingItem, onClearShoppingList }) {
+function HomeScreen({ cookbooks, favouriteRecipes, shoppingList, onOpenCookbook, onNewCookbook, onOpenRecipe, onToggleShoppingItem, onDeleteShoppingItem, onClearShoppingList, onOpenProfile, profileInitial }) {
   const [collapsed, setCollapsed] = useState({});
   const [collapsedRecipes, setCollapsedRecipes] = useState({});
   const togglePriority = (p) => setCollapsed(prev => ({ ...prev, [p]: !prev[p] }));
@@ -416,7 +515,8 @@ function HomeScreen({ cookbooks, favouriteRecipes, shoppingList, onOpenCookbook,
 
   return (
     <div className="screen">
-      <div className="page-header safe-top" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+      <div className="page-header safe-top" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', position: 'relative' }}>
+        <button className="profile-avatar" onClick={onOpenProfile} style={{ position: 'absolute', top: 'max(40px, calc(env(safe-area-inset-top, 0px) + 16px))', right: 28 }}>{profileInitial}</button>
         <div style={{ marginBottom: 6 }}>
           <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: 'clamp(40px, 8vw, 60px)', textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 0.85 }}>
             <div style={{ color: 'var(--red)' }}>MISE EN</div>
@@ -1036,6 +1136,7 @@ function FeedbackScreen({ recipe, onSave, onSkip }) {
 
 export default function App() {
   const [user, setUser] = useState(undefined); // undefined = checking, null = no user
+  const [profile, setProfile] = useState(null);
   const [cookbooks, setCookbooks] = useState([]);
   const [recipesMap, setRecipesMap] = useState({});
   const [loading, setLoading] = useState(true);
@@ -1059,12 +1160,13 @@ export default function App() {
 
   useEffect(() => {
     if (!user) return;
-    Promise.all([getCookbooks(), getFavouriteIds(), getFavouriteRecipes(), getShoppingList()])
-      .then(([cbs, favIds, favRecs, shop]) => {
+    Promise.all([getCookbooks(), getFavouriteIds(), getFavouriteRecipes(), getShoppingList(), getProfile(user.id)])
+      .then(([cbs, favIds, favRecs, shop, prof]) => {
         setCookbooks(cbs);
         setFavouriteIds(new Set(favIds));
         setFavouriteRecipes(favRecs);
         setShoppingList(shop);
+        setProfile(prof);
         setLoading(false);
       });
   }, [user]);
@@ -1198,6 +1300,12 @@ export default function App() {
     navigate('recipe', { cbId, rId });
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
+  const profileInitial = (profile?.first_name?.[0] || user?.email?.[0] || '?').toUpperCase();
+
   const { name: s, cbId, rId } = screen;
   const cb = cbId ? getCookbook(cbId) : null;
   const recipe = (cbId && rId) ? getRecipe(cbId, rId) : null;
@@ -1253,6 +1361,15 @@ export default function App() {
             onToggleShoppingItem={handleToggleShoppingItem}
             onDeleteShoppingItem={handleDeleteShoppingItem}
             onClearShoppingList={handleClearShoppingList}
+            onOpenProfile={() => navigate('profile')}
+            profileInitial={profileInitial}
+          />
+        )}
+        {s === 'profile' && (
+          <ProfileScreen
+            user={user}
+            onBack={() => navigate('home')}
+            onLogout={handleLogout}
           />
         )}
         {s === 'new-cookbook' && <NewCookbookScreen onBack={() => navigate('home')} onSave={handleNewCookbook} saving={saving} />}

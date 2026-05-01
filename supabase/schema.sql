@@ -6,6 +6,9 @@ create table profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   username text unique not null,
   display_name text,
+  first_name text,
+  last_name text,
+  unit_preference text default 'metric',
   avatar_url text,
   created_at timestamp default now()
 );
