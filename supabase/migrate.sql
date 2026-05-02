@@ -32,6 +32,7 @@ alter table recipes add column if not exists tags text[] default '{}';
 
 alter table favourites add column if not exists user_id uuid references auth.users(id) on delete cascade;
 alter table favourites drop constraint if exists favourites_recipe_id_key;
+alter table favourites drop constraint if exists favourites_user_recipe_unique;
 alter table favourites add constraint favourites_user_recipe_unique unique (user_id, recipe_id);
 
 -- ── shopping_list: add user_id, priority ─────────────────────────────────────

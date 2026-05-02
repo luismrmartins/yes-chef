@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import {
-  getCookbooks, createCookbook, getRecipes, createRecipe, incrementCookedCount,
+  getCookbooks, createCookbook, getRecipes, createRecipe, updateRecipe, incrementCookedCount,
   toggleFavourite, getFavouriteIds, getFavouriteRecipes,
   addRecipeToCookbook, addToShoppingList, getShoppingList,
   toggleShoppingItem, deleteShoppingItem, clearShoppingList, saveRecipeFeedback,
@@ -158,6 +158,11 @@ const STYLES = `
   .cook-nav-btn { width: 52px; height: 52px; border: 2px solid #DDD; background: transparent; color: var(--black); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; transition: all 0.15s; }
   .cook-nav-btn:hover:not(:disabled) { border-color: var(--red); color: var(--red); }
   .cook-nav-btn:disabled { opacity: 0.2; cursor: not-allowed; }
+
+  .input-mode-toggle { display: flex; gap: 0; margin-bottom: 10px; border: 2px solid var(--black); align-self: flex-start; }
+  .input-mode-btn { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 6px 14px; border: none; background: none; cursor: pointer; color: var(--gray2); transition: all 0.15s; }
+  .input-mode-btn.active { background: var(--black); color: var(--white); }
+  .paste-hint { font-family: 'Courier Prime', monospace; font-size: 11px; color: #AAA; letter-spacing: 0.05em; }
 
   .profile-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--black); color: var(--white); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; flex-shrink: 0; transition: opacity 0.15s; }
   .profile-avatar:hover { opacity: 0.7; }
@@ -323,6 +328,41 @@ function timeAgo(dateStr) {
 }
 
 function generateId() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
+
+function parseIngredientLine(line) {
+  line = line.trim().replace(/^[-•*]\s*/, '');
+  if (!line) return null;
+  const match = line.match(/^([\d¼½¾⅓⅔⅛⅜⅝⅞]+(?:[\/\.]\d+)?(?:\s+\d+\/\d+)?)\s*(cups?|tbsps?|tablespoons?|tsps?|teaspoons?|fl\.?\s*oz|ounces?|oz|pounds?|lbs?|grams?|g|kilograms?|kg|millilitres?|milliliters?|ml|litres?|liters?|l|cloves?|pieces?|slices?|large|medium|small|bunch(?:es)?|handfuls?|pinch(?:es)?|cans?|stalks?|sprigs?|leaves?)\s*/i);
+  if (match) return { qty: match[0].trim(), name: line.slice(match[0].length).trim() || line };
+  const numOnly = line.match(/^(\d+(?:[\/\.]\d+)?)\s+/);
+  if (numOnly) return { qty: numOnly[1], name: line.slice(numOnly[0].length).trim() };
+  return { qty: '', name: line };
+}
+
+function convertQty(qty, toPreference) {
+  if (!qty) return qty;
+  const toMetric = { cup: [240,'ml'], cups: [240,'ml'], tbsp: [15,'ml'], tablespoon: [15,'ml'], tablespoons: [15,'ml'], tsp: [5,'ml'], teaspoon: [5,'ml'], teaspoons: [5,'ml'], 'fl oz': [30,'ml'], oz: [28.35,'g'], ounce: [28.35,'g'], ounces: [28.35,'g'], lb: [453.6,'g'], lbs: [453.6,'g'], pound: [453.6,'g'], pounds: [453.6,'g'] };
+  const m = qty.match(/^([\d\.]+(?:\/[\d\.]+)?)\s*(.+)?$/);
+  if (!m) return qty;
+  let num = m[1].includes('/') ? parseFloat(m[1].split('/')[0]) / parseFloat(m[1].split('/')[1]) : parseFloat(m[1]);
+  const unit = (m[2] || '').trim().toLowerCase();
+  const round = n => Math.round(n * 10) / 10;
+  if (toPreference === 'metric' && toMetric[unit]) {
+    const [f, u] = toMetric[unit];
+    return `${round(num * f)} ${u}`;
+  }
+  if (toPreference === 'imperial') {
+    if (unit === 'ml') { if (num <= 5) return `${round(num/5)} tsp`; if (num <= 60) return `${round(num/15)} tbsp`; return `${round(num/240)} cups`; }
+    if (unit === 'g') { return num >= 454 ? `${round(num/453.6)} lbs` : `${round(num/28.35)} oz`; }
+    if (unit === 'kg') return `${round(num * 2.205)} lbs`;
+    if (unit === 'l') return `${round(num * 4.227)} cups`;
+  }
+  return qty;
+}
+
+function parseStepsFromText(text) {
+  return text.split(/\.(?:\s+|\s*\n|\s*$)/).map(s => s.trim()).filter(Boolean);
+}
 
 function ahUrl(name) { return `https://www.ah.nl/zoeken?query=${encodeURIComponent(name)}`; }
 
@@ -621,7 +661,7 @@ function NewCookbookScreen({ onBack, onSave, saving }) {
   );
 }
 
-function CookbookScreen({ cookbook, onBack, onNewRecipe, onStartCook, favouriteIds, onToggleFavourite, onAddToCookbook, onOpenAddToList, shoppingRecipeIds, initialRecipeId }) {
+function CookbookScreen({ cookbook, onBack, onNewRecipe, onStartCook, favouriteIds, onToggleFavourite, onAddToCookbook, onOpenAddToList, shoppingRecipeIds, initialRecipeId, onEditRecipe }) {
   const [selectedId, setSelectedId] = useState(initialRecipeId || null);
   const recipes = cookbook.recipes || [];
   const isLoading = cookbook.recipes === null;
@@ -678,6 +718,7 @@ function CookbookScreen({ cookbook, onBack, onNewRecipe, onStartCook, favouriteI
             onOpenAddToList={onOpenAddToList}
             inShoppingList={shoppingRecipeIds.has(selectedRecipe.id)}
             mobileBackToList={() => setSelectedId(null)}
+            onEdit={onEditRecipe ? () => onEditRecipe(cookbook.id, selectedId) : undefined}
           />
         ) : (
           <div className="detail-empty-state">
@@ -689,26 +730,50 @@ function CookbookScreen({ cookbook, onBack, onNewRecipe, onStartCook, favouriteI
   );
 }
 
-function NewRecipeScreen({ onBack, onSave, saving }) {
+function RecipeFormScreen({ initialData, onBack, onSave, saving, unitPreference = 'metric' }) {
+  const isEdit = !!initialData;
   const [tab, setTab] = useState(0);
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [time, setTime] = useState('');
-  const [difficulty, setDifficulty] = useState('Easy');
-  const [servings, setServings] = useState(2);
-  const [tags, setTags] = useState([]);
-  const [ingredients, setIngredients] = useState([{ id: generateId(), name: '', qty: '' }]);
-  const [steps, setSteps] = useState([{ id: generateId(), text: '', timer: null, hasTimer: false }]);
-  const toggleTag = (tag) => setTags(p => p.includes(tag) ? p.filter(t => t !== tag) : [...p, tag]);
+  const [name, setName] = useState(initialData?.name || '');
+  const [description, setDescription] = useState(initialData?.description || '');
+  const [time, setTime] = useState(initialData?.time?.toString() || '');
+  const [difficulty, setDifficulty] = useState(initialData?.difficulty || 'Easy');
+  const [servings, setServings] = useState(initialData?.servings || 2);
+  const [tags, setTags] = useState(initialData?.tags || []);
+  const [ingredients, setIngredients] = useState(
+    initialData?.ingredients?.length ? initialData.ingredients.map(i => ({ ...i, id: i.id || generateId() })) : [{ id: generateId(), name: '', qty: '' }]
+  );
+  const [steps, setSteps] = useState(
+    initialData?.steps?.length ? initialData.steps.map(s => ({ ...s, id: s.id || generateId(), hasTimer: !!s.timer })) : [{ id: generateId(), text: '', timer: null, hasTimer: false }]
+  );
+  const [ingMode, setIngMode] = useState('manual');
+  const [ingPaste, setIngPaste] = useState('');
+  const [stepMode, setStepMode] = useState('manual');
+  const [stepPaste, setStepPaste] = useState('');
 
+  const toggleTag = (tag) => setTags(p => p.includes(tag) ? p.filter(t => t !== tag) : [...p, tag]);
   const addIngredient = () => setIngredients(p => [...p, { id: generateId(), name: '', qty: '' }]);
   const removeIngredient = id => setIngredients(p => p.filter(i => i.id !== id));
   const updateIngredient = (id, field, val) => setIngredients(p => p.map(i => i.id === id ? { ...i, [field]: val } : i));
   const addStep = () => setSteps(p => [...p, { id: generateId(), text: '', timer: null, hasTimer: false }]);
   const removeStep = id => setSteps(p => p.filter(s => s.id !== id));
   const updateStep = (id, field, val) => setSteps(p => p.map(s => s.id === id ? { ...s, [field]: val } : s));
-  const canSave = name.trim() && ingredients.some(i => i.name.trim()) && steps.some(s => s.text.trim());
 
+  const applyIngPaste = () => {
+    const parsed = ingPaste.split('\n').map(parseIngredientLine).filter(Boolean)
+      .map(p => ({ id: generateId(), name: p.name, qty: convertQty(p.qty, unitPreference) }));
+    if (!parsed.length) return;
+    setIngredients(prev => prev.some(i => i.name.trim()) ? [...prev, ...parsed] : parsed);
+    setIngMode('manual'); setIngPaste('');
+  };
+
+  const applyStepPaste = () => {
+    const parsed = parseStepsFromText(stepPaste).map(text => ({ id: generateId(), text, timer: null, hasTimer: false }));
+    if (!parsed.length) return;
+    setSteps(prev => prev.some(s => s.text.trim()) ? [...prev, ...parsed] : parsed);
+    setStepMode('manual'); setStepPaste('');
+  };
+
+  const canSave = name.trim() && ingredients.some(i => i.name.trim()) && steps.some(s => s.text.trim());
   const handleSave = () => onSave({
     name: name.trim(), description: description.trim(),
     time: parseInt(time) || 30, difficulty, servings, tags,
@@ -721,7 +786,7 @@ function NewRecipeScreen({ onBack, onSave, saving }) {
       <div className="back-row safe-top">
         <button className="back-btn" onClick={onBack}>← Back</button>
         <button className="btn btn-red btn-sm" style={{ marginLeft: 'auto' }} disabled={!canSave || saving} onClick={handleSave}>
-          {saving ? 'Saving...' : 'Save'}
+          {saving ? 'Saving...' : isEdit ? 'Update' : 'Save'}
         </button>
       </div>
       <div style={{ padding: '0 28px 12px', borderBottom: '2px solid var(--black)' }}>
@@ -766,18 +831,37 @@ function NewRecipeScreen({ onBack, onSave, saving }) {
           </div>
         </>}
         {tab === 1 && <>
-          <div className="dynamic-list">
-            {ingredients.map((ing, idx) => (
-              <div key={ing.id} className="dynamic-item">
-                <input className="form-input" placeholder={`Ingredient ${idx + 1}`} value={ing.name} onChange={e => updateIngredient(ing.id, 'name', e.target.value)} style={{ flex: 2 }} />
-                <input className="form-input" placeholder="Qty" value={ing.qty} onChange={e => updateIngredient(ing.id, 'qty', e.target.value)} style={{ flex: 1 }} />
-                {ingredients.length > 1 && <button className="remove-btn" onClick={() => removeIngredient(ing.id)}>×</button>}
-              </div>
-            ))}
+          <div className="input-mode-toggle">
+            <button className={`input-mode-btn${ingMode === 'manual' ? ' active' : ''}`} onClick={() => setIngMode('manual')}>One by one</button>
+            <button className={`input-mode-btn${ingMode === 'paste' ? ' active' : ''}`} onClick={() => setIngMode('paste')}>Paste</button>
           </div>
-          <button className="btn btn-ghost btn-sm" style={{ alignSelf: 'flex-start', marginTop: 4 }} onClick={addIngredient}>+ Add ingredient</button>
+          {ingMode === 'paste' ? <>
+            <p className="paste-hint">One ingredient per line. Quantities are auto-detected and converted to {unitPreference}.</p>
+            <textarea className="form-input form-textarea" placeholder={"2 cups flour\n1/2 tsp salt\n100g butter"} value={ingPaste} onChange={e => setIngPaste(e.target.value)} style={{ minHeight: 140, fontSize: 14 }} />
+            <button className="btn btn-black btn-sm" style={{ alignSelf: 'flex-start' }} onClick={applyIngPaste} disabled={!ingPaste.trim()}>Apply</button>
+          </> : <>
+            <div className="dynamic-list">
+              {ingredients.map((ing, idx) => (
+                <div key={ing.id} className="dynamic-item">
+                  <input className="form-input" placeholder={`Ingredient ${idx + 1}`} value={ing.name} onChange={e => updateIngredient(ing.id, 'name', e.target.value)} style={{ flex: 2 }} />
+                  <input className="form-input" placeholder="Qty" value={ing.qty} onChange={e => updateIngredient(ing.id, 'qty', e.target.value)} style={{ flex: 1 }} />
+                  {ingredients.length > 1 && <button className="remove-btn" onClick={() => removeIngredient(ing.id)}>×</button>}
+                </div>
+              ))}
+            </div>
+            <button className="btn btn-ghost btn-sm" style={{ alignSelf: 'flex-start', marginTop: 4 }} onClick={addIngredient}>+ Add ingredient</button>
+          </>}
         </>}
         {tab === 2 && <>
+          <div className="input-mode-toggle">
+            <button className={`input-mode-btn${stepMode === 'manual' ? ' active' : ''}`} onClick={() => setStepMode('manual')}>One by one</button>
+            <button className={`input-mode-btn${stepMode === 'paste' ? ' active' : ''}`} onClick={() => setStepMode('paste')}>Paste</button>
+          </div>
+          {stepMode === 'paste' ? <>
+            <p className="paste-hint">Each sentence ending with a period becomes a step.</p>
+            <textarea className="form-input form-textarea" placeholder={"Preheat the oven to 180°C. Mix the flour and butter. Bake for 25 minutes."} value={stepPaste} onChange={e => setStepPaste(e.target.value)} style={{ minHeight: 140, fontSize: 14 }} />
+            <button className="btn btn-black btn-sm" style={{ alignSelf: 'flex-start' }} onClick={applyStepPaste} disabled={!stepPaste.trim()}>Apply</button>
+          </> : <>
           <div className="dynamic-list">
             {steps.map((step, idx) => (
               <div key={step.id} style={{ borderBottom: '1px solid #EEEEEE', paddingBottom: 12 }}>
@@ -799,13 +883,14 @@ function NewRecipeScreen({ onBack, onSave, saving }) {
             ))}
           </div>
           <button className="btn btn-ghost btn-sm" style={{ alignSelf: 'flex-start', marginTop: 4 }} onClick={addStep}>+ Add step</button>
+          </>}
         </>}
       </div>
     </div>
   );
 }
 
-function RecipeDetailScreen({ recipe, cookbook, onBack, onStartCook, isFavourite, onToggleFavourite, onAddToCookbook, onOpenAddToList, inShoppingList, mobileBackToList }) {
+function RecipeDetailScreen({ recipe, cookbook, onBack, onStartCook, isFavourite, onToggleFavourite, onAddToCookbook, onOpenAddToList, inShoppingList, mobileBackToList, onEdit }) {
 
   return (
     <div className="screen">
@@ -851,6 +936,12 @@ function RecipeDetailScreen({ recipe, cookbook, onBack, onStartCook, isFavourite
           <span className="recipe-action-icon" style={inShoppingList ? { color: 'var(--red)' } : {}}>{inShoppingList ? '✓' : '+'}</span>
           <span className="recipe-action-label">{inShoppingList ? 'On List' : 'Add to List'}</span>
         </button>
+        {onEdit && (
+          <button className="recipe-action-btn" onClick={onEdit}>
+            <span className="recipe-action-icon">✎</span>
+            <span className="recipe-action-label">Edit</span>
+          </button>
+        )}
       </div>
 
       <div className="scroll-body pb-safe">
@@ -1300,6 +1391,18 @@ export default function App() {
     navigate('recipe', { cbId, rId });
   };
 
+  const handleEditRecipe = async (cbId, rId, data) => {
+    setSaving(true);
+    try {
+      await updateRecipe(rId, data);
+      const updated = await getRecipes(cbId);
+      setRecipesMap(prev => ({ ...prev, [cbId]: updated }));
+      navigate('cookbook', { cbId, rId });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
   };
@@ -1385,9 +1488,11 @@ export default function App() {
             onOpenAddToList={handleOpenAddToList}
             shoppingRecipeIds={shoppingRecipeIds}
             initialRecipeId={rId || null}
+            onEditRecipe={(cbId, rId) => navigate('edit-recipe', { cbId, rId })}
           />
         )}
-        {s === 'new-recipe' && cb && <NewRecipeScreen onBack={() => navigate('cookbook', { cbId })} onSave={data => handleNewRecipe(cbId, data)} saving={saving} />}
+        {s === 'new-recipe' && cb && <RecipeFormScreen onBack={() => navigate('cookbook', { cbId })} onSave={data => handleNewRecipe(cbId, data)} saving={saving} unitPreference={profile?.unit_preference || 'metric'} />}
+        {s === 'edit-recipe' && cb && recipe && <RecipeFormScreen initialData={recipe} onBack={() => navigate('cookbook', { cbId, rId })} onSave={data => handleEditRecipe(cbId, rId, data)} saving={saving} unitPreference={profile?.unit_preference || 'metric'} />}
         {s === 'recipe' && cb && recipe && (
           <RecipeDetailScreen
             recipe={recipe} cookbook={cb}
@@ -1398,6 +1503,7 @@ export default function App() {
             onAddToCookbook={handleOpenAddToCookbook}
             onOpenAddToList={handleOpenAddToList}
             inShoppingList={shoppingRecipeIds.has(recipe.id)}
+            onEdit={() => navigate('edit-recipe', { cbId, rId })}
           />
         )}
         {s === 'prep' && cb && recipe && <PrepChecklistScreen recipe={recipe} onBack={() => navigate('recipe', { cbId, rId })} onStart={() => navigate('cook', { cbId, rId })} />}
