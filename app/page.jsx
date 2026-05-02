@@ -1562,7 +1562,7 @@ function UserPublicProfileScreen({ userId, currentUserId, onBack }) {
     );
   }
 
-  const { profile, cookbooks, followCounts } = data;
+  const { profile, cookbooks, followCounts, publicRecipes } = data;
   const initial = (profile?.display_name || profile?.username || '?')[0].toUpperCase();
 
   return (
@@ -1593,6 +1593,31 @@ function UserPublicProfileScreen({ userId, currentUserId, onBack }) {
         )}
       </div>
       <div className="scroll-body pb-safe">
+        {publicRecipes.length > 0 && (
+          <>
+            <div className="people-section-label">Recipes</div>
+            {publicRecipes.map(r => (
+              <div key={r.id} className="flat-row" style={{ cursor: 'default' }}>
+                <div className="flat-row-info">
+                  <div className="flat-row-name">{r.name}</div>
+                  <div className="flat-row-meta">
+                    {[r.time && `${r.time} min`, r.difficulty, r.servings && `${r.servings} servings`].filter(Boolean).join(' · ')}
+                  </div>
+                  {r.tags?.length > 0 && (
+                    <div className="tag-pills" style={{ marginTop: 4 }}>
+                      {r.tags.map(t => <span key={t} className="tag-pill-display">{t}</span>)}
+                    </div>
+                  )}
+                </div>
+                {r.cookedCount > 0 && (
+                  <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: 11, color: '#BBB', flexShrink: 0, marginLeft: 12 }}>
+                    {r.cookedCount}× cooked
+                  </span>
+                )}
+              </div>
+            ))}
+          </>
+        )}
         {cookbooks.length > 0 && (
           <>
             <div className="people-section-label">Cookbooks</div>
@@ -1605,6 +1630,9 @@ function UserPublicProfileScreen({ userId, currentUserId, onBack }) {
               </div>
             ))}
           </>
+        )}
+        {!publicRecipes.length && !cookbooks.length && (
+          <div style={{ padding: '40px 28px', fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#CCC', textTransform: 'uppercase', letterSpacing: '0.08em' }}>No public recipes yet</div>
         )}
       </div>
     </div>
