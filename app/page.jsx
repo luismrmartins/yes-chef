@@ -298,6 +298,15 @@ const STYLES = `
     .home-shopping-header { padding: 0 36px; }
   }
 
+  /* ── Home: top bar ──────────────────────────────────── */
+  .home-header { background: var(--white); border-bottom: 2px solid var(--black); }
+  .home-header-row { display: flex; align-items: center; justify-content: space-between; padding: 0 16px; height: 52px; }
+  .home-wordmark { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; text-transform: uppercase; letter-spacing: -0.02em; line-height: 0.82; text-align: center; }
+  .home-wordmark-yes { display: block; color: var(--red); font-size: 12px; }
+  .home-wordmark-chef { display: block; color: var(--black); font-size: 12px; }
+  .home-icon-btn { background: none; border: none; cursor: pointer; padding: 8px; font-size: 20px; line-height: 1; color: #888; transition: opacity 0.15s; display: flex; align-items: center; }
+  .home-icon-btn:hover { opacity: 0.6; }
+
   /* ── Home: cookbook buttons ─────────────────────────── */
   .home-cb-grid { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 28px 4px; }
   .home-cb-btn { font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 10px 18px; border: 1.5px solid var(--black); border-radius: 100px; background: transparent; cursor: pointer; text-align: left; color: var(--black); transition: all 0.12s; display: flex; align-items: baseline; gap: 6px; }
@@ -625,11 +634,57 @@ function StarRating({ value, onChange }) {
 const PRIORITY_ORDER = ['today', 'this_week', 'eventually'];
 const PRIORITY_LABELS = { today: 'Today', this_week: 'This Week', eventually: 'Eventually' };
 
-function HomeScreen({ cookbooks, favouriteRecipes, shoppingList, onOpenCookbook, onNewCookbook, onOpenRecipe, onToggleShoppingItem, onDeleteShoppingItem, onClearShoppingList, onOpenProfile, profileInitial, onOpenSearch }) {
+function HomeScreen({ cookbooks, shoppingList, onOpenCookbook, onNewCookbook, onToggleShoppingItem, onDeleteShoppingItem, onClearShoppingList, onOpenProfile, profileInitial, onOpenSearch, currentUserId, onOpenUser }) {
   const [collapsed, setCollapsed] = useState({});
   const [collapsedRecipes, setCollapsedRecipes] = useState({});
+  const [events, setEvents] = useState(null);
+
   const togglePriority = (p) => setCollapsed(prev => ({ ...prev, [p]: !prev[p] }));
   const toggleRecipe = (key) => setCollapsedRecipes(prev => ({ ...prev, [key]: !prev[key] }));
+
+  useEffect(() => { getTimeline().then(setEvents); }, [currentUserId]);
+
+  const handleLike = async (eventId) => {
+    const isNowLiked = await toggleLike(eventId);
+    setEvents(prev => prev?.map(e => e.id === eventId
+      ? { ...e, likedByMe: isNowLiked, likeCount: isNowLiked ? e.likeCount + 1 : e.likeCount - 1 }
+      : e
+    ));
+  };
+
+  const renderEvent = (event) => {
+    const { id, type, userProfile, targetProfile, recipe, post_text, photo_url, created_at, likeCount, likedByMe } = event;
+    const name = userProfile?.display_name || userProfile?.username || 'Someone';
+    const initial = name[0].toUpperCase();
+    let text = null;
+    if (type === 'followed_you' && targetProfile) {
+      const tname = targetProfile.display_name || targetProfile.username;
+      text = <><strong>{name}</strong> followed <strong>{tname}</strong></>;
+    } else if (type === 'cooked_recipe' && recipe) {
+      text = <><strong>{name}</strong> cooked <strong>{recipe.name}</strong></>;
+    } else if (type === 'posted') {
+      text = <><strong>{name}</strong> posted a cook</>;
+    }
+    return (
+      <div key={id} className="event-row">
+        <div className="event-header">
+          <div className="event-avatar" onClick={() => userProfile && onOpenUser(userProfile.id)}>{initial}</div>
+          <div className="event-meta">
+            <div className="event-name">{name}</div>
+            <div className="event-time">{timeAgo(created_at)}</div>
+          </div>
+        </div>
+        {text && <div className="event-text">{text}</div>}
+        {post_text && <div className="event-post-text">{post_text}</div>}
+        {photo_url && <img className="event-photo" src={photo_url} alt="" />}
+        <div className="event-actions">
+          <button className={`like-btn${likedByMe ? ' liked' : ''}`} onClick={() => handleLike(id)}>
+            {likedByMe ? '♥' : '♡'}{likeCount > 0 ? ` ${likeCount}` : ''}
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   const byPriority = PRIORITY_ORDER.map(p => {
     const items = shoppingList.filter(i => (i.priority || 'eventually') === p);
@@ -645,21 +700,22 @@ function HomeScreen({ cookbooks, favouriteRecipes, shoppingList, onOpenCookbook,
 
   return (
     <div className="screen">
-      <div className="page-header safe-top" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', position: 'relative' }}>
-        <button onClick={onOpenSearch} style={{ position: 'absolute', top: 'max(40px, calc(env(safe-area-inset-top, 0px) + 16px))', left: 28, background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, lineHeight: 1, color: '#888', padding: 4 }} title="Find people">&#128269;</button>
-        <button className="profile-avatar" onClick={onOpenProfile} style={{ position: 'absolute', top: 'max(40px, calc(env(safe-area-inset-top, 0px) + 16px))', right: 28 }}>{profileInitial}</button>
-        <div style={{ marginBottom: 6 }}>
-          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: 'clamp(40px, 8vw, 60px)', textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 0.85 }}>
-            <div style={{ color: 'var(--red)' }}>MISE EN</div>
-            <div style={{ color: 'var(--black)' }}>PLACE</div>
+      {/* Compact top bar */}
+      <div className="home-header">
+        <div style={{ height: 'env(safe-area-inset-top, 0px)' }} />
+        <div className="home-header-row">
+          <button className="home-icon-btn" onClick={onOpenSearch}>&#128269;</button>
+          <div className="home-wordmark">
+            <span className="home-wordmark-yes">MISE EN</span>
+            <span className="home-wordmark-chef">PLACE</span>
           </div>
+          <button className="profile-avatar" onClick={onOpenProfile}>{profileInitial}</button>
         </div>
-        <p className="page-header-sub">What are we cooking today?</p>
       </div>
 
-      <div className="scroll-body pb-safe pb-nav">
-        {/* Cookbook buttons */}
-        <div className="home-cb-grid">
+      <div className="scroll-body pb-safe">
+        {/* Cookbook chips */}
+        <div className="home-cb-grid" style={{ paddingTop: 14, paddingBottom: 6 }}>
           {cookbooks.map(cb => (
             <button key={cb.id} className="home-cb-btn" onClick={() => onOpenCookbook(cb.id)}>
               {cb.name}
@@ -669,61 +725,56 @@ function HomeScreen({ cookbooks, favouriteRecipes, shoppingList, onOpenCookbook,
           <button className="home-cb-btn cb-new" onClick={onNewCookbook}>+ New</button>
         </div>
 
-        {/* Favourites */}
-        {favouriteRecipes.length > 0 && (
-          <div className="home-section">
-            <div className="home-section-label">Favourites</div>
-            {favouriteRecipes.map(r => (
-              <div key={r.id} className="home-fav-row" onClick={() => onOpenRecipe(r)}>
-                <span className="home-fav-name">{r.name}</span>
-                <span className="home-fav-meta">{r.time} min · {r.difficulty}</span>
-              </div>
-            ))}
-          </div>
-        )}
+        {/* Timeline feed */}
+        <div className="home-section">
+          <div className="home-section-label">Timeline</div>
+          {events === null ? (
+            <div style={{ padding: '16px 28px 24px', fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#CCC', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Loading...</div>
+          ) : events.length === 0 ? (
+            <div style={{ padding: '20px 28px 32px', fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#CCC', textTransform: 'uppercase', letterSpacing: '0.06em', lineHeight: 2 }}>
+              Nothing yet.<br />Follow people to see their activity.
+            </div>
+          ) : events.map(renderEvent)}
+        </div>
 
         {/* Shopping list */}
-        <div className="home-section">
-          <div className="home-shopping-header" style={{ paddingTop: 16, paddingBottom: shoppingList.length ? 8 : 0 }}>
-            <span className="home-section-label" style={{ padding: 0, flex: 1 }}>Shopping List</span>
-            {unchecked > 0 && <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#999' }}>{unchecked} to buy</span>}
-          </div>
-          {shoppingList.length === 0 ? (
-            <div style={{ padding: '8px 28px 28px', fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#CCC', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Nothing to buy yet</div>
-          ) : (
-            <>
-              {byPriority.map(({ priority, label, byRecipe }) => (
-                <div key={priority} className="shopping-group">
-                  <div className="shopping-group-header" onClick={() => togglePriority(priority)}>
-                    <span>{label}</span>
-                    <span className="shopping-group-toggle">{collapsed[priority] ? '▶' : '▼'}</span>
-                  </div>
-                  {!collapsed[priority] && Object.entries(byRecipe).map(([recipeName, recipeItems]) => (
-                    <div key={recipeName}>
-                      <div className="shopping-recipe-header" onClick={() => toggleRecipe(`${priority}:${recipeName}`)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span>{recipeName}</span>
-                        <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: 11, color: '#999' }}>{collapsedRecipes[`${priority}:${recipeName}`] ? '▶' : '▼'}</span>
-                      </div>
-                      {!collapsedRecipes[`${priority}:${recipeName}`] && recipeItems.map(item => (
-                        <div key={item.id} className={`shopping-item${item.checked ? ' done' : ''}`} onClick={() => onToggleShoppingItem(item.id, item.checked)}>
-                          <span className="shopping-item-name">{item.ingredient_name}</span>
-                          <div className="shopping-item-right">
-                            <span className="shopping-item-qty">{item.qty}</span>
-                            <a href={ahUrl(item.ingredient_name)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontFamily: "'Courier Prime', monospace", fontSize: 11, fontWeight: 700, color: 'var(--red)', textDecoration: 'none' }}>AH →</a>
-                            <button className="shopping-item-delete" onClick={e => { e.stopPropagation(); onDeleteShoppingItem(item.id); }}>×</button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ))}
+        {shoppingList.length > 0 && (
+          <div className="home-section">
+            <div className="home-shopping-header" style={{ paddingTop: 16, paddingBottom: 8 }}>
+              <span className="home-section-label" style={{ padding: 0, flex: 1 }}>Shopping List</span>
+              {unchecked > 0 && <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#999' }}>{unchecked} to buy</span>}
+            </div>
+            {byPriority.map(({ priority, label, byRecipe }) => (
+              <div key={priority} className="shopping-group">
+                <div className="shopping-group-header" onClick={() => togglePriority(priority)}>
+                  <span>{label}</span>
+                  <span className="shopping-group-toggle">{collapsed[priority] ? '▶' : '▼'}</span>
                 </div>
-              ))}
-              <div style={{ padding: '12px 28px 32px', textAlign: 'center' }}>
-                <button onClick={onClearShoppingList} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#BBB', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Clear list</button>
+                {!collapsed[priority] && Object.entries(byRecipe).map(([recipeName, recipeItems]) => (
+                  <div key={recipeName}>
+                    <div className="shopping-recipe-header" onClick={() => toggleRecipe(`${priority}:${recipeName}`)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>{recipeName}</span>
+                      <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: 11, color: '#999' }}>{collapsedRecipes[`${priority}:${recipeName}`] ? '▶' : '▼'}</span>
+                    </div>
+                    {!collapsedRecipes[`${priority}:${recipeName}`] && recipeItems.map(item => (
+                      <div key={item.id} className={`shopping-item${item.checked ? ' done' : ''}`} onClick={() => onToggleShoppingItem(item.id, item.checked)}>
+                        <span className="shopping-item-name">{item.ingredient_name}</span>
+                        <div className="shopping-item-right">
+                          <span className="shopping-item-qty">{item.qty}</span>
+                          <a href={ahUrl(item.ingredient_name)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontFamily: "'Courier Prime', monospace", fontSize: 11, fontWeight: 700, color: 'var(--red)', textDecoration: 'none' }}>AH →</a>
+                          <button className="shopping-item-delete" onClick={e => { e.stopPropagation(); onDeleteShoppingItem(item.id); }}>×</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
               </div>
-            </>
-          )}
-        </div>
+            ))}
+            <div style={{ padding: '12px 28px 32px', textAlign: 'center' }}>
+              <button onClick={onClearShoppingList} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#BBB', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Clear list</button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1795,7 +1846,6 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [screen, setScreen] = useState({ name: 'home' });
-  const [mainTab, setMainTab] = useState('home');
   const [favouriteIds, setFavouriteIds] = useState(new Set());
   const [favouriteRecipes, setFavouriteRecipes] = useState([]);
   const [shoppingList, setShoppingList] = useState([]);
@@ -1827,8 +1877,6 @@ export default function App() {
 
   const navigate = (name, params = {}) => {
     setScreen({ name, ...params });
-    if (name === 'home') setMainTab('home');
-    if (name === 'timeline') setMainTab('timeline');
     if (name === 'cookbook' && params.cbId) {
       if (params.cbId === 'favourites' && recipesMap['favourites'] === undefined) {
         setRecipesMap(prev => ({ ...prev, favourites: null }));
@@ -2020,8 +2068,6 @@ export default function App() {
     navigate('cookbook', { cbId: recipe.cookbookId, rId: recipe.id });
   };
 
-  const showBottomNav = s === 'home' || s === 'timeline';
-
   return (
     <>
       <style>{STYLES}</style>
@@ -2029,21 +2075,15 @@ export default function App() {
         {s === 'home' && (
           <HomeScreen
             cookbooks={cookbooks}
-            favouriteRecipes={favouriteRecipes}
             shoppingList={shoppingList}
             onOpenCookbook={id => navigate('cookbook', { cbId: id })}
             onNewCookbook={() => navigate('new-cookbook')}
-            onOpenRecipe={handleOpenRecipe}
             onToggleShoppingItem={handleToggleShoppingItem}
             onDeleteShoppingItem={handleDeleteShoppingItem}
             onClearShoppingList={handleClearShoppingList}
             onOpenProfile={() => navigate('profile')}
             profileInitial={profileInitial}
             onOpenSearch={() => navigate('search')}
-          />
-        )}
-        {s === 'timeline' && (
-          <TimelineScreen
             currentUserId={user.id}
             onOpenUser={userId => navigate('user-profile', { userId })}
           />
@@ -2105,14 +2145,6 @@ export default function App() {
         {s === 'done' && recipe && <DoneScreen recipe={recipe} onContinue={() => navigate('feedback', { cbId, rId })} />}
         {s === 'feedback' && recipe && <FeedbackScreen recipe={recipe} onSave={(e, t, o, n) => handleSaveFeedback(cbId, rId, e, t, o, n)} onSkip={() => navigate('post', { cbId, rId })} />}
         {s === 'post' && recipe && <PostScreen recipe={recipe} onPost={(text, url) => handlePost(cbId, rId, text, url)} onSkip={() => navigate('recipe', { cbId, rId })} />}
-
-        {showBottomNav && (
-          <BottomNav
-            tab={mainTab}
-            onHome={() => navigate('home')}
-            onTimeline={() => navigate('timeline')}
-          />
-        )}
 
         {sheet?.type === 'addToCookbook' && (
           <AddToCookbookSheet cookbooks={cookbooks} currentCbId={sheet.currentCbId} onSelect={handleSelectCookbookForAdd} onClose={() => setSheet(null)} />
