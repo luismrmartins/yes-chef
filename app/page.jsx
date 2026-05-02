@@ -135,7 +135,16 @@ const STYLES = `
   .checklist-progress { height: 4px; background: var(--gray2); overflow: hidden; }
   .checklist-progress-fill { height: 100%; background: var(--red); transition: width 0.3s ease; }
 
-  .cook-screen { background: var(--white); min-height: 100vh; display: flex; flex-direction: column; }
+  .cook-screen { background: var(--white); min-height: 100vh; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+  .timers-drawer { position: absolute; top: 0; right: 0; bottom: 0; width: min(300px, 88vw); background: var(--white); box-shadow: -4px 0 32px rgba(0,0,0,0.14); z-index: 50; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.22s cubic-bezier(.4,0,.2,1); }
+  .timers-drawer.open { transform: translateX(0); }
+  .timers-drawer-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.2); z-index: 49; }
+  .timers-drawer-head { padding: 20px 20px 14px; border-bottom: 2px solid var(--black); display: flex; align-items: center; justify-content: space-between; }
+  .timers-drawer-title { font-family: 'Barlow Condensed', sans-serif; font-size: 24px; font-weight: 700; text-transform: uppercase; }
+  .timers-drawer-close { background: none; border: none; font-size: 22px; cursor: pointer; color: #888; padding: 0 4px; line-height: 1; }
+  .timers-drawer-close:hover { color: var(--black); }
+  .timers-drawer-body { flex: 1; overflow-y: auto; }
+  .timers-drawer-empty { padding: 40px 20px; text-align: center; color: #AAA; font-family: 'Courier Prime', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; line-height: 1.9; }
   .cook-header { padding: 20px 20px 0; display: flex; align-items: center; justify-content: space-between; }
   .cook-logo { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; text-transform: uppercase; letter-spacing: -0.02em; line-height: 0.85; display: inline-flex; flex-direction: column; align-items: flex-start; }
   .cook-logo .line1 { color: var(--red); font-size: 16px; }
@@ -195,7 +204,7 @@ const STYLES = `
   .timers-panel { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
   .timers-panel-head { padding: 20px 24px 12px; border-bottom: 2px solid var(--black); font-family: 'Barlow Condensed', sans-serif; font-size: 28px; font-weight: 700; text-transform: uppercase; }
   .timers-empty { text-align: center; color: #AAA; font-family: 'Courier Prime', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; padding: 60px 24px; line-height: 1.8; }
-  .timer-row { display: flex; align-items: center; gap: 12px; padding: 14px 24px; border-bottom: 1px solid #EEEEEE; }
+  .timer-row { display: flex; align-items: center; gap: 10px; padding: 14px 20px; border-bottom: 1px solid #EEEEEE; }
   .timer-row-info { flex: 1; min-width: 0; }
   .timer-row-step { font-family: 'Courier Prime', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--red); font-weight: 700; margin-bottom: 3px; }
   .timer-row-label { font-size: 13px; color: #555; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -1159,7 +1168,7 @@ function TimerWidget({ minutes }) {
 
 function CookModeScreen({ recipe, onFinish }) {
   const [stepIdx, setStepIdx] = useState(0);
-  const [panel, setPanel] = useState('cook');
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [timers, setTimers] = useState([]);
   const steps = recipe.steps;
   const current = steps[stepIdx];
@@ -1178,73 +1187,70 @@ function CookModeScreen({ recipe, onFinish }) {
   }, []);
 
   const fmt = s => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
-
-  const startTimer = (step, num) => {
-    setTimers(ts => [...ts, { id: generateId(), stepNum: num, label: step.text, totalSeconds: step.timer * 60, remaining: step.timer * 60, running: true }]);
-    setPanel('cook');
-  };
+  const startTimer = (step, num) => setTimers(ts => [...ts, { id: generateId(), stepNum: num, label: step.text, totalSeconds: step.timer * 60, remaining: step.timer * 60, running: true }]);
   const toggleTimer = id => setTimers(ts => ts.map(t => t.id === id ? { ...t, running: !t.running } : t));
   const resetTimer = id => setTimers(ts => ts.map(t => t.id === id ? { ...t, remaining: t.totalSeconds, running: false } : t));
   const removeTimer = id => setTimers(ts => ts.filter(t => t.id !== id));
-
-  const activeCount = timers.filter(t => t.running && t.remaining > 0).length;
   const stepTimerActive = current.timer && timers.some(t => t.stepNum === stepIdx + 1 && t.remaining > 0);
 
   return (
     <div className="cook-screen">
+      {/* Main cook view — always rendered */}
       <div className="cook-header safe-top">
         <div className="cook-logo"><span className="line1">MISE EN</span><span className="line2">PLACE</span></div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div className="cook-dots">
             {steps.map((_, i) => <div key={i} className={`cook-dot${i === stepIdx ? ' active' : i < stepIdx ? ' done' : ''}`} />)}
           </div>
-          <button className={`cook-timer-btn${timers.length > 0 ? ' has-timers' : ''}`} onClick={() => setPanel(p => p === 'timers' ? 'cook' : 'timers')}>
-            ⏱
-            {timers.length > 0 && <span className="cook-timer-badge">{timers.length}</span>}
+          <button className={`cook-timer-btn${timers.length > 0 ? ' has-timers' : ''}`} onClick={() => setDrawerOpen(o => !o)}>
+            ⏱{timers.length > 0 && <span className="cook-timer-badge">{timers.length}</span>}
           </button>
         </div>
       </div>
-
-      {panel === 'cook' ? <>
-        <div className="cook-steps">
-          {prev && <div className="cook-prev"><div className="cook-prev-text">{prev.text}</div></div>}
-          <div className="cook-current">
-            <div className="cook-step-label">Step {stepIdx + 1} of {steps.length}</div>
-            <p className="cook-current-text">{current.text}</p>
-            {current.timer && (
-              <div className="timer-launch">
-                <span className="timer-launch-label">{current.timer} min timer</span>
-                {stepTimerActive ? (
-                  <button className="timer-launch-btn viewing" onClick={() => setPanel('timers')}>View timers</button>
-                ) : (
-                  <button className="timer-launch-btn" onClick={() => startTimer(current, stepIdx + 1)}>Start timer</button>
-                )}
-              </div>
-            )}
-          </div>
-          {next && (
-            <div className="cook-next">
-              <div className="cook-next-label">Up next</div>
-              <div className="cook-next-text">{next.text}</div>
+      <div className="cook-steps">
+        {prev && <div className="cook-prev"><div className="cook-prev-text">{prev.text}</div></div>}
+        <div className="cook-current">
+          <div className="cook-step-label">Step {stepIdx + 1} of {steps.length}</div>
+          <p className="cook-current-text">{current.text}</p>
+          {current.timer && (
+            <div className="timer-launch">
+              <span className="timer-launch-label">{current.timer} min timer</span>
+              {stepTimerActive
+                ? <button className="timer-launch-btn viewing" onClick={() => setDrawerOpen(true)}>View timers</button>
+                : <button className="timer-launch-btn" onClick={() => { startTimer(current, stepIdx + 1); setDrawerOpen(true); }}>Start timer</button>
+              }
             </div>
           )}
         </div>
-        <div className="cook-footer">
-          <div className="cook-nav">
-            <button className="cook-nav-btn" disabled={stepIdx === 0} onClick={() => setStepIdx(i => i - 1)}>←</button>
-            <div style={{ flex: 1 }}>
-              <button className="btn btn-red btn-full" onClick={() => stepIdx === steps.length - 1 ? onFinish() : setStepIdx(i => i + 1)}>
-                {stepIdx === steps.length - 1 ? 'Finish →' : 'Next step →'}
-              </button>
-            </div>
-            <div style={{ width: 52 }} />
+        {next && (
+          <div className="cook-next">
+            <div className="cook-next-label">Up next</div>
+            <div className="cook-next-text">{next.text}</div>
           </div>
+        )}
+      </div>
+      <div className="cook-footer">
+        <div className="cook-nav">
+          <button className="cook-nav-btn" disabled={stepIdx === 0} onClick={() => setStepIdx(i => i - 1)}>←</button>
+          <div style={{ flex: 1 }}>
+            <button className="btn btn-red btn-full" onClick={() => stepIdx === steps.length - 1 ? onFinish() : setStepIdx(i => i + 1)}>
+              {stepIdx === steps.length - 1 ? 'Finish →' : 'Next step →'}
+            </button>
+          </div>
+          <div style={{ width: 52 }} />
         </div>
-      </> : (
-        <div className="timers-panel">
-          <div className="timers-panel-head">Timers</div>
+      </div>
+
+      {/* Timers drawer — overlays from the right */}
+      {drawerOpen && <div className="timers-drawer-overlay" onClick={() => setDrawerOpen(false)} />}
+      <div className={`timers-drawer${drawerOpen ? ' open' : ''}`}>
+        <div className="timers-drawer-head">
+          <span className="timers-drawer-title">Timers</span>
+          <button className="timers-drawer-close" onClick={() => setDrawerOpen(false)}>×</button>
+        </div>
+        <div className="timers-drawer-body">
           {timers.length === 0 ? (
-            <div className="timers-empty">No timers yet.<br/>Start one from a step<br/>that has a timer.</div>
+            <div className="timers-drawer-empty">No timers yet.<br/>Tap "Start timer" on any<br/>step that has a timer.</div>
           ) : timers.map(t => (
             <div key={t.id} className="timer-row">
               <div className="timer-row-info">
@@ -1266,7 +1272,7 @@ function CookModeScreen({ recipe, onFinish }) {
             </div>
           ))}
         </div>
-      )}
+      </div>
     </div>
   );
 }
