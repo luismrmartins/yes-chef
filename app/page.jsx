@@ -841,7 +841,13 @@ function RecipeFormScreen({ initialData, onBack, onSave, saving, unitPreference 
   const [stepMode, setStepMode] = useState('manual');
   const [stepPaste, setStepPaste] = useState('');
 
+  const [customTagInput, setCustomTagInput] = useState('');
   const toggleTag = (tag) => setTags(p => p.includes(tag) ? p.filter(t => t !== tag) : [...p, tag]);
+  const addCustomTag = () => {
+    const t = customTagInput.trim();
+    if (t && !tags.includes(t)) setTags(p => [...p, t]);
+    setCustomTagInput('');
+  };
   const addIngredient = () => setIngredients(p => [...p, { id: generateId(), name: '', qty: '' }]);
   const removeIngredient = id => setIngredients(p => p.filter(i => i.id !== id));
   const updateIngredient = (id, field, val) => setIngredients(p => p.map(i => i.id === id ? { ...i, [field]: val } : i));
@@ -918,6 +924,22 @@ function RecipeFormScreen({ initialData, onBack, onSave, saving, unitPreference 
               {PRESET_TAGS.map(tag => (
                 <button key={tag} className={`tag-pill${tags.includes(tag) ? ' active' : ''}`} onClick={() => toggleTag(tag)}>{tag}</button>
               ))}
+              {tags.filter(t => !PRESET_TAGS.includes(t)).map(tag => (
+                <button key={tag} className="tag-pill active" onClick={() => toggleTag(tag)} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  {tag} <span style={{ fontSize: 10, opacity: 0.7 }}>×</span>
+                </button>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+              <input
+                className="form-input"
+                placeholder="Add custom tag..."
+                value={customTagInput}
+                onChange={e => setCustomTagInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomTag(); } }}
+                style={{ flex: 1, padding: '8px 12px', fontSize: 13 }}
+              />
+              <button className="btn btn-ghost btn-sm" onClick={addCustomTag} disabled={!customTagInput.trim()}>+</button>
             </div>
           </div>
         </>}
