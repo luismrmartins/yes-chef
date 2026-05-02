@@ -483,7 +483,7 @@ function ProfileScreen({ user, onBack, onLogout }) {
     if (!username.trim()) { setError('Username is required'); return; }
     setError(''); setSaving(true); setSuccess(false);
     try {
-      await saveProfile(user.id, { firstName, lastName, username, unitPreference });
+      await saveProfile(user.id, { firstName, lastName, username, unitPreference, email });
       if (email !== user.email) {
         const { error: emailErr } = await supabase.auth.updateUser({ email });
         if (emailErr) throw emailErr;
