@@ -836,6 +836,7 @@ function RecipeFormScreen({ initialData, onBack, onSave, saving, unitPreference 
   const [steps, setSteps] = useState(
     initialData?.steps?.length ? initialData.steps.map(s => ({ ...s, id: s.id || generateId(), hasTimer: !!s.timer })) : [{ id: generateId(), text: '', timer: null, hasTimer: false }]
   );
+  const [isPublic, setIsPublic] = useState(initialData?.isPublic || false);
   const [ingMode, setIngMode] = useState('manual');
   const [ingPaste, setIngPaste] = useState('');
   const [stepMode, setStepMode] = useState('manual');
@@ -873,7 +874,7 @@ function RecipeFormScreen({ initialData, onBack, onSave, saving, unitPreference 
   const canSave = name.trim() && ingredients.some(i => i.name.trim()) && steps.some(s => s.text.trim());
   const handleSave = () => onSave({
     name: name.trim(), description: description.trim(),
-    time: parseInt(time) || 30, difficulty, servings, tags,
+    time: parseInt(time) || 30, difficulty, servings, tags, isPublic,
     ingredients: ingredients.filter(i => i.name.trim()),
     steps: steps.filter(s => s.text.trim()).map(s => ({ ...s, timer: s.hasTimer ? (parseInt(s.timer) || null) : null })),
   });
@@ -917,6 +918,16 @@ function RecipeFormScreen({ initialData, onBack, onSave, saving, unitPreference 
                 <button key={d} className={`btn btn-sm${difficulty === d ? ' btn-primary' : ' btn-ghost'}`} onClick={() => setDifficulty(d)}>{d}</button>
               ))}
             </div>
+          </div>
+          <div className="form-field">
+            <label className="form-label">Visibility</label>
+            <div className="unit-toggle">
+              <button type="button" className={`unit-btn${!isPublic ? ' active' : ''}`} onClick={() => setIsPublic(false)}>Private</button>
+              <button type="button" className={`unit-btn${isPublic ? ' active' : ''}`} onClick={() => setIsPublic(true)}>Public</button>
+            </div>
+            <p style={{ fontFamily: "'Courier Prime', monospace", fontSize: 11, color: '#AAA', marginTop: 6, letterSpacing: '0.04em' }}>
+              {isPublic ? 'Visible to everyone on the platform.' : 'Only visible to you.'}
+            </p>
           </div>
           <div className="form-field">
             <label className="form-label">Tags</label>
@@ -1036,6 +1047,9 @@ function RecipeDetailScreen({ recipe, cookbook, onBack, onStartCook, isFavourite
             ? <span className="detail-meta-item">Last cooked {timeAgo(recipe.lastCookedAt)}</span>
             : <span className="detail-meta-item" style={{ color: '#CCC' }}>Never cooked</span>
           }
+          <span className="detail-meta-item" style={{ color: recipe.isPublic ? 'var(--red)' : '#CCC' }}>
+            {recipe.isPublic ? '◎ Public' : '◉ Private'}
+          </span>
         </div>
       </div>
 
