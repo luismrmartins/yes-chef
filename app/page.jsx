@@ -1065,11 +1065,11 @@ function RecipeDetailScreen({ recipe, cookbook, onBack, onStartCook, isFavourite
           <h2>Ingredients</h2>
           {recipe.ingredients.map((ing, idx) => (
             <div key={ing.id || idx} className="ingredient-item">
-              <span>{ing.name}</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span className="ingredient-qty">{ing.qty}</span>
-                <a href={ahUrl(ing.name)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontFamily: "'Courier Prime', monospace", fontSize: 11, fontWeight: 700, color: 'var(--red)', textDecoration: 'none', flexShrink: 0 }}>AH</a>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flex: 1, minWidth: 0 }}>
+                {ing.qty && <span className="ingredient-qty" style={{ flexShrink: 0 }}>{ing.qty}</span>}
+                <span>{ing.name}</span>
               </div>
+              <a href={ahUrl(ing.name)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontFamily: "'Courier Prime', monospace", fontSize: 11, fontWeight: 700, color: 'var(--red)', textDecoration: 'none', flexShrink: 0, marginLeft: 10 }}>AH</a>
             </div>
           ))}
         </div>
