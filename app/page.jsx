@@ -840,6 +840,9 @@ function RecipeFormScreen({ initialData, onBack, onSave, saving, unitPreference 
             <textarea className="form-input form-textarea" placeholder={"2 cups flour\n1/2 tsp salt\n100g butter"} value={ingPaste} onChange={e => setIngPaste(e.target.value)} style={{ minHeight: 140, fontSize: 14 }} />
             <button className="btn btn-black btn-sm" style={{ alignSelf: 'flex-start' }} onClick={applyIngPaste} disabled={!ingPaste.trim()}>Apply</button>
           </> : <>
+            <button className="btn btn-ghost btn-sm" style={{ alignSelf: 'flex-start', marginBottom: 8 }} onClick={() => setIngredients(p => p.map(i => ({ ...i, qty: convertQty(i.qty, unitPreference) })))}>
+              Convert all to {unitPreference}
+            </button>
             <div className="dynamic-list">
               {ingredients.map((ing, idx) => (
                 <div key={ing.id} className="dynamic-item">
