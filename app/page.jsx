@@ -6,6 +6,9 @@ import {
   addRecipeToCookbook, addToShoppingList, getShoppingList,
   toggleShoppingItem, deleteShoppingItem, clearShoppingList, saveRecipeFeedback,
   getProfile, saveProfile,
+  createEvent, getTimeline, toggleLike, getUserPublicProfile, uploadPostPhoto,
+  getDiscoverPeople, getPeopleFollowingMeNotFollowedBack, searchUsers,
+  followUser, unfollowUser, getFollowingIds,
 } from '../lib/db';
 import { supabase } from '../lib/supabase';
 
@@ -343,6 +346,61 @@ const STYLES = `
     .cookbook-layout.has-detail .recipe-detail-panel { display: flex; flex-direction: column; min-height: 100vh; }
     .panel-mobile-back { display: block; border-bottom: 1px solid #EEEEEE; }
   }
+
+  /* ── Bottom nav ──────────────────────────────────────── */
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--white); border-top: 2px solid var(--black); display: flex; z-index: 100; padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .bottom-nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 10px 4px; border: none; background: none; cursor: pointer; transition: opacity 0.15s; }
+  .bottom-nav-btn:hover { opacity: 0.7; }
+  .bottom-nav-icon { font-size: 20px; line-height: 1; color: #CCC; }
+  .bottom-nav-label { font-family: 'Courier Prime', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: #CCC; }
+  .bottom-nav-btn.active .bottom-nav-icon, .bottom-nav-btn.active .bottom-nav-label { color: var(--black); }
+  .pb-nav { padding-bottom: 72px !important; }
+
+  /* ── Search screen ───────────────────────────────────── */
+  .search-screen { min-height: 100vh; background: var(--white); display: flex; flex-direction: column; }
+  .search-input-wrap { padding: 0 28px 16px; }
+  .search-input { width: 100%; padding: 12px 16px; border: 2px solid var(--black); font-size: 16px; font-family: 'DM Sans', sans-serif; background: var(--white); outline: none; border-radius: 0; }
+  .search-input:focus { border-color: var(--red); }
+  .people-section-label { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: #999; padding: 12px 28px 4px; }
+  .person-row { display: flex; align-items: center; padding: 12px 28px; border-bottom: 1px solid #EEEEEE; cursor: pointer; gap: 12px; transition: opacity 0.15s; }
+  .person-row:hover { opacity: 0.7; }
+  .person-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--black); color: var(--white); display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 16px; flex-shrink: 0; }
+  .person-info { flex: 1; min-width: 0; }
+  .person-name { font-size: 15px; font-weight: 500; color: var(--black); }
+  .person-handle { font-family: 'Courier Prime', monospace; font-size: 12px; color: #999; }
+  .person-followers { font-family: 'Courier Prime', monospace; font-size: 11px; color: #BBB; margin-top: 1px; }
+  .follow-btn { padding: 6px 14px; border: 2px solid var(--black); background: transparent; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: all 0.15s; }
+  .follow-btn:hover { background: var(--black); color: var(--white); }
+  .follow-btn.following { background: var(--black); color: var(--white); border-color: var(--black); }
+
+  /* ── Timeline screen ─────────────────────────────────── */
+  .timeline-screen { min-height: 100vh; background: var(--white); display: flex; flex-direction: column; }
+  .event-row { padding: 16px 28px; border-bottom: 1px solid #EEEEEE; }
+  .event-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .event-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--black); color: var(--white); display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; flex-shrink: 0; cursor: pointer; }
+  .event-avatar:hover { opacity: 0.7; }
+  .event-meta { flex: 1; min-width: 0; }
+  .event-name { font-size: 14px; font-weight: 600; color: var(--black); }
+  .event-time { font-family: 'Courier Prime', monospace; font-size: 11px; color: #BBB; }
+  .event-text { font-size: 14px; line-height: 1.5; color: var(--black); margin-bottom: 6px; }
+  .event-post-text { font-size: 15px; line-height: 1.6; color: var(--black); margin: 8px 0; }
+  .event-photo { width: 100%; max-height: 320px; object-fit: cover; margin: 8px 0; display: block; }
+  .event-actions { display: flex; align-items: center; gap: 16px; margin-top: 8px; }
+  .like-btn { background: none; border: none; cursor: pointer; font-size: 14px; color: #BBB; font-family: 'Courier Prime', monospace; display: flex; align-items: center; gap: 5px; padding: 0; transition: color 0.15s; line-height: 1; }
+  .like-btn.liked { color: var(--red); }
+  .like-btn:hover { color: var(--red); }
+  .timeline-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 28px; text-align: center; color: #CCC; font-family: 'Courier Prime', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; line-height: 2; }
+
+  /* ── Post screen ─────────────────────────────────────── */
+  .post-screen { min-height: 100vh; background: var(--white); display: flex; flex-direction: column; }
+  .photo-upload-area { display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px dashed #DDD; padding: 32px; cursor: pointer; gap: 8px; transition: border-color 0.15s; }
+  .photo-upload-area:hover { border-color: var(--black); }
+  .photo-upload-icon { font-size: 28px; color: #CCC; line-height: 1; }
+  .photo-upload-label { font-family: 'Courier Prime', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #AAA; }
+  .photo-preview { position: relative; }
+  .photo-preview img { width: 100%; max-height: 260px; object-fit: cover; display: block; }
+  .photo-remove { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.55); color: white; border: none; cursor: pointer; width: 28px; height: 28px; border-radius: 50%; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+  .char-count { font-family: 'Courier Prime', monospace; font-size: 11px; color: #BBB; text-align: right; margin-top: 4px; }
 `;
 
 const COOKBOOK_COLORS = ['#111111','#1a1a2e','#1a3a1a','#3a1a1a','#2A6B8C','#5B4FCF','#7A4B9C','#8B1A0A'];
@@ -567,7 +625,7 @@ function StarRating({ value, onChange }) {
 const PRIORITY_ORDER = ['today', 'this_week', 'eventually'];
 const PRIORITY_LABELS = { today: 'Today', this_week: 'This Week', eventually: 'Eventually' };
 
-function HomeScreen({ cookbooks, favouriteRecipes, shoppingList, onOpenCookbook, onNewCookbook, onOpenRecipe, onToggleShoppingItem, onDeleteShoppingItem, onClearShoppingList, onOpenProfile, profileInitial }) {
+function HomeScreen({ cookbooks, favouriteRecipes, shoppingList, onOpenCookbook, onNewCookbook, onOpenRecipe, onToggleShoppingItem, onDeleteShoppingItem, onClearShoppingList, onOpenProfile, profileInitial, onOpenSearch }) {
   const [collapsed, setCollapsed] = useState({});
   const [collapsedRecipes, setCollapsedRecipes] = useState({});
   const togglePriority = (p) => setCollapsed(prev => ({ ...prev, [p]: !prev[p] }));
@@ -588,6 +646,7 @@ function HomeScreen({ cookbooks, favouriteRecipes, shoppingList, onOpenCookbook,
   return (
     <div className="screen">
       <div className="page-header safe-top" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', position: 'relative' }}>
+        <button onClick={onOpenSearch} style={{ position: 'absolute', top: 'max(40px, calc(env(safe-area-inset-top, 0px) + 16px))', left: 28, background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, lineHeight: 1, color: '#888', padding: 4 }} title="Find people">&#128269;</button>
         <button className="profile-avatar" onClick={onOpenProfile} style={{ position: 'absolute', top: 'max(40px, calc(env(safe-area-inset-top, 0px) + 16px))', right: 28 }}>{profileInitial}</button>
         <div style={{ marginBottom: 6 }}>
           <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: 'clamp(40px, 8vw, 60px)', textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 0.85 }}>
@@ -598,7 +657,7 @@ function HomeScreen({ cookbooks, favouriteRecipes, shoppingList, onOpenCookbook,
         <p className="page-header-sub">What are we cooking today?</p>
       </div>
 
-      <div className="scroll-body pb-safe">
+      <div className="scroll-body pb-safe pb-nav">
         {/* Cookbook buttons */}
         <div className="home-cb-grid">
           {cookbooks.map(cb => (
@@ -1327,6 +1386,343 @@ function FeedbackScreen({ recipe, onSave, onSkip }) {
   );
 }
 
+function BottomNav({ tab, onHome, onTimeline }) {
+  return (
+    <nav className="bottom-nav">
+      <button className={`bottom-nav-btn${tab === 'home' ? ' active' : ''}`} onClick={onHome}>
+        <span className="bottom-nav-icon">&#8962;</span>
+        <span className="bottom-nav-label">Home</span>
+      </button>
+      <button className={`bottom-nav-btn${tab === 'timeline' ? ' active' : ''}`} onClick={onTimeline}>
+        <span className="bottom-nav-icon">&#9685;</span>
+        <span className="bottom-nav-label">Timeline</span>
+      </button>
+    </nav>
+  );
+}
+
+function SearchScreen({ onBack, onOpenUser, currentUserId }) {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState([]);
+  const [discover, setDiscover] = useState([]);
+  const [followingMe, setFollowingMe] = useState([]);
+  const [followingIds, setFollowingIds] = useState(new Set());
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      getDiscoverPeople(),
+      getPeopleFollowingMeNotFollowedBack(),
+      getFollowingIds(currentUserId),
+    ]).then(([disc, fme, fids]) => {
+      setDiscover(disc);
+      setFollowingMe(fme);
+      setFollowingIds(new Set(fids));
+      setLoading(false);
+    });
+  }, [currentUserId]);
+
+  useEffect(() => {
+    if (!query.trim()) { setResults([]); return; }
+    const t = setTimeout(() => searchUsers(query).then(setResults), 300);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  const handleFollow = async (userId, e) => {
+    e.stopPropagation();
+    if (followingIds.has(userId)) {
+      await unfollowUser(userId);
+      setFollowingIds(prev => { const n = new Set(prev); n.delete(userId); return n; });
+    } else {
+      await followUser(userId);
+      setFollowingIds(prev => new Set([...prev, userId]));
+    }
+  };
+
+  const renderPerson = (person) => (
+    <div key={person.id} className="person-row" onClick={() => onOpenUser(person.id)}>
+      <div className="person-avatar">{(person.display_name || person.username || '?')[0].toUpperCase()}</div>
+      <div className="person-info">
+        <div className="person-name">{person.display_name || person.username}</div>
+        <div className="person-handle">@{person.username}</div>
+        {person.followerCount != null && (
+          <div className="person-followers">{person.followerCount} follower{person.followerCount !== 1 ? 's' : ''}</div>
+        )}
+      </div>
+      {person.id !== currentUserId && (
+        <button className={`follow-btn${followingIds.has(person.id) ? ' following' : ''}`} onClick={e => handleFollow(person.id, e)}>
+          {followingIds.has(person.id) ? 'Following' : 'Follow'}
+        </button>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="search-screen">
+      <div className="page-header safe-top" style={{ paddingBottom: 16 }}>
+        <div style={{ marginBottom: 12 }}>
+          <button className="back-btn" onClick={onBack}>← Back</button>
+        </div>
+        <div className="page-header-title">Find People</div>
+      </div>
+      <div className="search-input-wrap">
+        <input className="search-input" placeholder="Search by name or @username..." value={query} onChange={e => setQuery(e.target.value)} autoFocus />
+      </div>
+      <div className="scroll-body pb-safe">
+        {query.trim() ? (
+          results.length === 0 ? (
+            <div style={{ padding: '40px 28px', fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#CCC', textTransform: 'uppercase', letterSpacing: '0.08em' }}>No results</div>
+          ) : results.map(renderPerson)
+        ) : loading ? null : (
+          <>
+            {followingMe.length > 0 && (
+              <>
+                <div className="people-section-label">Following you</div>
+                {followingMe.map(renderPerson)}
+              </>
+            )}
+            {discover.length > 0 && (
+              <>
+                <div className="people-section-label">Discover</div>
+                {discover.map(renderPerson)}
+              </>
+            )}
+            {!followingMe.length && !discover.length && (
+              <div style={{ padding: '40px 28px', fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#CCC', textTransform: 'uppercase', letterSpacing: '0.08em' }}>No one to discover yet</div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function UserPublicProfileScreen({ userId, currentUserId, onBack }) {
+  const [data, setData] = useState(null);
+  const [following, setFollowing] = useState(false);
+
+  useEffect(() => {
+    getUserPublicProfile(userId).then(d => {
+      setData(d);
+      setFollowing(d.isFollowing);
+    });
+  }, [userId]);
+
+  const handleFollow = async () => {
+    if (following) {
+      await unfollowUser(userId);
+      setFollowing(false);
+    } else {
+      await followUser(userId);
+      setFollowing(true);
+    }
+  };
+
+  if (!data) {
+    return (
+      <div className="loading-screen">
+        <div className="loading-logo"><span className="line1">MISE EN</span><span className="line2">PLACE</span></div>
+      </div>
+    );
+  }
+
+  const { profile, cookbooks, followCounts } = data;
+  const initial = (profile?.display_name || profile?.username || '?')[0].toUpperCase();
+
+  return (
+    <div className="screen">
+      <div className="back-row safe-top">
+        <button className="back-btn" onClick={onBack}>← Back</button>
+      </div>
+      <div className="page-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
+          <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--black)', color: 'var(--white)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 28 }}>{initial}</div>
+          <div>
+            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 28, textTransform: 'uppercase', letterSpacing: '-0.01em', color: 'var(--black)' }}>{profile?.display_name || profile?.username}</div>
+            <div style={{ fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#999' }}>@{profile?.username}</div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 24, marginBottom: 16 }}>
+          <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#888' }}>
+            <span style={{ color: 'var(--black)', fontWeight: 700, fontSize: 15 }}>{followCounts.followers}</span> followers
+          </span>
+          <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#888' }}>
+            <span style={{ color: 'var(--black)', fontWeight: 700, fontSize: 15 }}>{followCounts.following}</span> following
+          </span>
+        </div>
+        {userId !== currentUserId && (
+          <button className={`follow-btn${following ? ' following' : ''}`} onClick={handleFollow}>
+            {following ? 'Following' : 'Follow'}
+          </button>
+        )}
+      </div>
+      <div className="scroll-body pb-safe">
+        {cookbooks.length > 0 && (
+          <>
+            <div className="people-section-label">Cookbooks</div>
+            {cookbooks.map(cb => (
+              <div key={cb.id} className="flat-row" style={{ cursor: 'default' }}>
+                <div className="flat-row-info">
+                  <div className="flat-row-name">{cb.name}</div>
+                  <div className="flat-row-meta">{cb.recipeCount} recipe{cb.recipeCount !== 1 ? 's' : ''}</div>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TimelineScreen({ currentUserId, onOpenUser }) {
+  const [events, setEvents] = useState(null);
+
+  useEffect(() => {
+    getTimeline().then(setEvents);
+  }, []);
+
+  const handleLike = async (eventId) => {
+    const isNowLiked = await toggleLike(eventId);
+    setEvents(prev => prev.map(e => e.id === eventId
+      ? { ...e, likedByMe: isNowLiked, likeCount: isNowLiked ? e.likeCount + 1 : e.likeCount - 1 }
+      : e
+    ));
+  };
+
+  const renderEvent = (event) => {
+    const { id, type, userProfile, targetProfile, recipe, post_text, photo_url, created_at, likeCount, likedByMe } = event;
+    const name = userProfile?.display_name || userProfile?.username || 'Someone';
+    const initial = name[0].toUpperCase();
+
+    let text = null;
+    if (type === 'followed_you' && targetProfile) {
+      const tname = targetProfile.display_name || targetProfile.username;
+      text = <><strong>{name}</strong> followed <strong>{tname}</strong></>;
+    } else if (type === 'cooked_recipe' && recipe) {
+      text = <><strong>{name}</strong> cooked <strong>{recipe.name}</strong></>;
+    } else if (type === 'posted') {
+      text = <><strong>{name}</strong> posted a cook</>;
+    } else {
+      text = <strong>{name}</strong>;
+    }
+
+    return (
+      <div key={id} className="event-row">
+        <div className="event-header">
+          <div className="event-avatar" onClick={() => userProfile && onOpenUser(userProfile.id)}>{initial}</div>
+          <div className="event-meta">
+            <div className="event-name">{name}</div>
+            <div className="event-time">{timeAgo(created_at)}</div>
+          </div>
+        </div>
+        {text && <div className="event-text">{text}</div>}
+        {post_text && <div className="event-post-text">{post_text}</div>}
+        {photo_url && <img className="event-photo" src={photo_url} alt="" />}
+        <div className="event-actions">
+          <button className={`like-btn${likedByMe ? ' liked' : ''}`} onClick={() => handleLike(id)}>
+            {likedByMe ? '♥' : '♡'}{likeCount > 0 ? ` ${likeCount}` : ''}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="timeline-screen" style={{ paddingBottom: 72 }}>
+      <div className="page-header safe-top">
+        <div className="page-header-title">Timeline</div>
+      </div>
+      {events === null ? (
+        <div style={{ padding: '40px 28px', fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#CCC', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Loading...</div>
+      ) : events.length === 0 ? (
+        <div className="timeline-empty">Nothing here yet.<br/>Follow people to see<br/>their activity.</div>
+      ) : (
+        <div>{events.map(renderEvent)}</div>
+      )}
+    </div>
+  );
+}
+
+function PostScreen({ recipe, onPost, onSkip }) {
+  const [text, setText] = useState('');
+  const [photo, setPhoto] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [posting, setPosting] = useState(false);
+  const fileRef = useRef(null);
+  const MAX_CHARS = 300;
+
+  const handlePhotoSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhoto(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  };
+
+  const handlePost = async () => {
+    setPosting(true);
+    try {
+      let uploadedUrl = null;
+      if (photo) uploadedUrl = await uploadPostPhoto(photo);
+      await onPost(text.trim(), uploadedUrl);
+    } catch (err) {
+      console.error(err);
+      setPosting(false);
+    }
+  };
+
+  return (
+    <div className="post-screen">
+      <div className="back-row safe-top">
+        <button className="back-btn" onClick={onSkip}>← Skip</button>
+      </div>
+      <div className="page-header" style={{ paddingTop: 12 }}>
+        <div className="page-header-title">Share your cook</div>
+        <p className="page-header-sub">{recipe.name}</p>
+      </div>
+      <div className="form-body scroll-body pb-safe" style={{ flex: 1 }}>
+        <div className="form-field">
+          <label className="form-label">How did it go?</label>
+          <textarea
+            className="form-input form-textarea"
+            placeholder="Any tweaks? Worth making again?"
+            value={text}
+            onChange={e => setText(e.target.value.slice(0, MAX_CHARS))}
+            style={{ minHeight: 100 }}
+          />
+          <div className="char-count">{text.length}/{MAX_CHARS}</div>
+        </div>
+        <div className="form-field">
+          <label className="form-label">Photo (optional)</label>
+          {photoPreview ? (
+            <div className="photo-preview">
+              <img src={photoPreview} alt="Post" />
+              <button className="photo-remove" onClick={() => { setPhoto(null); setPhotoPreview(null); }}>×</button>
+            </div>
+          ) : (
+            <div className="photo-upload-area" onClick={() => fileRef.current?.click()}>
+              <input ref={fileRef} type="file" accept="image/*" onChange={handlePhotoSelect} style={{ display: 'none' }} />
+              <span className="photo-upload-icon">&#128247;</span>
+              <span className="photo-upload-label">Tap to add a photo</span>
+            </div>
+          )}
+        </div>
+        <button
+          className="btn btn-primary btn-full"
+          style={{ height: 52, fontSize: 18 }}
+          disabled={(!text.trim() && !photo) || posting}
+          onClick={handlePost}
+        >
+          {posting ? 'Posting...' : 'Post to timeline'}
+        </button>
+        <button onClick={onSkip} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Courier Prime', monospace", fontSize: 13, color: '#AAA', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '8px 0', alignSelf: 'center' }}>
+          Skip
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [user, setUser] = useState(undefined); // undefined = checking, null = no user
   const [profile, setProfile] = useState(null);
@@ -1335,6 +1731,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [screen, setScreen] = useState({ name: 'home' });
+  const [mainTab, setMainTab] = useState('home');
   const [favouriteIds, setFavouriteIds] = useState(new Set());
   const [favouriteRecipes, setFavouriteRecipes] = useState([]);
   const [shoppingList, setShoppingList] = useState([]);
@@ -1366,6 +1763,8 @@ export default function App() {
 
   const navigate = (name, params = {}) => {
     setScreen({ name, ...params });
+    if (name === 'home') setMainTab('home');
+    if (name === 'timeline') setMainTab('timeline');
     if (name === 'cookbook' && params.cbId) {
       if (params.cbId === 'favourites' && recipesMap['favourites'] === undefined) {
         setRecipesMap(prev => ({ ...prev, favourites: null }));
@@ -1485,11 +1884,17 @@ export default function App() {
       ...prev,
       [cbId]: (prev[cbId] || []).map(r => r.id === rId ? { ...r, cookedCount: (r.cookedCount || 0) + 1, lastCookedAt: now } : r),
     }));
+    await createEvent('cooked_recipe', { recipeId: rId });
     navigate('done', { cbId, rId });
   };
 
   const handleSaveFeedback = async (cbId, rId, ease, taste, overall, notes) => {
     await saveRecipeFeedback(rId, ease, taste, overall, notes);
+    navigate('post', { cbId, rId });
+  };
+
+  const handlePost = async (cbId, rId, postText, photoUrl) => {
+    await createEvent('posted', { recipeId: rId, postText: postText || null, photoUrl: photoUrl || null });
     navigate('recipe', { cbId, rId });
   };
 
@@ -1551,6 +1956,8 @@ export default function App() {
     navigate('cookbook', { cbId: recipe.cookbookId, rId: recipe.id });
   };
 
+  const showBottomNav = s === 'home' || s === 'timeline';
+
   return (
     <>
       <style>{STYLES}</style>
@@ -1568,6 +1975,27 @@ export default function App() {
             onClearShoppingList={handleClearShoppingList}
             onOpenProfile={() => navigate('profile')}
             profileInitial={profileInitial}
+            onOpenSearch={() => navigate('search')}
+          />
+        )}
+        {s === 'timeline' && (
+          <TimelineScreen
+            currentUserId={user.id}
+            onOpenUser={userId => navigate('user-profile', { userId })}
+          />
+        )}
+        {s === 'search' && (
+          <SearchScreen
+            onBack={() => navigate('home')}
+            onOpenUser={userId => navigate('user-profile', { userId })}
+            currentUserId={user.id}
+          />
+        )}
+        {s === 'user-profile' && screen.userId && (
+          <UserPublicProfileScreen
+            userId={screen.userId}
+            currentUserId={user.id}
+            onBack={() => navigate(screen._from || 'home')}
           />
         )}
         {s === 'profile' && (
@@ -1611,7 +2039,16 @@ export default function App() {
         {s === 'prep' && cb && recipe && <PrepChecklistScreen recipe={recipe} onBack={() => navigate('recipe', { cbId, rId })} onStart={() => navigate('cook', { cbId, rId })} />}
         {s === 'cook' && recipe && <CookModeScreen recipe={recipe} onFinish={() => handleFinishCook(cbId, rId)} />}
         {s === 'done' && recipe && <DoneScreen recipe={recipe} onContinue={() => navigate('feedback', { cbId, rId })} />}
-        {s === 'feedback' && recipe && <FeedbackScreen recipe={recipe} onSave={(e, t, o, n) => handleSaveFeedback(cbId, rId, e, t, o, n)} onSkip={() => navigate('recipe', { cbId, rId })} />}
+        {s === 'feedback' && recipe && <FeedbackScreen recipe={recipe} onSave={(e, t, o, n) => handleSaveFeedback(cbId, rId, e, t, o, n)} onSkip={() => navigate('post', { cbId, rId })} />}
+        {s === 'post' && recipe && <PostScreen recipe={recipe} onPost={(text, url) => handlePost(cbId, rId, text, url)} onSkip={() => navigate('recipe', { cbId, rId })} />}
+
+        {showBottomNav && (
+          <BottomNav
+            tab={mainTab}
+            onHome={() => navigate('home')}
+            onTimeline={() => navigate('timeline')}
+          />
+        )}
 
         {sheet?.type === 'addToCookbook' && (
           <AddToCookbookSheet cookbooks={cookbooks} currentCbId={sheet.currentCbId} onSelect={handleSelectCookbookForAdd} onClose={() => setSheet(null)} />
