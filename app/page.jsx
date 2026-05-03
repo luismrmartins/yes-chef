@@ -622,8 +622,8 @@ function AuthScreen({ onAuth }) {
   return (
     <div className="auth-screen">
       <div style={{ textAlign: 'center', marginBottom: 48 }}>
-        <img src="/logo.png" alt="The Pass" style={{ width: 240, height: 'auto' }} />
-        <div style={{ fontFamily: "'DM Mono', monospace", fontWeight: 300, fontSize: 11, color: 'var(--text-muted)', marginTop: 16, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Everything in its place.</div>
+        <img src="/logo.png" alt="The Pass" style={{ width: 300, height: 'auto' }} />
+        <div style={{ fontFamily: "'DM Mono', monospace", fontWeight: 300, fontSize: 11, color: 'var(--text-muted)', marginTop: 16, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Ready to serve.</div>
       </div>
       <div className="auth-card">
         <div className="auth-tabs">
@@ -740,7 +740,7 @@ function HomeScreen({ cookbooks, shoppingList, onOpenCookbook, onNewCookbook, on
         <div style={{ height: 'env(safe-area-inset-top, 0px)' }} />
         <div className="home-header-row">
           <button className="home-icon-btn" onClick={onOpenSearch}>⌕</button>
-          <img src="/logo.png" alt="The Pass" style={{ height: 18, width: 'auto' }} />
+          <img src="/logo.png" alt="The Pass" style={{ height: 26, width: 'auto' }} />
           <button className="profile-avatar" onClick={onOpenProfile}>{profileInitial}</button>
         </div>
       </div>
