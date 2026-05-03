@@ -622,7 +622,7 @@ function AuthScreen({ onAuth }) {
   return (
     <div className="auth-screen">
       <div style={{ textAlign: 'center', marginBottom: 48 }}>
-        <div style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, fontSize: 52, letterSpacing: '0.04em', lineHeight: 1, color: 'var(--blue)' }}>The Pass</div>
+        <img src="/logo.png" alt="The Pass" style={{ width: 240, height: 'auto' }} />
         <div style={{ fontFamily: "'DM Mono', monospace", fontWeight: 300, fontSize: 11, color: 'var(--text-muted)', marginTop: 16, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Everything in its place.</div>
       </div>
       <div className="auth-card">
@@ -649,11 +649,9 @@ function AuthScreen({ onAuth }) {
   );
 }
 
-function AppLogo({ color = 'var(--blue)', size = 16 }) {
+function AppLogo({ size = 16 }) {
   return (
-    <span style={{ fontFamily: "'DM Mono', monospace", fontWeight: 400, fontSize: size, letterSpacing: '0.06em', textTransform: 'uppercase', color }}>
-      The Pass
-    </span>
+    <img src="/logo.png" alt="The Pass" style={{ height: size, width: 'auto' }} />
   );
 }
 
@@ -742,7 +740,7 @@ function HomeScreen({ cookbooks, shoppingList, onOpenCookbook, onNewCookbook, on
         <div style={{ height: 'env(safe-area-inset-top, 0px)' }} />
         <div className="home-header-row">
           <button className="home-icon-btn" onClick={onOpenSearch}>⌕</button>
-          <div style={{ fontFamily: "'DM Mono', monospace", fontWeight: 400, fontSize: 12, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--blue)' }}>The Pass</div>
+          <img src="/logo.png" alt="The Pass" style={{ height: 18, width: 'auto' }} />
           <button className="profile-avatar" onClick={onOpenProfile}>{profileInitial}</button>
         </div>
       </div>
@@ -1508,7 +1506,7 @@ function CookModeScreen({ recipe, onFinish }) {
     <div className="cook-screen">
       {/* Main cook view — always rendered */}
       <div className="cook-header safe-top">
-        <div style={{ fontFamily: "'DM Mono', monospace", fontWeight: 400, fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--blue-pale)' }}>The Pass</div>
+        <img src="/logo.png" alt="The Pass" style={{ height: 14, width: 'auto', opacity: 0.4 }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div className="cook-dots">
             {steps.map((_, i) => <div key={i} className={`cook-dot${i === stepIdx ? ' active' : i < stepIdx ? ' done' : ''}`} />)}
@@ -1834,7 +1832,7 @@ function UserPublicProfileScreen({ userId, currentUserId, onBack, myCookbooks, o
   if (!data) {
     return (
       <div className="loading-screen">
-        <div className="loading-logo">The Pass</div>
+        <img src="/logo.png" alt="The Pass" className="loading-logo" style={{ width: 160, height: 'auto' }} />
       </div>
     );
   }
@@ -2358,7 +2356,7 @@ export default function App() {
       <>
         <style>{STYLES}</style>
         <div className="loading-screen">
-          <div className="loading-logo">The Pass</div>
+          <img src="/logo.png" alt="The Pass" className="loading-logo" style={{ width: 160, height: 'auto' }} />
         </div>
       </>
     );
@@ -2378,7 +2376,7 @@ export default function App() {
       <>
         <style>{STYLES}</style>
         <div className="loading-screen">
-          <div className="loading-logo">The Pass</div>
+          <img src="/logo.png" alt="The Pass" className="loading-logo" style={{ width: 160, height: 'auto' }} />
         </div>
       </>
     );
