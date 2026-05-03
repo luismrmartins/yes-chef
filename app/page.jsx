@@ -883,7 +883,7 @@ function CookbookScreen({ cookbook, onBack, onNewRecipe, onStartCook, favouriteI
       <div className="recipe-list-panel">
         <div className="list-panel-header safe-top">
           <button className="list-panel-back" onClick={onBack}>
-            <AppLogo size={13} />
+            <AppLogo size={22} />
           </button>
           <div className="list-panel-title">{cookbook.name}</div>
           {!isLoading && <div className="list-panel-count">{recipes.length} recipe{recipes.length !== 1 ? 's' : ''}</div>}
@@ -1193,7 +1193,7 @@ function RecipeDetailScreen({ recipe, cookbook, onBack, onStartCook, isFavourite
       )}
       <div className="detail-hero safe-top">
         <div style={{ marginBottom: 12, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, fontFamily: "'DM Mono', monospace", fontWeight: 400, textTransform: 'uppercase', letterSpacing: '0.12em' }} onClick={onBack}>
-          <AppLogo size={14} />
+          <AppLogo size={22} />
           <span>/ {cookbook.name}</span>
         </div>
         <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, fontStyle: 'italic', fontSize: 40, color: 'var(--ink)', lineHeight: 1.05, letterSpacing: '0.02em' }}>{recipe.name}</h1>
@@ -1378,7 +1378,7 @@ function PrepChecklistScreen({ recipe, onBack, onStart }) {
     <div className="screen">
       <div className="hero safe-top">
         <div style={{ marginBottom: 12, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, fontFamily: "'DM Mono', monospace", fontWeight: 400, textTransform: 'uppercase', letterSpacing: '0.12em' }} onClick={onBack}>
-          <AppLogo size={14} />
+          <AppLogo size={22} />
           <span>/ Back</span>
         </div>
         <div className="hero-label">Before we start</div>
@@ -1506,7 +1506,7 @@ function CookModeScreen({ recipe, onFinish }) {
     <div className="cook-screen">
       {/* Main cook view — always rendered */}
       <div className="cook-header safe-top">
-        <img src="/logo.png" alt="The Pass" style={{ height: 14, width: 'auto', opacity: 0.4 }} />
+        <img src="/logo.png" alt="The Pass" style={{ height: 22, width: 'auto', opacity: 0.4 }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div className="cook-dots">
             {steps.map((_, i) => <div key={i} className={`cook-dot${i === stepIdx ? ' active' : i < stepIdx ? ' done' : ''}`} />)}
@@ -1832,7 +1832,7 @@ function UserPublicProfileScreen({ userId, currentUserId, onBack, myCookbooks, o
   if (!data) {
     return (
       <div className="loading-screen">
-        <img src="/logo.png" alt="The Pass" className="loading-logo" style={{ width: 160, height: 'auto' }} />
+        <img src="/logo.png" alt="The Pass" className="loading-logo" style={{ width: 220, height: 'auto' }} />
       </div>
     );
   }
@@ -2356,7 +2356,7 @@ export default function App() {
       <>
         <style>{STYLES}</style>
         <div className="loading-screen">
-          <img src="/logo.png" alt="The Pass" className="loading-logo" style={{ width: 160, height: 'auto' }} />
+          <img src="/logo.png" alt="The Pass" className="loading-logo" style={{ width: 220, height: 'auto' }} />
         </div>
       </>
     );
@@ -2376,7 +2376,7 @@ export default function App() {
       <>
         <style>{STYLES}</style>
         <div className="loading-screen">
-          <img src="/logo.png" alt="The Pass" className="loading-logo" style={{ width: 160, height: 'auto' }} />
+          <img src="/logo.png" alt="The Pass" className="loading-logo" style={{ width: 220, height: 'auto' }} />
         </div>
       </>
     );
