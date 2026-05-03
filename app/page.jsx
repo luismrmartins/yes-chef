@@ -9,343 +9,363 @@ import {
   createEvent, getTimeline, toggleLike, getUserPublicProfile, uploadPostPhoto,
   getDiscoverPeople, getPeopleFollowingMeNotFollowedBack, searchUsers,
   followUser, unfollowUser, getFollowingIds,
+  toggleRecipeLike, getRecipeLikes, getRecipeComments, addRecipeComment, deleteRecipeComment,
+  setRecipePublic, copyRecipeToMyCookbook, getPublicRecipeDetail,
 } from '../lib/db';
 import { supabase } from '../lib/supabase';
 
 const STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;900&family=Courier+Prime:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Mono:wght@300;400;500&display=swap');
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --red: #FB3B00;
-    --black: #111111;
+    --paper: #F5F3EF;
+    --surface: #EDEAE4;
+    --rule: #D8D4CC;
+    --text-muted: #9A9590;
+    --text-secondary: #6A6560;
+    --text-primary: #1E1C1A;
+    --ink: #0F0E0C;
+    --blue: #1B4FD8;
+    --blue-dark: #1240B0;
+    --blue-pale: #E8EEFB;
     --white: #FFFFFF;
-    --gray: #F2F2F2;
-    --gray2: #CCCCCC;
   }
 
-  body { font-family: 'DM Sans', sans-serif; background: var(--white); color: var(--black); min-height: 100vh; }
-
-  .app { width: 100%; min-height: 100vh; position: relative; overflow-x: hidden; background: var(--white); }
+  body { font-family: 'DM Mono', monospace; background: var(--paper); color: var(--text-primary); min-height: 100vh; font-weight: 300; }
+  .app { width: 100%; min-height: 100vh; position: relative; overflow-x: hidden; background: var(--paper); }
 
   .btn {
     display: inline-flex; align-items: center; justify-content: center;
-    padding: 12px 24px; border-radius: 0; border: none; cursor: pointer;
-    font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.06em; transition: all 0.15s ease;
+    padding: 16px 24px; border-radius: 0; cursor: pointer;
+    font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 400;
+    letter-spacing: 0.12em; text-transform: uppercase; transition: all 0.15s ease;
   }
-  .btn-primary { background: var(--red); color: var(--white); }
-  .btn-primary:hover { background: #d43200; }
-  .btn-primary:disabled { background: var(--gray2); cursor: not-allowed; }
-  .btn-red { background: var(--red); color: var(--white); }
-  .btn-red:hover { background: #d43200; }
-  .btn-black { background: var(--black); color: var(--white); }
-  .btn-black:hover { background: #333; }
-  .btn-ghost { background: transparent; color: var(--black); border: 2px solid var(--black); }
-  .btn-ghost:hover { background: var(--gray); }
-  .btn-sm { padding: 8px 16px; font-size: 14px; }
+  .btn-primary { background: var(--blue); color: var(--white); border: none; }
+  .btn-primary:hover { background: var(--blue-dark); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-red { background: var(--blue); color: var(--white); border: none; }
+  .btn-red:hover { background: var(--blue-dark); }
+  .btn-black { background: var(--ink); color: var(--white); border: none; }
+  .btn-black:hover { opacity: 0.85; }
+  .btn-ghost { background: transparent; color: var(--text-primary); border: 1px solid var(--text-primary); }
+  .btn-ghost:hover { background: var(--surface); }
+  .btn-sm { padding: 10px 16px; font-size: 10px; }
   .btn-full { width: 100%; }
 
-  .screen { min-height: 100vh; display: flex; flex-direction: column; background: var(--white); }
+  .screen { min-height: 100vh; display: flex; flex-direction: column; background: var(--paper); }
   .safe-top { padding-top: env(safe-area-inset-top, 0px); }
 
-  .page-header { padding: 40px 28px 24px; }
-  .page-header.safe-top { padding-top: max(40px, calc(env(safe-area-inset-top, 0px) + 16px)); }
-  .page-header-back { display: flex; align-items: center; gap: 0; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #888; cursor: pointer; margin-bottom: 16px; background: none; border: none; padding: 0; }
-  .page-header-back:hover { opacity: 0.7; }
-  .page-header-title { font-family: 'Barlow Condensed', sans-serif; font-size: 40px; font-weight: 700; text-transform: uppercase; letter-spacing: -0.01em; line-height: 0.92; color: var(--black); }
-  .page-header-sub { font-size: 14px; color: #999; margin-top: 8px; }
-  .page-header-meta { font-family: 'Courier Prime', monospace; font-size: 12px; letter-spacing: 0.06em; color: #999; margin-top: 8px; }
+  .page-header { padding: 48px 28px 24px; border-bottom: 1px solid var(--rule); }
+  .page-header.safe-top { padding-top: max(48px, calc(env(safe-area-inset-top, 0px) + 24px)); }
+  .page-header-back { display: flex; align-items: center; gap: 0; font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); cursor: pointer; margin-bottom: 20px; background: none; border: none; padding: 0; }
+  .page-header-back:hover { color: var(--text-primary); }
+  .page-header-title { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.14em; color: var(--text-muted); }
+  .page-header-sub { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted); margin-top: 8px; font-weight: 300; }
+  .page-header-meta { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.04em; color: var(--text-muted); margin-top: 8px; }
 
   .flat-list { display: flex; flex-direction: column; }
-  .flat-row { display: flex; align-items: center; padding: 18px 28px; cursor: pointer; border-bottom: 1px solid #EEEEEE; transition: opacity 0.15s; }
-  .flat-row:first-child { border-top: 1px solid #EEEEEE; }
-  .flat-row:hover { opacity: 0.65; }
+  .flat-row { display: flex; align-items: center; padding: 14px 28px; cursor: pointer; border-bottom: 1px solid var(--rule); transition: background 0.1s; }
+  .flat-row:first-child { border-top: 1px solid var(--rule); }
+  .flat-row:hover { background: var(--surface); }
   .flat-row-info { flex: 1; min-width: 0; }
-  .flat-row-name { font-family: 'Barlow Condensed', sans-serif; font-size: 26px; font-weight: 700; color: var(--black); text-transform: uppercase; letter-spacing: 0.01em; line-height: 1; }
-  .flat-row-meta { font-family: 'Courier Prime', monospace; font-size: 12px; color: #999; margin-top: 4px; }
-  .flat-row-badge { font-family: 'Courier Prime', monospace; font-size: 11px; color: #999; margin-top: 3px; }
-  .flat-row-arrow { color: #CCC; font-size: 18px; flex-shrink: 0; margin-left: 12px; }
-  .flat-row-action { display: flex; align-items: center; padding: 18px 28px; cursor: pointer; color: #888; font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; gap: 8px; transition: opacity 0.15s; border-top: 1px solid #EEEEEE; }
-  .flat-row-action:hover { opacity: 0.7; }
+  .flat-row-name { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 400; color: var(--text-primary); letter-spacing: 0.02em; line-height: 1.4; }
+  .flat-row-meta { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted); margin-top: 3px; font-weight: 300; }
+  .flat-row-badge { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted); margin-top: 3px; font-weight: 300; }
+  .flat-row-arrow { color: var(--rule); font-size: 14px; flex-shrink: 0; margin-left: 12px; }
+  .flat-row-action { display: flex; align-items: center; padding: 14px 28px; cursor: pointer; color: var(--text-muted); font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.12em; gap: 8px; transition: all 0.15s; border-top: 1px solid var(--rule); }
+  .flat-row-action:hover { color: var(--text-primary); }
 
-  .loading-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--white); }
-  .loading-logo { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 64px; text-transform: uppercase; letter-spacing: -0.02em; line-height: 0.85; }
-  .loading-logo .line1 { display: block; color: var(--red); }
-  .loading-logo .line2 { display: block; color: var(--black); }
+  .loading-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--paper); }
+  .loading-logo { font-family: 'DM Mono', monospace; font-weight: 400; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; line-height: 1; color: var(--blue); }
 
-  .hero { background: var(--white); color: var(--black); padding: 40px 28px 32px; border-bottom: 1px solid #EEEEEE; }
+  .hero { background: var(--paper); color: var(--text-primary); padding: 40px 28px 32px; border-bottom: 1px solid var(--rule); }
   .hero-sm { padding: 32px 28px 24px; }
-  .hero-label { font-family: 'Courier Prime', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--red); margin-bottom: 8px; font-weight: 700; }
-  .hero-title { font-family: 'Barlow Condensed', sans-serif; font-size: 44px; line-height: 0.92; font-weight: 700; text-transform: uppercase; letter-spacing: -0.01em; color: var(--black); }
+  .hero-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; }
+  .hero-title { font-family: 'Cormorant Garamond', serif; font-size: 28px; line-height: 1.25; font-weight: 400; font-style: italic; letter-spacing: 0.01em; color: var(--text-primary); }
 
-  .back-row { display: flex; align-items: center; gap: 8px; padding: 16px 28px; border-bottom: 1px solid #EEEEEE; }
-  .back-btn { background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; color: var(--black); font-size: 13px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
-  .back-btn:hover { color: var(--red); }
+  .back-row { display: flex; align-items: center; gap: 8px; padding: 16px 28px; border-bottom: 1px solid var(--rule); }
+  .back-btn { background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; color: var(--text-muted); font-size: 10px; font-family: 'DM Mono', monospace; font-weight: 400; text-transform: uppercase; letter-spacing: 0.12em; }
+  .back-btn:hover { color: var(--text-primary); }
 
-  .form-screen { background: var(--white); min-height: 100vh; }
-  .form-body { padding: 24px 28px; display: flex; flex-direction: column; gap: 16px; }
-  .form-field { display: flex; flex-direction: column; gap: 6px; }
-  .form-label { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--black); }
-  .form-input { padding: 12px 14px; border-radius: 0; border: 2px solid var(--black); font-size: 15px; font-family: 'DM Sans', sans-serif; background: var(--white); outline: none; transition: border-color 0.15s; color: var(--black); }
-  .form-input:focus { border-color: var(--red); }
+  .form-screen { background: var(--paper); min-height: 100vh; }
+  .form-body { padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; }
+  .form-field { display: flex; flex-direction: column; gap: 8px; }
+  .form-label { font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 400; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); }
+  .form-input { padding: 10px 0; border-radius: 0; border: none; border-bottom: 1px solid var(--rule); font-size: 13px; font-family: 'DM Mono', monospace; font-weight: 300; background: transparent; outline: none; transition: border-color 0.15s; color: var(--text-primary); letter-spacing: 0.02em; }
+  .form-input:focus { border-bottom-color: var(--blue); }
   .form-textarea { resize: vertical; min-height: 80px; }
 
-  .tabs { display: flex; padding: 0 28px; border-bottom: 2px solid var(--black); }
-  .tab { padding: 12px 16px; font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; border: none; background: none; color: var(--gray2); border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.15s; }
-  .tab.active { color: var(--black); border-bottom-color: var(--red); }
+  .tabs { display: flex; padding: 0 28px; border-bottom: 1px solid var(--rule); }
+  .tab { padding: 12px 16px; font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.12em; cursor: pointer; border: none; background: none; color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s; }
+  .tab.active { color: var(--text-primary); border-bottom-color: var(--blue); }
 
   .color-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
-  .color-btn { width: 44px; height: 44px; border: 3px solid transparent; cursor: pointer; transition: all 0.1s; }
-  .color-btn.selected { border-color: white; box-shadow: 0 0 0 2px var(--black); }
+  .color-btn { width: 36px; height: 36px; border: 2px solid transparent; cursor: pointer; transition: all 0.1s; border-radius: 0; }
+  .color-btn.selected { border-color: white; box-shadow: 0 0 0 1px var(--text-primary); }
 
   .dynamic-list { display: flex; flex-direction: column; gap: 10px; }
   .dynamic-item { display: flex; gap: 8px; align-items: flex-start; }
-  .remove-btn { padding: 12px 10px; border: none; background: none; cursor: pointer; color: var(--gray2); font-size: 18px; line-height: 1; flex-shrink: 0; }
-  .remove-btn:hover { color: var(--red); }
+  .remove-btn { padding: 12px 8px; border: none; background: none; cursor: pointer; color: var(--text-muted); font-size: 16px; line-height: 1; flex-shrink: 0; }
+  .remove-btn:hover { color: var(--text-primary); }
 
-  .cookbook-preview { aspect-ratio: 3/4; max-width: 120px; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-end; margin: 0 auto; background: var(--black); padding: 14px; }
-  .cookbook-preview-name { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: 0.02em; line-height: 1; }
+  .cookbook-preview { aspect-ratio: 3/4; max-width: 120px; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-end; margin: 0 auto; background: var(--ink); padding: 14px; }
+  .cookbook-preview-name { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 400; color: white; letter-spacing: 0.06em; text-transform: uppercase; line-height: 1.4; }
 
-  .detail-hero { background: var(--white); color: var(--black); padding: 32px 28px 0; border-bottom: 1px solid #EEEEEE; }
-  .detail-meta { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; padding-bottom: 20px; }
-  .detail-meta-item { font-family: 'Courier Prime', monospace; font-size: 12px; color: #999; }
+  .detail-hero { background: var(--paper); color: var(--text-primary); padding: 32px 28px 0; border-bottom: 1px solid var(--rule); }
+  .detail-meta { display: flex; gap: 20px; margin-top: 12px; flex-wrap: wrap; padding-bottom: 20px; }
+  .detail-meta-item { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
 
-  .recipe-actions { display: flex; border-bottom: 1px solid #EEEEEE; }
-  .recipe-action-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; padding: 14px 4px; border: none; background: none; cursor: pointer; border-right: 1px solid #EEEEEE; transition: opacity 0.15s; }
+  .recipe-actions { display: flex; border-bottom: 1px solid var(--rule); }
+  .recipe-action-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; padding: 14px 4px; border: none; background: none; cursor: pointer; border-right: 1px solid var(--rule); transition: background 0.1s; }
   .recipe-action-btn:last-child { border-right: none; }
-  .recipe-action-btn:hover { opacity: 0.7; }
-  .recipe-action-icon { font-size: 18px; line-height: 1; }
-  .recipe-action-label { font-family: 'Courier Prime', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; color: #888; text-align: center; }
-  .recipe-action-btn.active .recipe-action-icon { color: var(--red); }
-  .recipe-action-btn.active .recipe-action-label { color: var(--red); }
+  .recipe-action-btn:hover { background: var(--surface); }
+  .recipe-action-icon { font-size: 16px; line-height: 1; color: var(--text-muted); }
+  .recipe-action-label { font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); text-align: center; }
+  .recipe-action-btn.active .recipe-action-icon { color: var(--blue); }
+  .recipe-action-btn.active .recipe-action-label { color: var(--blue); }
 
-  .detail-section { padding: 20px 28px; }
-  .detail-section h2 { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: #999; margin-bottom: 12px; }
-  .ingredient-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #EEEEEE; font-size: 15px; }
-  .ingredient-qty { font-family: 'Courier Prime', monospace; color: #888; font-size: 13px; }
-  .step-preview { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid #EEEEEE; }
-  .step-num { width: 24px; height: 24px; background: var(--red); color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px; font-family: 'Courier Prime', monospace; }
+  .detail-section { padding: 20px 28px; border-bottom: 1px solid var(--rule); }
+  .detail-section h2 { font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 400; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 16px; }
+  .ingredient-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--rule); font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 300; letter-spacing: 0.02em; }
+  .ingredient-qty { font-family: 'DM Mono', monospace; color: var(--text-muted); font-size: 11px; font-weight: 400; }
+  .step-preview { display: flex; gap: 20px; padding: 12px 0; border-bottom: 1px solid var(--rule); }
+  .step-num { font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 400; color: var(--text-muted); width: 20px; flex-shrink: 0; margin-top: 3px; letter-spacing: 0.04em; }
 
-  .checklist-item { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid #EEEEEE; cursor: pointer; transition: all 0.2s; }
-  .checklist-item:first-child { border-top: 1px solid #EEEEEE; }
-  .checklist-item.checked .ci-name { text-decoration: line-through; color: var(--gray2); }
-  .check-circle { width: 22px; height: 22px; border: 2px solid var(--black); display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: white; transition: all 0.2s; }
-  .checklist-item.checked .check-circle { background: var(--red); border-color: var(--red); }
-  .ci-name { font-size: 15px; font-weight: 500; }
-  .ci-qty { font-family: 'Courier Prime', monospace; font-size: 12px; color: var(--gray2); margin-top: 1px; }
-  .checklist-progress { height: 4px; background: var(--gray2); overflow: hidden; }
-  .checklist-progress-fill { height: 100%; background: var(--red); transition: width 0.3s ease; }
+  .checklist-item { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--rule); cursor: pointer; transition: all 0.15s; }
+  .checklist-item:first-child { border-top: 1px solid var(--rule); }
+  .checklist-item.checked .ci-name { text-decoration: line-through; color: var(--text-muted); }
+  .check-circle { width: 14px; height: 14px; border: 1px solid var(--rule); display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: transparent; transition: all 0.15s; border-radius: 0; }
+  .checklist-item.checked .check-circle { background: var(--blue); border-color: var(--blue); }
+  .ci-name { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 300; letter-spacing: 0.02em; }
+  .ci-qty { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .checklist-progress { height: 1px; background: var(--rule); overflow: hidden; }
+  .checklist-progress-fill { height: 100%; background: var(--blue); transition: width 0.3s ease; }
 
-  .cook-screen { background: var(--white); min-height: 100vh; display: flex; flex-direction: column; position: relative; overflow: hidden; }
-  .timers-drawer { position: absolute; top: 0; right: 0; bottom: 0; width: min(300px, 88vw); background: var(--white); box-shadow: -4px 0 32px rgba(0,0,0,0.14); z-index: 50; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.22s cubic-bezier(.4,0,.2,1); }
+  .cook-screen { background: var(--ink); min-height: 100vh; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+  .timers-drawer { position: absolute; top: 0; right: 0; bottom: 0; width: min(300px, 88vw); background: var(--ink); border-left: 1px solid #252320; z-index: 50; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.22s cubic-bezier(.4,0,.2,1); }
   .timers-drawer.open { transform: translateX(0); }
-  .timers-drawer-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.2); z-index: 49; }
-  .timers-drawer-head { padding: 20px 20px 14px; border-bottom: 2px solid var(--black); display: flex; align-items: center; justify-content: space-between; }
-  .timers-drawer-title { font-family: 'Barlow Condensed', sans-serif; font-size: 24px; font-weight: 700; text-transform: uppercase; }
-  .timers-drawer-close { background: none; border: none; font-size: 22px; cursor: pointer; color: #888; padding: 0 4px; line-height: 1; }
-  .timers-drawer-close:hover { color: var(--black); }
+  .ingr-drawer { position: absolute; top: 0; left: 0; bottom: 0; width: min(300px, 88vw); background: var(--ink); border-right: 1px solid #252320; z-index: 50; display: flex; flex-direction: column; transform: translateX(-100%); transition: transform 0.22s cubic-bezier(.4,0,.2,1); }
+  .ingr-drawer.open { transform: translateX(0); }
+  .timers-drawer-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.45); z-index: 49; }
+  .timers-drawer-head { padding: 20px 20px 14px; border-bottom: 1px solid #252320; display: flex; align-items: center; justify-content: space-between; }
+  .timers-drawer-title { font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.14em; color: #4A4845; }
+  .timers-drawer-close { background: none; border: none; font-size: 18px; cursor: pointer; color: #4A4845; padding: 0 4px; line-height: 1; }
+  .timers-drawer-close:hover { color: #F5F3EF; }
   .timers-drawer-body { flex: 1; overflow-y: auto; }
-  .timers-drawer-empty { padding: 40px 20px; text-align: center; color: #AAA; font-family: 'Courier Prime', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; line-height: 1.9; }
+  .timers-drawer-empty { padding: 40px 20px; text-align: center; color: #3A3835; font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; line-height: 2; }
   .cook-header { padding: 20px 20px 0; display: flex; align-items: center; justify-content: space-between; }
-  .cook-logo { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; text-transform: uppercase; letter-spacing: -0.02em; line-height: 0.85; display: inline-flex; flex-direction: column; align-items: flex-start; }
-  .cook-logo .line1 { color: var(--red); font-size: 16px; }
-  .cook-logo .line2 { color: #888; font-size: 16px; }
-  .cook-dots { display: flex; gap: 6px; }
-  .cook-dot { width: 6px; height: 6px; background: #DDD; transition: all 0.2s; }
-  .cook-dot.active { background: var(--red); width: 18px; }
-  .cook-dot.done { background: #BBB; }
-  .cook-steps { flex: 1; display: flex; flex-direction: column; padding: 0 24px; justify-content: center; }
-  .cook-prev { padding: 20px 0 24px; border-bottom: 1px solid #EEEEEE; }
-  .cook-prev-text { font-size: 14px; text-decoration: line-through; line-height: 1.5; color: #CCC; }
+  .cook-dots { display: flex; gap: 4px; align-items: center; }
+  .cook-dot { width: 4px; height: 4px; background: #252320; transition: all 0.2s; }
+  .cook-dot.active { background: var(--blue); width: 14px; }
+  .cook-dot.done { background: #3A3835; }
+  .cook-steps { flex: 1; display: flex; flex-direction: column; padding: 0 28px; justify-content: center; }
+  .cook-prev { padding: 20px 0 24px; border-bottom: 1px solid #252320; }
+  .cook-prev-text { font-family: 'DM Mono', monospace; font-size: 14px; text-decoration: line-through; line-height: 1.6; color: #3A3835; font-weight: 300; letter-spacing: 0.02em; }
   .cook-current { padding: 36px 0; flex: 1; display: flex; flex-direction: column; justify-content: center; }
-  .cook-step-label { font-family: 'Courier Prime', monospace; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--red); margin-bottom: 16px; font-weight: 700; }
-  .cook-current-text { font-family: 'Barlow Condensed', sans-serif; font-size: 36px; line-height: 1.05; font-weight: 700; text-transform: uppercase; color: var(--black); }
-  .cook-next { padding: 24px 0 20px; border-top: 1px solid #EEEEEE; }
-  .cook-next-label { font-family: 'Courier Prime', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #AAA; margin-bottom: 8px; font-weight: 700; }
-  .cook-next-text { font-size: 14px; line-height: 1.5; color: #AAA; }
-  .cook-footer { padding: 20px 24px 40px; }
+  .cook-step-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: #4A4845; margin-bottom: 20px; }
+  .cook-current-text { font-family: 'Cormorant Garamond', serif; font-size: clamp(28px, 6vw, 38px); line-height: 1.55; font-weight: 300; font-style: italic; color: #F5F3EF; }
+  .cook-next { padding: 24px 0 20px; border-top: 1px solid #252320; }
+  .cook-next-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: #4A4845; margin-bottom: 10px; }
+  .cook-next-text { font-family: 'DM Mono', monospace; font-size: 14px; line-height: 1.6; color: #3A3835; font-weight: 300; letter-spacing: 0.02em; }
+  .cook-footer { padding: 20px 28px 40px; }
   .cook-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .cook-nav-btn { width: 52px; height: 52px; border: 2px solid #DDD; background: transparent; color: var(--black); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; transition: all 0.15s; }
-  .cook-nav-btn:hover:not(:disabled) { border-color: var(--red); color: var(--red); }
+  .cook-nav-btn { flex: 1; height: 44px; border: 1px solid #3A3835; background: transparent; color: #9A9590; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; font-family: 'DM Mono', monospace; font-weight: 300; transition: all 0.15s; border-radius: 0; }
+  .cook-nav-btn:last-child { border-color: #F5F3EF; color: #F5F3EF; }
+  .cook-nav-btn:hover:not(:disabled) { background: rgba(245,243,239,0.05); }
   .cook-nav-btn:disabled { opacity: 0.2; cursor: not-allowed; }
 
-  .input-mode-toggle { display: flex; gap: 0; margin-bottom: 10px; border: 2px solid var(--black); align-self: flex-start; }
-  .input-mode-btn { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 6px 14px; border: none; background: none; cursor: pointer; color: var(--gray2); transition: all 0.15s; }
-  .input-mode-btn.active { background: var(--black); color: var(--white); }
-  .paste-hint { font-family: 'Courier Prime', monospace; font-size: 11px; color: #AAA; letter-spacing: 0.05em; }
+  .input-mode-toggle { display: flex; gap: 0; margin-bottom: 10px; border: 1px solid var(--rule); align-self: flex-start; }
+  .input-mode-btn { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.1em; padding: 6px 14px; border: none; background: none; cursor: pointer; color: var(--text-muted); transition: all 0.15s; }
+  .input-mode-btn.active { background: var(--ink); color: var(--white); }
+  .paste-hint { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-muted); letter-spacing: 0.04em; }
 
-  .profile-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--black); color: var(--white); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; flex-shrink: 0; transition: opacity 0.15s; }
-  .profile-avatar:hover { opacity: 0.7; }
-  .unit-toggle { display: flex; border: 2px solid var(--black); overflow: hidden; }
-  .unit-btn { flex: 1; padding: 10px; font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; border: none; cursor: pointer; background: var(--white); color: var(--gray2); transition: all 0.15s; }
-  .unit-btn.active { background: var(--black); color: var(--white); }
-  .logout-btn { display: flex; align-items: center; gap: 10px; padding: 18px 28px; border: none; background: none; cursor: pointer; font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--red); border-top: 1px solid #EEEEEE; width: 100%; transition: opacity 0.15s; }
-  .logout-btn:hover { opacity: 0.7; }
+  .profile-avatar { width: 30px; height: 30px; border-radius: 0; background: var(--surface); color: var(--text-muted); font-family: 'DM Mono', monospace; font-weight: 400; font-size: 11px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--rule); cursor: pointer; flex-shrink: 0; transition: background 0.15s; }
+  .profile-avatar:hover { background: var(--rule); }
+  .unit-toggle { display: flex; border: 1px solid var(--rule); overflow: hidden; }
+  .unit-btn { flex: 1; padding: 10px; font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.1em; border: none; cursor: pointer; background: transparent; color: var(--text-muted); transition: all 0.15s; }
+  .unit-btn.active { background: var(--ink); color: var(--white); }
+  .logout-btn { display: flex; align-items: center; gap: 10px; padding: 16px 28px; border: none; background: none; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); border-top: 1px solid var(--rule); width: 100%; transition: color 0.15s; }
+  .logout-btn:hover { color: var(--text-primary); }
 
-  .auth-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 28px; background: var(--white); }
-  .auth-logo { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 72px; text-transform: uppercase; letter-spacing: -0.02em; line-height: 0.85; text-align: center; margin-bottom: 48px; }
-  .auth-logo .line1 { display: block; color: var(--red); }
-  .auth-logo .line2 { display: block; color: var(--black); }
+  .auth-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 28px; background: var(--paper); }
   .auth-card { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 14px; }
-  .auth-tabs { display: flex; border-bottom: 2px solid var(--black); margin-bottom: 8px; }
-  .auth-tab { flex: 1; padding: 10px; font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; border: none; background: none; color: var(--gray2); border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.15s; }
-  .auth-tab.active { color: var(--black); border-bottom-color: var(--red); }
-  .auth-error { font-size: 13px; color: var(--red); font-family: 'Courier Prime', monospace; padding: 10px 12px; border: 1px solid var(--red); background: #FFF5F2; }
+  .auth-tabs { display: flex; border-bottom: 1px solid var(--rule); margin-bottom: 8px; }
+  .auth-tab { flex: 1; padding: 10px; font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.12em; cursor: pointer; border: none; background: none; color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s; }
+  .auth-tab.active { color: var(--text-primary); border-bottom-color: var(--blue); }
+  .auth-error { font-size: 11px; color: var(--text-primary); font-family: 'DM Mono', monospace; padding: 10px 12px; border: 1px solid var(--rule); background: var(--surface); letter-spacing: 0.02em; }
 
-  .timer-widget { background: #FFF5F2; padding: 12px 16px; margin-top: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-left: 3px solid var(--red); }
-  .timer-display { font-family: 'Courier Prime', monospace; font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--red); }
-  .timer-display.done { color: var(--black); }
-  .timer-start-btn { padding: 8px 16px; border: 2px solid var(--red); background: transparent; color: var(--red); font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: 0.08em; transition: all 0.15s; }
-  .timer-start-btn:hover { background: var(--red); color: white; }
-  .timer-start-btn.running { border-color: rgba(251,59,0,0.35); color: rgba(251,59,0,0.35); }
+  .timer-widget { background: transparent; padding: 14px 0; margin-top: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+  .timer-display { font-family: 'DM Mono', monospace; font-size: 28px; font-weight: 400; font-variant-numeric: tabular-nums; color: var(--blue); }
+  .timer-display.done { color: var(--text-primary); }
+  .timer-start-btn { padding: 8px 14px; border: 1px solid var(--rule); background: transparent; color: var(--text-muted); font-size: 10px; font-weight: 400; cursor: pointer; font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.12em; transition: all 0.15s; border-radius: 0; }
+  .timer-start-btn:hover { background: var(--blue); color: white; border-color: var(--blue); }
+  .timer-start-btn.running { background: var(--blue); color: white; border-color: var(--blue); }
 
-  .cook-timer-btn { position: relative; background: none; border: 2px solid var(--black); padding: 4px 10px; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer; flex-shrink: 0; transition: all 0.15s; }
-  .cook-timer-btn.has-timers { border-color: var(--red); color: var(--red); }
-  .cook-timer-badge { position: absolute; top: -7px; right: -7px; background: var(--red); color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 10px; display: flex; align-items: center; justify-content: center; font-family: 'Courier Prime', monospace; font-weight: 700; }
+  .cook-timer-btn { position: relative; background: none; border: 1px solid #3A3835; padding: 4px 10px; font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; flex-shrink: 0; transition: all 0.15s; color: #9A9590; border-radius: 0; }
+  .cook-timer-btn.has-timers { border-color: var(--blue); color: var(--blue); }
+  .cook-timer-badge { position: absolute; top: -6px; right: -6px; background: var(--blue); color: white; width: 14px; height: 14px; font-size: 9px; display: flex; align-items: center; justify-content: center; font-family: 'DM Mono', monospace; font-weight: 400; border-radius: 0; }
   .timers-panel { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
-  .timers-panel-head { padding: 20px 24px 12px; border-bottom: 2px solid var(--black); font-family: 'Barlow Condensed', sans-serif; font-size: 28px; font-weight: 700; text-transform: uppercase; }
-  .timers-empty { text-align: center; color: #AAA; font-family: 'Courier Prime', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; padding: 60px 24px; line-height: 1.8; }
-  .timer-row { display: flex; align-items: center; gap: 10px; padding: 14px 20px; border-bottom: 1px solid #EEEEEE; }
+  .timers-panel-head { padding: 20px 28px 14px; border-bottom: 1px solid #252320; font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.14em; color: #4A4845; }
+  .timers-empty { text-align: center; color: #3A3835; font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; padding: 60px 28px; line-height: 2; }
+  .timer-row { display: flex; align-items: center; gap: 10px; padding: 14px 20px; border-bottom: 1px solid #252320; }
   .timer-row-info { flex: 1; min-width: 0; }
-  .timer-row-step { font-family: 'Courier Prime', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--red); font-weight: 700; margin-bottom: 3px; }
-  .timer-row-label { font-size: 13px; color: #555; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .timer-row-step { font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--blue); font-weight: 400; margin-bottom: 4px; }
+  .timer-row-label { font-family: 'DM Mono', monospace; font-size: 11px; color: #3A3835; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-weight: 300; letter-spacing: 0.02em; }
   .timer-row-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
-  .timer-row-display { font-family: 'Courier Prime', monospace; font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--black); line-height: 1; }
-  .timer-row-display.done { color: var(--red); }
+  .timer-row-display { font-family: 'DM Mono', monospace; font-size: 22px; font-weight: 400; font-variant-numeric: tabular-nums; color: #F5F3EF; line-height: 1; }
+  .timer-row-display.done { color: var(--blue); }
   .timer-row-actions { display: flex; gap: 6px; }
-  .timer-row-ctrl { padding: 4px 10px; border: 1.5px solid var(--black); background: none; font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer; transition: all 0.15s; }
-  .timer-row-ctrl:hover { background: var(--black); color: var(--white); }
-  .timer-row-remove { background: none; border: none; cursor: pointer; color: #CCC; font-size: 20px; padding: 2px 6px; line-height: 1; }
-  .timer-row-remove:hover { color: var(--red); }
-  .timer-launch { background: #F5F5F5; padding: 10px 14px; margin-top: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-left: 3px solid var(--black); }
-  .timer-launch-label { font-size: 12px; color: #888; font-family: 'Courier Prime', monospace; }
-  .timer-launch-btn { padding: 7px 14px; border: none; background: var(--black); color: white; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; flex-shrink: 0; }
-  .timer-launch-btn.viewing { background: var(--red); }
+  .timer-row-ctrl { padding: 4px 10px; border: 1px solid #3A3835; background: none; font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; transition: all 0.15s; color: #9A9590; border-radius: 0; }
+  .timer-row-ctrl:hover { background: rgba(245,243,239,0.05); color: #F5F3EF; }
+  .timer-row-remove { background: none; border: none; cursor: pointer; color: #3A3835; font-size: 16px; padding: 2px 6px; line-height: 1; }
+  .timer-row-remove:hover { color: var(--blue); }
+  .timer-launch { background: transparent; padding: 10px 0; margin-top: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px solid #252320; }
+  .timer-launch-label { font-family: 'DM Mono', monospace; font-size: 10px; color: #4A4845; text-transform: uppercase; letter-spacing: 0.1em; }
+  .timer-launch-btn { padding: 7px 14px; border: 1px solid #3A3835; background: none; color: #9A9590; font-size: 10px; font-weight: 400; cursor: pointer; font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.1em; white-space: nowrap; flex-shrink: 0; border-radius: 0; }
+  .timer-launch-btn.viewing { background: var(--blue); color: white; border-color: var(--blue); }
 
-  .done-screen { background: var(--white); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; text-align: center; }
-  .done-title { font-family: 'Barlow Condensed', sans-serif; font-size: 64px; font-weight: 700; text-transform: uppercase; letter-spacing: -0.01em; line-height: 0.95; color: var(--black); margin-bottom: 8px; }
-  .done-sub { color: #888; font-size: 16px; margin-bottom: 40px; }
+  .done-screen { background: var(--paper); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; text-align: center; }
+  .done-title { font-family: 'Cormorant Garamond', serif; font-size: 48px; font-weight: 300; font-style: italic; letter-spacing: 0.02em; line-height: 1.1; color: var(--text-primary); margin-bottom: 12px; }
+  .done-sub { color: var(--text-muted); font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 300; margin-bottom: 40px; letter-spacing: 0.12em; text-transform: uppercase; }
 
-  .star-row { display: flex; align-items: center; padding: 16px 0; border-bottom: 1px solid #EEEEEE; }
-  .star-label { flex: 1; font-size: 15px; color: var(--black); }
+  .star-row { display: flex; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--rule); }
+  .star-label { flex: 1; font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 300; color: var(--text-primary); letter-spacing: 0.04em; }
   .stars { display: flex; gap: 4px; }
-  .star { font-size: 22px; cursor: pointer; color: #DDD; transition: color 0.1s; background: none; border: none; padding: 2px; line-height: 1; }
-  .star.filled { color: var(--red); }
-  .notes-field { width: 100%; border: none; border-bottom: 2px solid #EEEEEE; padding: 12px 0; font-family: 'DM Sans', sans-serif; font-size: 15px; background: transparent; outline: none; resize: none; min-height: 60px; color: var(--black); }
-  .notes-field:focus { border-bottom-color: var(--red); }
+  .star { font-size: 18px; cursor: pointer; color: var(--rule); transition: color 0.1s; background: none; border: none; padding: 2px; line-height: 1; }
+  .star.filled { color: var(--blue); }
+  .notes-field { width: 100%; border: none; border-bottom: 1px solid var(--rule); padding: 12px 0; font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 300; background: transparent; outline: none; resize: none; min-height: 60px; color: var(--text-primary); letter-spacing: 0.02em; }
+  .notes-field:focus { border-bottom-color: var(--blue); }
 
   .shopping-group { padding: 0 28px; }
-  .shopping-group-header { font-family: 'Courier Prime', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--red); padding: 16px 0 8px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; }
-  .shopping-group-header:hover { opacity: 0.7; }
-  .shopping-group-toggle { font-size: 9px; opacity: 0.6; }
-  .shopping-recipe-header { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; color: #666; padding: 10px 0 6px; margin-top: 2px; border-top: 1px solid #F0F0F0; letter-spacing: 0.01em; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; }
-  .shopping-recipe-header:hover { color: var(--black); }
-  .shopping-item { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid #EEEEEE; cursor: pointer; transition: opacity 0.15s; }
+  .shopping-group-header { font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--text-muted); padding: 16px 0 8px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; }
+  .shopping-group-header:hover { color: var(--text-primary); }
+  .shopping-group-toggle { font-size: 9px; opacity: 0.5; }
+  .shopping-recipe-header { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 400; color: var(--text-muted); padding: 10px 0 6px; margin-top: 2px; border-top: 1px solid var(--rule); letter-spacing: 0.08em; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; text-transform: uppercase; }
+  .shopping-recipe-header:hover { color: var(--text-primary); }
+  .shopping-item { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--rule); cursor: pointer; transition: opacity 0.15s; }
   .shopping-item:hover { opacity: 0.7; }
-  .shopping-item.done .shopping-item-name { text-decoration: line-through; color: #CCC; }
-  .shopping-item-name { font-size: 15px; flex: 1; min-width: 0; }
+  .shopping-item.done .shopping-item-name { text-decoration: line-through; color: var(--text-muted); }
+  .shopping-item-name { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 300; flex: 1; min-width: 0; letter-spacing: 0.02em; color: var(--text-primary); }
   .shopping-item-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-  .shopping-item-qty { font-family: 'Courier Prime', monospace; font-size: 13px; color: #888; }
-  .shopping-item-delete { background: none; border: none; cursor: pointer; color: #CCC; font-size: 17px; padding: 0; line-height: 1; }
-  .shopping-item-delete:hover { color: #999; }
-  .shopping-item.done .shopping-item-qty { color: #DDD; }
+  .shopping-item-qty { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted); font-weight: 400; }
+  .shopping-item-delete { background: none; border: none; cursor: pointer; color: var(--rule); font-size: 16px; padding: 0; line-height: 1; }
+  .shopping-item-delete:hover { color: var(--text-muted); }
+  .shopping-item.done .shopping-item-qty { color: var(--rule); }
 
-  .sheet-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 200; display: flex; align-items: flex-end; }
-  .sheet { background: white; width: 100%; max-height: 75vh; overflow-y: auto; }
-  .sheet-handle { width: 40px; height: 4px; background: #DDD; border-radius: 2px; margin: 14px auto 4px; }
-  .sheet-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px; text-transform: uppercase; letter-spacing: 0.04em; padding: 8px 24px 14px; border-bottom: 1px solid #EEEEEE; color: var(--black); }
+  .sheet-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.22); z-index: 200; display: flex; align-items: flex-end; }
+  .sheet { background: var(--paper); width: 100%; max-height: 75vh; overflow-y: auto; border-top: 1px solid var(--rule); }
+  .sheet-handle { width: 32px; height: 2px; background: var(--rule); margin: 14px auto 4px; }
+  .sheet-title { font-family: 'DM Mono', monospace; font-weight: 400; font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; padding: 8px 24px 14px; border-bottom: 1px solid var(--rule); color: var(--text-muted); }
 
-  .cookbook-shelf { display: flex; overflow-x: auto; gap: 12px; padding: 4px 28px 24px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .cookbook-shelf { display: flex; overflow-x: auto; gap: 0; padding: 0; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; flex-direction: column; }
   .cookbook-shelf::-webkit-scrollbar { display: none; }
-  .cookbook-card { flex-shrink: 0; width: 140px; height: 180px; display: flex; flex-direction: column; justify-content: flex-end; padding: 14px; cursor: pointer; scroll-snap-align: start; transition: opacity 0.15s; background: transparent; border: 2px solid var(--black); border-radius: 14px; }
-  .cookbook-card:hover { opacity: 0.72; }
-  .cookbook-card-name { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; color: var(--black); text-transform: uppercase; letter-spacing: 0.02em; line-height: 1.1; }
-  .cookbook-card-count { font-family: 'Courier Prime', monospace; font-size: 11px; color: #999; margin-top: 5px; }
-  .cookbook-card-new { background: transparent; border: 2px dashed #DDD; border-radius: 14px; align-items: center; justify-content: center; gap: 6px; }
-  .cookbook-card-new-icon { font-size: 28px; color: #CCC; line-height: 1; }
-  .cookbook-card-new-label { font-family: 'Courier Prime', monospace; font-size: 11px; color: #BBB; text-transform: uppercase; letter-spacing: 0.08em; }
+  .cookbook-card { flex-shrink: 0; width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; cursor: pointer; scroll-snap-align: start; transition: background 0.1s; background: transparent; border-bottom: 1px solid var(--rule); border-radius: 0; }
+  .cookbook-card:hover { background: var(--surface); }
+  .cookbook-card-name { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 400; color: var(--text-primary); letter-spacing: 0.02em; }
+  .cookbook-card-count { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted); font-weight: 300; }
+  .cookbook-card-new { border-bottom: 1px dashed var(--rule); }
+  .cookbook-card-new-icon { font-size: 16px; color: var(--rule); line-height: 1; }
+  .cookbook-card-new-label { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.12em; }
 
   .tag-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-  .tag-pill { font-family: 'Courier Prime', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; padding: 4px 10px; border-radius: 100px; border: 1.5px solid #DDD; color: #888; cursor: pointer; background: transparent; transition: all 0.12s; }
-  .tag-pill:hover { border-color: var(--black); color: var(--black); }
-  .tag-pill.active { border-color: var(--red); color: var(--red); background: transparent; }
-  .tag-pill-display { font-family: 'Courier Prime', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; padding: 3px 8px; border-radius: 100px; border: 1.5px solid #DDD; color: #999; }
+  .tag-pill { font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; padding: 4px 10px; border-radius: 0; border: 1px solid var(--rule); color: var(--text-muted); cursor: pointer; background: transparent; transition: all 0.12s; }
+  .tag-pill:hover { border-color: var(--text-primary); color: var(--text-primary); }
+  .tag-pill.active { border-color: var(--blue); color: var(--blue); background: var(--blue-pale); }
+  .tag-pill-display { font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; padding: 3px 8px; border-radius: 0; border: 1px solid var(--rule); color: var(--text-muted); }
 
-  .section-label { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: #999; padding: 20px 28px 0; }
+  .section-label { font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 400; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); padding: 20px 28px 0; }
 
   .scroll-body { overflow-y: auto; flex: 1; }
   .pb-safe { padding-bottom: 40px; }
 
   @media (min-width: 520px) {
-    .page-header { padding: 48px 36px 28px; }
-    .page-header-title { font-size: 52px; }
-    .flat-row { padding: 20px 36px; }
-    .flat-row-action { padding: 20px 36px; }
+    .page-header { padding: 56px 36px 28px; }
+    .flat-row { padding: 14px 36px; }
+    .flat-row-action { padding: 14px 36px; }
     .back-row { padding: 16px 36px; }
     .form-body { padding: 24px 36px; }
     .tabs { padding: 0 36px; }
     .detail-hero { padding: 40px 36px 0; }
-    .detail-section { padding: 22px 36px; }
+    .detail-section { padding: 20px 36px; }
     .shopping-group { padding: 0 36px; }
-    .checklist-progress { margin: 8px 36px; }
     .done-screen { padding: 60px 36px; }
-    .done-title { font-size: 72px; }
-    .home-cb-grid { gap: 8px; }
     .home-section-label { padding: 16px 36px 8px; }
     .home-fav-row { padding: 11px 36px; }
     .home-shopping-header { padding: 0 36px; }
   }
 
   /* ── Home: top bar ──────────────────────────────────── */
-  .home-header { background: var(--white); border-bottom: 2px solid var(--black); }
-  .home-header-row { display: flex; align-items: center; justify-content: space-between; padding: 0 16px; height: 52px; }
-  .home-wordmark { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; text-transform: uppercase; letter-spacing: -0.02em; line-height: 0.82; text-align: center; }
-  .home-wordmark-yes { display: block; color: var(--red); font-size: 12px; }
-  .home-wordmark-chef { display: block; color: var(--black); font-size: 12px; }
-  .home-icon-btn { background: none; border: none; cursor: pointer; padding: 8px; font-size: 20px; line-height: 1; color: #888; transition: opacity 0.15s; display: flex; align-items: center; }
-  .home-icon-btn:hover { opacity: 0.6; }
+  .home-header { background: var(--paper); border-bottom: 1px solid var(--rule); flex-shrink: 0; }
+  .home-header-row { display: flex; align-items: center; justify-content: space-between; padding: 0 16px; height: 44px; }
+  .home-icon-btn { background: none; border: none; cursor: pointer; padding: 8px; font-size: 14px; line-height: 1; color: var(--text-muted); transition: color 0.15s; display: flex; align-items: center; font-family: 'DM Mono', monospace; }
+  .home-icon-btn:hover { color: var(--text-primary); }
 
-  /* ── Home: cookbook buttons ─────────────────────────── */
-  .home-cb-grid { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 28px 4px; }
-  .home-cb-btn { font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 10px 18px; border: 1.5px solid var(--black); border-radius: 100px; background: transparent; cursor: pointer; text-align: left; color: var(--black); transition: all 0.12s; display: flex; align-items: baseline; gap: 6px; }
-  .home-cb-btn:hover { background: var(--black); color: var(--white); }
-  .home-cb-btn:hover .cb-btn-count { color: rgba(255,255,255,0.55); }
-  .home-cb-btn.cb-new { border-color: #CCC; border-style: dashed; color: #AAA; }
-  .home-cb-btn.cb-new:hover { background: var(--black); color: var(--white); border-color: var(--black); border-style: solid; }
-  .cb-btn-count { font-family: 'Courier Prime', monospace; font-size: 10px; color: #999; font-weight: 400; text-transform: none; letter-spacing: 0; }
+  /* ── Home: 3-col layout ─────────────────────────────── */
+  .home-wrapper { display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: var(--paper); }
+  .home-body { flex: 1; overflow: hidden; display: grid; grid-template-columns: 1fr 3fr 1fr; }
+  .home-col { overflow-y: auto; border-right: 1px solid var(--rule); display: flex; flex-direction: column; min-width: 0; }
+  .home-col:last-child { border-right: none; }
+  .home-col-header { padding: 12px 18px; border-bottom: 1px solid var(--rule); flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--paper); z-index: 1; }
+  .home-col-title { font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 400; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); }
 
-  /* ── Home: sections ─────────────────────────────────── */
-  .home-section { margin-top: 8px; border-top: 1px solid #EEEEEE; }
-  .home-section-label { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: #999; padding: 16px 28px 8px; }
-  .home-fav-row { display: flex; align-items: center; padding: 11px 28px; cursor: pointer; border-bottom: 1px solid #F5F5F5; transition: opacity 0.12s; }
-  .home-fav-row:last-child { border-bottom: none; }
-  .home-fav-row:hover { opacity: 0.7; }
-  .home-fav-name { font-size: 15px; font-weight: 500; color: var(--black); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .home-fav-meta { font-family: 'Courier Prime', monospace; font-size: 11px; color: #BBB; flex-shrink: 0; margin-left: 10px; }
-  .home-shopping-header { display: flex; align-items: center; padding: 0 28px; }
+  /* ── Home: cookbook list (left col) ─────────────────── */
+  .home-cb-list { display: flex; flex-direction: column; }
+  .home-cb-list-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; border: none; background: none; cursor: pointer; text-align: left; width: 100%; border-bottom: 1px solid var(--rule); transition: background 0.1s; }
+  .home-cb-list-row:hover { background: var(--surface); }
+  .home-cb-list-name { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 400; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0.02em; }
+  .home-cb-list-count { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-muted); flex-shrink: 0; margin-left: 8px; font-weight: 300; }
+  .home-cb-new .home-cb-list-name { font-size: 10px; color: var(--text-muted); font-weight: 300; text-transform: uppercase; letter-spacing: 0.12em; }
+  .home-cb-new:hover .home-cb-list-name { color: var(--text-primary); }
+  .home-empty { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; padding: 24px 18px; line-height: 2; }
+
+  /* ── Home: shopping list (right col) ────────────────── */
+  .home-col-right .shopping-group { padding: 0; }
+  .home-col-right .shopping-group-header { padding: 12px 16px 8px; }
+  .home-col-right .shopping-recipe-header { padding: 6px 16px; }
+  .home-col-right .shopping-item { padding: 10px 16px; }
+
+  /* ── Home: mobile tab bar ───────────────────────────── */
+  .home-tab-bar { display: none; flex-shrink: 0; }
+  .home-tab-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 10px 4px; border: none; background: none; cursor: pointer; transition: color 0.15s; }
+  .home-tab-btn:hover { opacity: 0.8; }
+  .home-tab-icon { font-size: 14px; line-height: 1; color: var(--text-muted); font-family: 'DM Mono', monospace; }
+  .home-tab-label { font-family: 'DM Mono', monospace; font-size: 8px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); }
+  .home-tab-btn.active .home-tab-icon { color: var(--blue); }
+  .home-tab-btn.active .home-tab-label { color: var(--blue); }
+
+  @media (max-width: 767px) {
+    .home-body { display: flex; flex-direction: column; }
+    .home-col { display: none; flex: 1; border-right: none; }
+    .home-col.active { display: flex; }
+    .home-tab-bar { display: flex; border-bottom: 1px solid var(--rule); background: var(--paper); }
+    .home-col-right .shopping-group-header { padding: 12px 20px 8px; }
+    .home-col-right .shopping-recipe-header { padding: 6px 20px; }
+    .home-col-right .shopping-item { padding: 10px 20px; }
+  }
 
   /* ── Two-panel cookbook layout ──────────────────────── */
-  .cookbook-layout { display: flex; height: 100vh; overflow: hidden; background: var(--white); }
-  .recipe-list-panel { width: 260px; flex-shrink: 0; border-right: 1px solid #EEEEEE; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+  .cookbook-layout { display: flex; height: 100vh; overflow: hidden; background: var(--paper); }
+  .recipe-list-panel { width: 260px; flex-shrink: 0; border-right: 1px solid var(--rule); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
   .recipe-detail-panel { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
-  .list-panel-header { padding: 24px 20px 14px; border-bottom: 1px solid #EEEEEE; flex-shrink: 0; }
-  .list-panel-back { background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; color: #999; font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 0; margin-bottom: 10px; }
-  .list-panel-back:hover { color: var(--black); }
-  .list-panel-title { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.01em; color: var(--black); line-height: 1; }
-  .list-panel-count { font-family: 'Courier Prime', monospace; font-size: 11px; color: #999; margin-top: 3px; }
+  .list-panel-header { padding: 24px 20px 14px; border-bottom: 1px solid var(--rule); flex-shrink: 0; }
+  .list-panel-back { background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; color: var(--text-muted); font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.1em; padding: 0; margin-bottom: 10px; }
+  .list-panel-back:hover { color: var(--text-primary); }
+  .list-panel-title { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-primary); line-height: 1.3; }
+  .list-panel-count { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-muted); margin-top: 4px; font-weight: 300; }
   .recipe-list-rows { flex: 1; overflow-y: auto; }
-  .recipe-list-row { padding: 11px 20px; cursor: pointer; border-bottom: 1px solid #F5F5F5; transition: all 0.1s; }
-  .recipe-list-row:hover { background: #FAFAFA; }
-  .recipe-list-row.active { background: #F5F5F5; border-left: 3px solid var(--red); padding-left: 17px; }
-  .recipe-list-row-name { font-size: 14px; font-weight: 500; color: var(--black); line-height: 1.25; }
-  .recipe-list-row-meta { font-family: 'Courier Prime', monospace; font-size: 10px; color: #BBB; margin-top: 2px; }
-  .list-panel-footer { padding: 12px 16px; border-top: 1px solid #EEEEEE; flex-shrink: 0; }
-  .detail-empty-state { flex: 1; display: flex; align-items: center; justify-content: center; color: #CCC; font-family: 'Courier Prime', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; min-height: 60vh; }
+  .recipe-list-row { padding: 11px 20px; cursor: pointer; border-bottom: 1px solid var(--rule); transition: background 0.1s; }
+  .recipe-list-row:hover { background: var(--surface); }
+  .recipe-list-row.active { background: var(--surface); border-left: 2px solid var(--blue); padding-left: 18px; }
+  .recipe-list-row-name { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 400; color: var(--text-primary); line-height: 1.4; letter-spacing: 0.02em; }
+  .recipe-list-row-meta { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-muted); margin-top: 2px; font-weight: 300; }
+  .list-panel-footer { padding: 12px 16px; border-top: 1px solid var(--rule); flex-shrink: 0; }
+  .detail-empty-state { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; min-height: 60vh; }
   .panel-mobile-back { display: none; }
-  .panel-mobile-back-btn { background: none; border: none; cursor: pointer; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #888; padding: 14px 28px; display: block; }
-  .panel-mobile-back-btn:hover { color: var(--black); }
+  .panel-mobile-back-btn { background: none; border: none; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); padding: 14px 28px; display: block; }
+  .panel-mobile-back-btn:hover { color: var(--text-primary); }
 
   @media (max-width: 639px) {
     .cookbook-layout { height: auto; overflow: visible; display: block; }
@@ -353,63 +373,80 @@ const STYLES = `
     .recipe-detail-panel { display: none; }
     .cookbook-layout.has-detail .recipe-list-panel { display: none; }
     .cookbook-layout.has-detail .recipe-detail-panel { display: flex; flex-direction: column; min-height: 100vh; }
-    .panel-mobile-back { display: block; border-bottom: 1px solid #EEEEEE; }
+    .panel-mobile-back { display: block; border-bottom: 1px solid var(--rule); }
   }
 
+  /* ── Recipe comments ────────────────────────────────── */
+  .comments-section { padding: 20px 28px 8px; }
+  .comment-item { display: flex; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--rule); }
+  .comment-avatar { width: 24px; height: 24px; border-radius: 0; background: var(--surface); color: var(--text-muted); display: flex; align-items: center; justify-content: center; font-family: 'DM Mono', monospace; font-weight: 400; font-size: 10px; flex-shrink: 0; margin-top: 1px; border: 1px solid var(--rule); }
+  .comment-body { flex: 1; min-width: 0; }
+  .comment-author { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 400; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .comment-text { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 300; color: var(--text-primary); line-height: 1.55; margin-top: 4px; letter-spacing: 0.02em; }
+  .comment-time { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+  .comment-delete { background: none; border: none; cursor: pointer; color: var(--rule); font-size: 14px; padding: 0 2px; line-height: 1; flex-shrink: 0; align-self: flex-start; margin-top: 2px; }
+  .comment-delete:hover { color: var(--text-muted); }
+  .comment-input-row { display: flex; gap: 0; margin-top: 14px; padding-bottom: 20px; }
+  .comment-input { flex: 1; padding: 12px 0; border: none; border-bottom: 1px solid var(--rule); font-size: 13px; font-family: 'DM Mono', monospace; font-weight: 300; background: transparent; outline: none; resize: none; color: var(--text-primary); letter-spacing: 0.02em; }
+  .comment-input:focus { border-bottom-color: var(--blue); }
+  .comment-submit { padding: 0 16px; border: none; background: var(--blue); color: var(--white); font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; flex-shrink: 0; transition: background 0.15s; border-radius: 0; }
+  .comment-submit:disabled { opacity: 0.3; cursor: not-allowed; }
+
   /* ── Bottom nav ──────────────────────────────────────── */
-  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--white); border-top: 2px solid var(--black); display: flex; z-index: 100; padding-bottom: env(safe-area-inset-bottom, 0px); }
-  .bottom-nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 10px 4px; border: none; background: none; cursor: pointer; transition: opacity 0.15s; }
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--paper); border-top: 1px solid var(--rule); display: flex; z-index: 100; padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .bottom-nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 10px 4px; border: none; background: none; cursor: pointer; transition: color 0.15s; }
   .bottom-nav-btn:hover { opacity: 0.7; }
-  .bottom-nav-icon { font-size: 20px; line-height: 1; color: #CCC; }
-  .bottom-nav-label { font-family: 'Courier Prime', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: #CCC; }
-  .bottom-nav-btn.active .bottom-nav-icon, .bottom-nav-btn.active .bottom-nav-label { color: var(--black); }
+  .bottom-nav-icon { font-size: 16px; line-height: 1; color: var(--text-muted); }
+  .bottom-nav-label { font-family: 'DM Mono', monospace; font-size: 8px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); }
+  .bottom-nav-btn.active .bottom-nav-icon, .bottom-nav-btn.active .bottom-nav-label { color: var(--blue); }
   .pb-nav { padding-bottom: 72px !important; }
 
   /* ── Search screen ───────────────────────────────────── */
-  .search-screen { min-height: 100vh; background: var(--white); display: flex; flex-direction: column; }
+  .search-screen { min-height: 100vh; background: var(--paper); display: flex; flex-direction: column; }
   .search-input-wrap { padding: 0 28px 16px; }
-  .search-input { width: 100%; padding: 12px 16px; border: 2px solid var(--black); font-size: 16px; font-family: 'DM Sans', sans-serif; background: var(--white); outline: none; border-radius: 0; }
-  .search-input:focus { border-color: var(--red); }
-  .people-section-label { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: #999; padding: 12px 28px 4px; }
-  .person-row { display: flex; align-items: center; padding: 12px 28px; border-bottom: 1px solid #EEEEEE; cursor: pointer; gap: 12px; transition: opacity 0.15s; }
-  .person-row:hover { opacity: 0.7; }
-  .person-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--black); color: var(--white); display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 16px; flex-shrink: 0; }
+  .search-input { width: 100%; padding: 10px 0; border: none; border-bottom: 1px solid var(--rule); font-size: 13px; font-family: 'DM Mono', monospace; font-weight: 300; background: transparent; outline: none; border-radius: 0; color: var(--text-primary); letter-spacing: 0.02em; }
+  .search-input:focus { border-bottom-color: var(--blue); }
+  .people-section-label { font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 400; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); padding: 12px 28px 4px; }
+  .person-row { display: flex; align-items: center; padding: 12px 28px; border-bottom: 1px solid var(--rule); cursor: pointer; gap: 12px; transition: background 0.1s; }
+  .person-row:hover { background: var(--surface); }
+  .person-avatar { width: 32px; height: 32px; border-radius: 0; background: var(--surface); color: var(--text-muted); display: flex; align-items: center; justify-content: center; font-family: 'DM Mono', monospace; font-weight: 400; font-size: 12px; flex-shrink: 0; border: 1px solid var(--rule); }
   .person-info { flex: 1; min-width: 0; }
-  .person-name { font-size: 15px; font-weight: 500; color: var(--black); }
-  .person-handle { font-family: 'Courier Prime', monospace; font-size: 12px; color: #999; }
-  .person-followers { font-family: 'Courier Prime', monospace; font-size: 11px; color: #BBB; margin-top: 1px; }
-  .follow-btn { padding: 6px 14px; border: 2px solid var(--black); background: transparent; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: all 0.15s; }
-  .follow-btn:hover { background: var(--black); color: var(--white); }
-  .follow-btn.following { background: var(--black); color: var(--white); border-color: var(--black); }
+  .person-name { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 400; color: var(--text-primary); letter-spacing: 0.02em; }
+  .person-handle { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .person-followers { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+  .follow-btn { padding: 7px 14px; border: 1px solid var(--text-primary); background: transparent; font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: all 0.15s; border-radius: 0; }
+  .follow-btn:hover { background: var(--blue); color: var(--white); border-color: var(--blue); }
+  .follow-btn.following { background: var(--blue); color: var(--white); border-color: var(--blue); }
 
   /* ── Timeline screen ─────────────────────────────────── */
-  .timeline-screen { min-height: 100vh; background: var(--white); display: flex; flex-direction: column; }
-  .event-row { padding: 16px 28px; border-bottom: 1px solid #EEEEEE; }
+  .timeline-screen { min-height: 100vh; background: var(--paper); display: flex; flex-direction: column; }
+  .event-row { padding: 16px 28px; border-bottom: 1px solid var(--rule); }
   .event-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-  .event-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--black); color: var(--white); display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; flex-shrink: 0; cursor: pointer; }
-  .event-avatar:hover { opacity: 0.7; }
+  .event-avatar { width: 28px; height: 28px; border-radius: 0; background: var(--surface); color: var(--text-muted); display: flex; align-items: center; justify-content: center; font-family: 'DM Mono', monospace; font-weight: 400; font-size: 11px; flex-shrink: 0; cursor: pointer; border: 1px solid var(--rule); }
+  .event-avatar:hover { background: var(--rule); }
   .event-meta { flex: 1; min-width: 0; }
-  .event-name { font-size: 14px; font-weight: 600; color: var(--black); }
-  .event-time { font-family: 'Courier Prime', monospace; font-size: 11px; color: #BBB; }
-  .event-text { font-size: 14px; line-height: 1.5; color: var(--black); margin-bottom: 6px; }
-  .event-post-text { font-size: 15px; line-height: 1.6; color: var(--black); margin: 8px 0; }
-  .event-photo { width: 100%; max-height: 320px; object-fit: cover; margin: 8px 0; display: block; }
-  .event-actions { display: flex; align-items: center; gap: 16px; margin-top: 8px; }
-  .like-btn { background: none; border: none; cursor: pointer; font-size: 14px; color: #BBB; font-family: 'Courier Prime', monospace; display: flex; align-items: center; gap: 5px; padding: 0; transition: color 0.15s; line-height: 1; }
-  .like-btn.liked { color: var(--red); }
-  .like-btn:hover { color: var(--red); }
-  .timeline-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 28px; text-align: center; color: #CCC; font-family: 'Courier Prime', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; line-height: 2; }
+  .event-name { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 400; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.08em; }
+  .event-time { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-muted); }
+  .event-text { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 300; line-height: 1.6; color: var(--text-primary); margin-bottom: 6px; letter-spacing: 0.02em; }
+  .event-post-text { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 300; line-height: 1.65; color: var(--text-primary); margin: 8px 0; letter-spacing: 0.02em; }
+  .event-photo { width: 100%; max-height: 320px; object-fit: cover; margin: 10px 0; display: block; border: 1px solid var(--rule); }
+  .event-actions { display: flex; align-items: center; gap: 16px; margin-top: 10px; }
+  .like-btn { background: none; border: none; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 5px; padding: 0; transition: color 0.15s; line-height: 1; letter-spacing: 0.04em; }
+  .like-btn.liked { color: var(--blue); }
+  .like-btn:hover { color: var(--blue); }
+  .timeline-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 28px; text-align: center; color: var(--text-muted); font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; line-height: 2; }
 
   /* ── Post screen ─────────────────────────────────────── */
-  .post-screen { min-height: 100vh; background: var(--white); display: flex; flex-direction: column; }
-  .photo-upload-area { display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px dashed #DDD; padding: 32px; cursor: pointer; gap: 8px; transition: border-color 0.15s; }
-  .photo-upload-area:hover { border-color: var(--black); }
-  .photo-upload-icon { font-size: 28px; color: #CCC; line-height: 1; }
-  .photo-upload-label { font-family: 'Courier Prime', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #AAA; }
+  .post-screen { min-height: 100vh; background: var(--paper); display: flex; flex-direction: column; }
+  .photo-upload-area { display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px dashed var(--rule); padding: 32px; cursor: pointer; gap: 8px; transition: border-color 0.15s; }
+  .photo-upload-area:hover { border-color: var(--text-muted); }
+  .photo-upload-icon { font-size: 20px; color: var(--rule); line-height: 1; }
+  .photo-upload-label { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); }
   .photo-preview { position: relative; }
-  .photo-preview img { width: 100%; max-height: 260px; object-fit: cover; display: block; }
-  .photo-remove { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.55); color: white; border: none; cursor: pointer; width: 28px; height: 28px; border-radius: 50%; font-size: 16px; display: flex; align-items: center; justify-content: center; }
-  .char-count { font-family: 'Courier Prime', monospace; font-size: 11px; color: #BBB; text-align: right; margin-top: 4px; }
+  .photo-preview img { width: 100%; max-height: 260px; object-fit: cover; display: block; border: 1px solid var(--rule); }
+  .photo-remove { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.55); color: white; border: none; cursor: pointer; width: 28px; height: 28px; border-radius: 0; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+  .char-count { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-muted); text-align: right; margin-top: 4px; }
+
 `;
 
 const COOKBOOK_COLORS = ['#111111','#1a1a2e','#1a3a1a','#3a1a1a','#2A6B8C','#5B4FCF','#7A4B9C','#8B1A0A'];
@@ -514,7 +551,7 @@ function ProfileScreen({ user, onBack, onLogout }) {
       </div>
       <div className="page-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 4 }}>
-          <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--black)', color: 'var(--white)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 24 }}>{initials}</div>
+          <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--ink)', color: 'var(--white)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'DM Mono', monospace", fontWeight: 400, fontSize: 18 }}>{initials}</div>
           <div className="page-header-title">Profile</div>
         </div>
       </div>
@@ -546,7 +583,7 @@ function ProfileScreen({ user, onBack, onLogout }) {
             </div>
           </div>
           {error && <div className="auth-error">{error}</div>}
-          {success && <div style={{ fontSize: 13, color: 'green', fontFamily: "'Courier Prime', monospace" }}>Saved.</div>}
+          {success && <div style={{ fontSize: 13, color: 'green', fontFamily: "'DM Mono', monospace" }}>Saved.</div>}
           <button className="btn btn-primary btn-full" type="submit" disabled={saving}>{saving ? '...' : 'Save changes'}</button>
         </div>
       </form>
@@ -584,9 +621,9 @@ function AuthScreen({ onAuth }) {
 
   return (
     <div className="auth-screen">
-      <div className="auth-logo">
-        <span className="line1">YES</span>
-        <span className="line2">CHEF</span>
+      <div style={{ textAlign: 'center', marginBottom: 48 }}>
+        <div style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, fontSize: 52, letterSpacing: '0.04em', lineHeight: 1, color: 'var(--blue)' }}>The Pass</div>
+        <div style={{ fontFamily: "'DM Mono', monospace", fontWeight: 300, fontSize: 11, color: 'var(--text-muted)', marginTop: 16, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Everything in its place.</div>
       </div>
       <div className="auth-card">
         <div className="auth-tabs">
@@ -612,12 +649,11 @@ function AuthScreen({ onAuth }) {
   );
 }
 
-function YesChefLogo({ yesColor = 'var(--red)', chefColor = 'var(--black)', size = 18 }) {
+function AppLogo({ color = 'var(--blue)', size = 16 }) {
   return (
-    <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: size, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 0.85, display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-      <span style={{ color: yesColor }}>MISE EN</span>
-      <span style={{ color: chefColor }}>PLACE</span>
-    </div>
+    <span style={{ fontFamily: "'DM Mono', monospace", fontWeight: 400, fontSize: size, letterSpacing: '0.06em', textTransform: 'uppercase', color }}>
+      The Pass
+    </span>
   );
 }
 
@@ -635,6 +671,7 @@ const PRIORITY_ORDER = ['today', 'this_week', 'eventually'];
 const PRIORITY_LABELS = { today: 'Today', this_week: 'This Week', eventually: 'Eventually' };
 
 function HomeScreen({ cookbooks, shoppingList, onOpenCookbook, onNewCookbook, onToggleShoppingItem, onDeleteShoppingItem, onClearShoppingList, onOpenProfile, profileInitial, onOpenSearch, currentUserId, onOpenUser }) {
+  const [mobileTab, setMobileTab] = useState('timeline');
   const [collapsed, setCollapsed] = useState({});
   const [collapsedRecipes, setCollapsedRecipes] = useState({});
   const [events, setEvents] = useState(null);
@@ -699,83 +736,110 @@ function HomeScreen({ cookbooks, shoppingList, onOpenCookbook, onNewCookbook, on
   const unchecked = shoppingList.filter(i => !i.checked).length;
 
   return (
-    <div className="screen">
-      {/* Compact top bar */}
+    <div className="home-wrapper">
+      {/* Top bar */}
       <div className="home-header">
         <div style={{ height: 'env(safe-area-inset-top, 0px)' }} />
         <div className="home-header-row">
-          <button className="home-icon-btn" onClick={onOpenSearch}>&#128269;</button>
-          <div className="home-wordmark">
-            <span className="home-wordmark-yes">MISE EN</span>
-            <span className="home-wordmark-chef">PLACE</span>
-          </div>
+          <button className="home-icon-btn" onClick={onOpenSearch}>⌕</button>
+          <div style={{ fontFamily: "'DM Mono', monospace", fontWeight: 400, fontSize: 12, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--blue)' }}>The Pass</div>
           <button className="profile-avatar" onClick={onOpenProfile}>{profileInitial}</button>
         </div>
       </div>
 
-      <div className="scroll-body pb-safe">
-        {/* Cookbook chips */}
-        <div className="home-cb-grid" style={{ paddingTop: 14, paddingBottom: 6 }}>
-          {cookbooks.map(cb => (
-            <button key={cb.id} className="home-cb-btn" onClick={() => onOpenCookbook(cb.id)}>
-              {cb.name}
-              <span className="cb-btn-count">{cb.recipeCount ?? 0}</span>
+      {/* Mobile tab bar */}
+      <div className="home-tab-bar">
+        <button className={`home-tab-btn${mobileTab === 'cookbooks' ? ' active' : ''}`} onClick={() => setMobileTab('cookbooks')}>
+          <span className="home-tab-icon">◎</span>
+          <span className="home-tab-label">Cookbooks</span>
+        </button>
+        <button className={`home-tab-btn${mobileTab === 'timeline' ? ' active' : ''}`} onClick={() => setMobileTab('timeline')}>
+          <span className="home-tab-icon">◌</span>
+          <span className="home-tab-label">Timeline</span>
+        </button>
+        <button className={`home-tab-btn${mobileTab === 'shopping' ? ' active' : ''}`} onClick={() => setMobileTab('shopping')}>
+          <span className="home-tab-icon">◻</span>
+          <span className="home-tab-label">Shopping</span>
+        </button>
+      </div>
+
+      {/* 3-column body */}
+      <div className="home-body">
+
+        {/* Left col: Cookbooks */}
+        <div className={`home-col home-col-left${mobileTab === 'cookbooks' ? ' active' : ''}`}>
+          <div className="home-col-header">
+            <span className="home-col-title">Cookbooks</span>
+          </div>
+          <div className="home-cb-list">
+            {cookbooks.map(cb => (
+              <button key={cb.id} className="home-cb-list-row" onClick={() => onOpenCookbook(cb.id)}>
+                <span className="home-cb-list-name">{cb.name}</span>
+                <span className="home-cb-list-count">{cb.recipeCount ?? 0}</span>
+              </button>
+            ))}
+            <button className="home-cb-list-row home-cb-new" onClick={onNewCookbook}>
+              <span className="home-cb-list-name">+ New Cookbook</span>
             </button>
-          ))}
-          <button className="home-cb-btn cb-new" onClick={onNewCookbook}>+ New</button>
+          </div>
         </div>
 
-        {/* Timeline feed */}
-        <div className="home-section">
-          <div className="home-section-label">Timeline</div>
+        {/* Center col: Timeline */}
+        <div className={`home-col home-col-center${mobileTab === 'timeline' ? ' active' : ''}`}>
+          <div className="home-col-header">
+            <span className="home-col-title">Timeline</span>
+          </div>
           {events === null ? (
-            <div style={{ padding: '16px 28px 24px', fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#CCC', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Loading...</div>
+            <div className="home-empty">Loading...</div>
           ) : events.length === 0 ? (
-            <div style={{ padding: '20px 28px 32px', fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#CCC', textTransform: 'uppercase', letterSpacing: '0.06em', lineHeight: 2 }}>
-              Nothing yet.<br />Follow people to see their activity.
-            </div>
+            <div className="home-empty">Nothing yet.<br />Follow people to see their activity.</div>
           ) : events.map(renderEvent)}
         </div>
 
-        {/* Shopping list */}
-        {shoppingList.length > 0 && (
-          <div className="home-section">
-            <div className="home-shopping-header" style={{ paddingTop: 16, paddingBottom: 8 }}>
-              <span className="home-section-label" style={{ padding: 0, flex: 1 }}>Shopping List</span>
-              {unchecked > 0 && <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#999' }}>{unchecked} to buy</span>}
-            </div>
-            {byPriority.map(({ priority, label, byRecipe }) => (
-              <div key={priority} className="shopping-group">
-                <div className="shopping-group-header" onClick={() => togglePriority(priority)}>
-                  <span>{label}</span>
-                  <span className="shopping-group-toggle">{collapsed[priority] ? '▶' : '▼'}</span>
-                </div>
-                {!collapsed[priority] && Object.entries(byRecipe).map(([recipeName, recipeItems]) => (
-                  <div key={recipeName}>
-                    <div className="shopping-recipe-header" onClick={() => toggleRecipe(`${priority}:${recipeName}`)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span>{recipeName}</span>
-                      <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: 11, color: '#999' }}>{collapsedRecipes[`${priority}:${recipeName}`] ? '▶' : '▼'}</span>
-                    </div>
-                    {!collapsedRecipes[`${priority}:${recipeName}`] && recipeItems.map(item => (
-                      <div key={item.id} className={`shopping-item${item.checked ? ' done' : ''}`} onClick={() => onToggleShoppingItem(item.id, item.checked)}>
-                        <span className="shopping-item-name">{item.ingredient_name}</span>
-                        <div className="shopping-item-right">
-                          <span className="shopping-item-qty">{item.qty}</span>
-                          <a href={ahUrl(item.ingredient_name)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontFamily: "'Courier Prime', monospace", fontSize: 11, fontWeight: 700, color: 'var(--red)', textDecoration: 'none' }}>AH →</a>
-                          <button className="shopping-item-delete" onClick={e => { e.stopPropagation(); onDeleteShoppingItem(item.id); }}>×</button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            ))}
-            <div style={{ padding: '12px 28px 32px', textAlign: 'center' }}>
-              <button onClick={onClearShoppingList} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#BBB', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Clear list</button>
-            </div>
+        {/* Right col: Shopping List */}
+        <div className={`home-col home-col-right${mobileTab === 'shopping' ? ' active' : ''}`}>
+          <div className="home-col-header">
+            <span className="home-col-title">Shopping List</span>
+            {unchecked > 0 && <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: 'var(--text-secondary)' }}>{unchecked} to buy</span>}
           </div>
-        )}
+          {shoppingList.length === 0 ? (
+            <div className="home-empty">Your list is empty.</div>
+          ) : (
+            <>
+              {byPriority.map(({ priority, label, byRecipe }) => (
+                <div key={priority} className="shopping-group">
+                  <div className="shopping-group-header" onClick={() => togglePriority(priority)}>
+                    <span>{label}</span>
+                    <span className="shopping-group-toggle">{collapsed[priority] ? '▶' : '▼'}</span>
+                  </div>
+                  {!collapsed[priority] && Object.entries(byRecipe).map(([recipeName, recipeItems]) => (
+                    <div key={recipeName}>
+                      <div className="shopping-recipe-header" onClick={() => toggleRecipe(`${priority}:${recipeName}`)}>
+                        <span>{recipeName}</span>
+                        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: 'var(--text-secondary)' }}>{collapsedRecipes[`${priority}:${recipeName}`] ? '▶' : '▼'}</span>
+                      </div>
+                      {!collapsedRecipes[`${priority}:${recipeName}`] && recipeItems.map(item => (
+                        <div key={item.id} className={`shopping-item${item.checked ? ' done' : ''}`} onClick={() => onToggleShoppingItem(item.id, item.checked)}>
+                          <span className="shopping-item-name">{item.ingredient_name}</span>
+                          <div className="shopping-item-right">
+                            <span className="shopping-item-qty">{item.qty}</span>
+                            <a href={ahUrl(item.ingredient_name)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 500, color: 'var(--blue)', textDecoration: 'none' }}>AH →</a>
+                            <button className="shopping-item-delete" onClick={e => { e.stopPropagation(); onDeleteShoppingItem(item.id); }}>×</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              ))}
+              <div style={{ padding: '12px 16px 32px', textAlign: 'center' }}>
+                <button onClick={onClearShoppingList} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Clear list</button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
+
     </div>
   );
 }
@@ -789,7 +853,7 @@ function NewCookbookScreen({ onBack, onSave, saving }) {
       </div>
       <div className="form-body scroll-body">
         <div style={{ paddingTop: 12, paddingBottom: 8 }}>
-          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 32, textTransform: 'uppercase', letterSpacing: '-0.01em', color: 'var(--black)' }}>New Cookbook</div>
+          <div style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, fontStyle: 'italic', fontSize: 32, letterSpacing: '0.01em', color: 'var(--ink)' }}>New Cookbook</div>
         </div>
         <div className="form-field">
           <label className="form-label">Name</label>
@@ -803,7 +867,7 @@ function NewCookbookScreen({ onBack, onSave, saving }) {
   );
 }
 
-function CookbookScreen({ cookbook, onBack, onNewRecipe, onStartCook, favouriteIds, onToggleFavourite, onAddToCookbook, onOpenAddToList, shoppingRecipeIds, initialRecipeId, onEditRecipe }) {
+function CookbookScreen({ cookbook, onBack, onNewRecipe, onStartCook, favouriteIds, onToggleFavourite, onAddToCookbook, onOpenAddToList, shoppingRecipeIds, initialRecipeId, onEditRecipe, currentUserId, onTogglePublic }) {
   const [selectedId, setSelectedId] = useState(initialRecipeId || null);
   const recipes = cookbook.recipes || [];
   const isLoading = cookbook.recipes === null;
@@ -821,16 +885,16 @@ function CookbookScreen({ cookbook, onBack, onNewRecipe, onStartCook, favouriteI
       <div className="recipe-list-panel">
         <div className="list-panel-header safe-top">
           <button className="list-panel-back" onClick={onBack}>
-            <YesChefLogo chefColor="#999" size={13} />
+            <AppLogo size={13} />
           </button>
           <div className="list-panel-title">{cookbook.name}</div>
           {!isLoading && <div className="list-panel-count">{recipes.length} recipe{recipes.length !== 1 ? 's' : ''}</div>}
         </div>
         <div className="recipe-list-rows">
           {isLoading ? (
-            <div style={{ padding: '20px', color: '#CCC', fontFamily: "'Courier Prime', monospace", fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Loading…</div>
+            <div style={{ padding: '20px', color: 'var(--text-muted)', fontFamily: "'DM Mono', monospace", fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Loading…</div>
           ) : recipes.length === 0 ? (
-            <div style={{ padding: '20px', color: '#CCC', fontFamily: "'Courier Prime', monospace", fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em' }}>No recipes yet</div>
+            <div style={{ padding: '20px', color: 'var(--text-muted)', fontFamily: "'DM Mono', monospace", fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em' }}>No recipes yet</div>
           ) : recipes.map(r => (
             <div key={r.id} className={`recipe-list-row${selectedId === r.id ? ' active' : ''}`} onClick={() => setSelectedId(r.id)}>
               <div className="recipe-list-row-name">{r.name}</div>
@@ -861,6 +925,8 @@ function CookbookScreen({ cookbook, onBack, onNewRecipe, onStartCook, favouriteI
             inShoppingList={shoppingRecipeIds.has(selectedRecipe.id)}
             mobileBackToList={() => setSelectedId(null)}
             onEdit={onEditRecipe ? () => onEditRecipe(cookbook.id, selectedId) : undefined}
+            currentUserId={currentUserId}
+            onTogglePublic={onTogglePublic ? (rId, isPublic) => onTogglePublic(cookbook.id, rId, isPublic) : undefined}
           />
         ) : (
           <div className="detail-empty-state">
@@ -938,8 +1004,8 @@ function RecipeFormScreen({ initialData, onBack, onSave, saving, unitPreference 
           {saving ? 'Saving...' : isEdit ? 'Update' : 'Save'}
         </button>
       </div>
-      <div style={{ padding: '0 28px 12px', borderBottom: '2px solid var(--black)' }}>
-        <input className="form-input" placeholder="Recipe name" value={name} onChange={e => setName(e.target.value)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 24, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.02em', border: 'none', padding: '12px 0', background: 'transparent', width: '100%' }} />
+      <div style={{ padding: '0 28px 12px', borderBottom: '1px solid var(--rule)' }}>
+        <input className="form-input" placeholder="Recipe name" value={name} onChange={e => setName(e.target.value)} style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: 'italic', fontSize: 28, fontWeight: 300, letterSpacing: '0.01em', border: 'none', padding: '12px 0', background: 'transparent', width: '100%' }} />
       </div>
       <div className="tabs">
         {['Details', 'Ingredients', 'Steps'].map((t, i) => (
@@ -976,7 +1042,7 @@ function RecipeFormScreen({ initialData, onBack, onSave, saving, unitPreference 
               <button type="button" className={`unit-btn${!isPublic ? ' active' : ''}`} onClick={() => setIsPublic(false)}>Private</button>
               <button type="button" className={`unit-btn${isPublic ? ' active' : ''}`} onClick={() => setIsPublic(true)}>Public</button>
             </div>
-            <p style={{ fontFamily: "'Courier Prime', monospace", fontSize: 11, color: '#AAA', marginTop: 6, letterSpacing: '0.04em' }}>
+            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: 'var(--text-muted)', marginTop: 6, letterSpacing: '0.04em' }}>
               {isPublic ? 'Visible to everyone on the platform.' : 'Only visible to you.'}
             </p>
           </div>
@@ -1049,8 +1115,8 @@ function RecipeFormScreen({ initialData, onBack, onSave, saving, unitPreference 
                   {steps.length > 1 && <button className="remove-btn" onClick={() => removeStep(step.id)}>×</button>}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, color: '#888' }}>
-                    <input type="checkbox" checked={step.hasTimer} onChange={e => updateStep(step.id, 'hasTimer', e.target.checked)} style={{ accentColor: 'var(--red)' }} />
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, color: 'var(--text-secondary)' }}>
+                    <input type="checkbox" checked={step.hasTimer} onChange={e => updateStep(step.id, 'hasTimer', e.target.checked)} style={{ accentColor: 'var(--blue)' }} />
                     Timer
                   </label>
                   {step.hasTimer && (
@@ -1068,7 +1134,57 @@ function RecipeFormScreen({ initialData, onBack, onSave, saving, unitPreference 
   );
 }
 
-function RecipeDetailScreen({ recipe, cookbook, onBack, onStartCook, isFavourite, onToggleFavourite, onAddToCookbook, onOpenAddToList, inShoppingList, mobileBackToList, onEdit }) {
+function RecipeDetailScreen({ recipe, cookbook, onBack, onStartCook, isFavourite, onToggleFavourite, onAddToCookbook, onOpenAddToList, inShoppingList, mobileBackToList, onEdit, currentUserId, onTogglePublic }) {
+  const [likeCount, setLikeCount] = useState(0);
+  const [likedByMe, setLikedByMe] = useState(false);
+  const [comments, setComments] = useState([]);
+  const [commentText, setCommentText] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [isPublic, setIsPublic] = useState(recipe.isPublic);
+
+  useEffect(() => {
+    getRecipeLikes(recipe.id).then(({ count, likedByMe }) => {
+      setLikeCount(count);
+      setLikedByMe(likedByMe);
+    });
+    getRecipeComments(recipe.id).then(setComments);
+  }, [recipe.id]);
+
+  const handleLike = async () => {
+    const isNowLiked = await toggleRecipeLike(recipe.id);
+    setLikedByMe(isNowLiked);
+    setLikeCount(prev => isNowLiked ? prev + 1 : prev - 1);
+  };
+
+  const handleComment = async () => {
+    if (!commentText.trim() || submitting) return;
+    setSubmitting(true);
+    try {
+      await addRecipeComment(recipe.id, commentText);
+      const updated = await getRecipeComments(recipe.id);
+      setComments(updated);
+      setCommentText('');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    await deleteRecipeComment(commentId);
+    setComments(prev => prev.filter(c => c.id !== commentId));
+  };
+
+  const handleTogglePublic = async () => {
+    const next = !isPublic;
+    setIsPublic(next);
+    try {
+      await setRecipePublic(recipe.id, next);
+      onTogglePublic?.(recipe.id, next);
+    } catch (err) {
+      setIsPublic(!next);
+      alert('Failed to update visibility: ' + (err?.message || 'Unknown error'));
+    }
+  };
 
   return (
     <div className="screen">
@@ -1078,12 +1194,12 @@ function RecipeDetailScreen({ recipe, cookbook, onBack, onStartCook, isFavourite
         </div>
       )}
       <div className="detail-hero safe-top">
-        <div style={{ marginBottom: 12, cursor: 'pointer', color: '#888', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }} onClick={onBack}>
-          <YesChefLogo chefColor="#888" size={16} />
+        <div style={{ marginBottom: 12, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, fontFamily: "'DM Mono', monospace", fontWeight: 400, textTransform: 'uppercase', letterSpacing: '0.12em' }} onClick={onBack}>
+          <AppLogo size={14} />
           <span>/ {cookbook.name}</span>
         </div>
-        <h1 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', fontSize: 40, color: 'var(--black)', lineHeight: 0.95, letterSpacing: '0.01em' }}>{recipe.name}</h1>
-        {recipe.description && <p style={{ color: '#888', fontSize: 14, marginTop: 8 }}>{recipe.description}</p>}
+        <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, fontStyle: 'italic', fontSize: 40, color: 'var(--ink)', lineHeight: 1.05, letterSpacing: '0.02em' }}>{recipe.name}</h1>
+        {recipe.description && <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginTop: 8 }}>{recipe.description}</p>}
         {recipe.tags?.length > 0 && (
           <div className="tag-pills" style={{ marginTop: 10 }}>
             {recipe.tags.map(tag => <span key={tag} className="tag-pill-display">{tag}</span>)}
@@ -1096,17 +1212,17 @@ function RecipeDetailScreen({ recipe, cookbook, onBack, onStartCook, isFavourite
           {recipe.cookedCount > 0 && <span className="detail-meta-item">Cooked {recipe.cookedCount}×</span>}
           {recipe.lastCookedAt
             ? <span className="detail-meta-item">Last cooked {timeAgo(recipe.lastCookedAt)}</span>
-            : <span className="detail-meta-item" style={{ color: '#CCC' }}>Never cooked</span>
+            : <span className="detail-meta-item" style={{ color: 'var(--text-muted)' }}>Never cooked</span>
           }
-          <span className="detail-meta-item" style={{ color: recipe.isPublic ? 'var(--red)' : '#CCC' }}>
-            {recipe.isPublic ? '◎ Public' : '◉ Private'}
-          </span>
+          <button onClick={handleTogglePublic} className="detail-meta-item" style={{ color: isPublic ? 'var(--blue)' : '#999', background: 'none', border: 'none', cursor: 'pointer', padding: 0, font: 'inherit', textDecoration: 'underline dotted' }}>
+            {isPublic ? '◎ Public' : '◉ Private'}
+          </button>
         </div>
       </div>
 
       <div className="recipe-actions">
         <button className={`recipe-action-btn${isFavourite ? ' active' : ''}`} onClick={() => onToggleFavourite(recipe.id)}>
-          <span className="recipe-action-icon" style={isFavourite ? { color: 'var(--red)' } : {}}>{isFavourite ? '♥' : '♡'}</span>
+          <span className="recipe-action-icon" style={isFavourite ? { color: 'var(--blue)' } : {}}>{isFavourite ? '♥' : '♡'}</span>
           <span className="recipe-action-label">Favourite</span>
         </button>
         <button className="recipe-action-btn" onClick={() => onAddToCookbook(recipe.id, cookbook.id)}>
@@ -1114,8 +1230,12 @@ function RecipeDetailScreen({ recipe, cookbook, onBack, onStartCook, isFavourite
           <span className="recipe-action-label">Add to Cookbook</span>
         </button>
         <button className={`recipe-action-btn${inShoppingList ? ' active' : ''}`} onClick={() => !inShoppingList && onOpenAddToList(recipe)}>
-          <span className="recipe-action-icon" style={inShoppingList ? { color: 'var(--red)' } : {}}>{inShoppingList ? '✓' : '+'}</span>
+          <span className="recipe-action-icon" style={inShoppingList ? { color: 'var(--blue)' } : {}}>{inShoppingList ? '✓' : '+'}</span>
           <span className="recipe-action-label">{inShoppingList ? 'On List' : 'Add to List'}</span>
+        </button>
+        <button className={`recipe-action-btn${likedByMe ? ' active' : ''}`} onClick={handleLike}>
+          <span className="recipe-action-icon">{likedByMe ? '♥' : '♡'}</span>
+          <span className="recipe-action-label">{likeCount > 0 ? likeCount : 'Like'}</span>
         </button>
         {onEdit && (
           <button className="recipe-action-btn" onClick={onEdit}>
@@ -1134,7 +1254,7 @@ function RecipeDetailScreen({ recipe, cookbook, onBack, onStartCook, isFavourite
                 {ing.qty && <span className="ingredient-qty" style={{ flexShrink: 0 }}>{ing.qty}</span>}
                 <span>{ing.name}</span>
               </div>
-              <a href={ahUrl(ing.name)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontFamily: "'Courier Prime', monospace", fontSize: 11, fontWeight: 700, color: 'var(--red)', textDecoration: 'none', flexShrink: 0, marginLeft: 10 }}>AH</a>
+              <a href={ahUrl(ing.name)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 500, color: 'var(--blue)', textDecoration: 'none', flexShrink: 0, marginLeft: 10 }}>AH</a>
             </div>
           ))}
         </div>
@@ -1145,13 +1265,44 @@ function RecipeDetailScreen({ recipe, cookbook, onBack, onStartCook, isFavourite
               <div className="step-num">{idx + 1}</div>
               <div>
                 <div style={{ fontSize: 14, lineHeight: 1.5 }}>{step.text}</div>
-                {step.timer && <div style={{ fontSize: 12, color: 'var(--red)', marginTop: 4, fontFamily: "'Courier Prime', monospace" }}>{step.timer} min timer</div>}
+                {step.timer && <div style={{ fontSize: 12, color: 'var(--blue)', marginTop: 4, fontFamily: "'DM Mono', monospace" }}>{step.timer} min timer</div>}
               </div>
             </div>
           ))}
         </div>
         <div style={{ padding: '0 20px 40px' }}>
           <button className="btn btn-primary btn-full" style={{ height: 52, fontSize: 18 }} onClick={onStartCook}>Start Cooking</button>
+        </div>
+
+        <div className="comments-section">
+          <h2 style={{ fontFamily: "'DM Mono', monospace", fontWeight: 400, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.18em', color: 'var(--text-muted)', marginBottom: 16 }}>
+            Comments{comments.length > 0 ? ` (${comments.length})` : ''}
+          </h2>
+          {comments.map(c => (
+            <div key={c.id} className="comment-item">
+              <div className="comment-avatar">{(c.profiles?.display_name || c.profiles?.username || '?')[0].toUpperCase()}</div>
+              <div className="comment-body">
+                <div className="comment-author">{c.profiles?.display_name || c.profiles?.username || 'Unknown'}</div>
+                <div className="comment-text">{c.text}</div>
+                <div className="comment-time">{timeAgo(c.created_at)}</div>
+              </div>
+              {currentUserId && c.user_id === currentUserId && (
+                <button className="comment-delete" onClick={() => handleDeleteComment(c.id)}>×</button>
+              )}
+            </div>
+          ))}
+          {currentUserId && (
+            <div className="comment-input-row">
+              <textarea
+                className="comment-input"
+                placeholder="Add a comment…"
+                value={commentText}
+                onChange={e => setCommentText(e.target.value)}
+                rows={2}
+              />
+              <button className="comment-submit" onClick={handleComment} disabled={submitting || !commentText.trim()}>Post</button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -1228,19 +1379,19 @@ function PrepChecklistScreen({ recipe, onBack, onStart }) {
   return (
     <div className="screen">
       <div className="hero safe-top">
-        <div style={{ marginBottom: 12, cursor: 'pointer', color: '#888', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }} onClick={onBack}>
-          <YesChefLogo chefColor="#888" size={16} />
+        <div style={{ marginBottom: 12, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, fontFamily: "'DM Mono', monospace", fontWeight: 400, textTransform: 'uppercase', letterSpacing: '0.12em' }} onClick={onBack}>
+          <AppLogo size={14} />
           <span>/ Back</span>
         </div>
         <div className="hero-label">Before we start</div>
         <h1 className="hero-title">Grab your<br/>ingredients</h1>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', padding: '16px 20px 8px', borderBottom: '1px solid #EEEEEE' }}>
-        <span style={{ fontSize: 13, color: '#888', flex: 1, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Servings</span>
+        <span style={{ fontSize: 13, color: 'var(--text-secondary)', flex: 1, fontFamily: "'DM Mono', monospace", fontWeight: 300 }}>Servings</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button style={{ width: 32, height: 32, border: '2px solid var(--black)', background: 'white', cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setServings(s => Math.max(1, s - 1))}>−</button>
-          <span style={{ fontSize: 18, fontWeight: 700, fontFamily: "'Barlow Condensed', sans-serif", minWidth: 20, textAlign: 'center' }}>{servings}</span>
-          <button style={{ width: 32, height: 32, border: '2px solid var(--black)', background: 'white', cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setServings(s => s + 1)}>+</button>
+          <button style={{ width: 32, height: 32, border: '1px solid var(--ink)', background: 'white', cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setServings(s => Math.max(1, s - 1))}>−</button>
+          <span style={{ fontSize: 18, fontWeight: 400, fontFamily: "'DM Mono', monospace", minWidth: 20, textAlign: 'center' }}>{servings}</span>
+          <button style={{ width: 32, height: 32, border: '1px solid var(--ink)', background: 'white', cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setServings(s => s + 1)}>+</button>
         </div>
       </div>
       <div className="checklist-progress" style={{ margin: '8px 20px' }}>
@@ -1257,14 +1408,14 @@ function PrepChecklistScreen({ recipe, onBack, onStart }) {
                 <div className="ci-name">{ing.name}</div>
                 <div className="ci-qty">{scaleQty(ing.qty)}</div>
               </div>
-              <a href={ahUrl(ing.name)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontFamily: "'Courier Prime', monospace", fontSize: 11, fontWeight: 700, color: 'var(--red)', textDecoration: 'none', flexShrink: 0, padding: '4px 2px' }}>AH</a>
+              <a href={ahUrl(ing.name)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 500, color: 'var(--blue)', textDecoration: 'none', flexShrink: 0, padding: '4px 2px' }}>AH</a>
             </div>
           ))}
         </div>
         <div style={{ padding: '8px 20px 40px' }}>
           {showWarning ? (
-            <div style={{ background: '#FFF5F2', borderLeft: '3px solid var(--red)', padding: '16px', marginBottom: 12 }}>
-              <p style={{ fontSize: 14, lineHeight: 1.55, color: 'var(--black)', marginBottom: 14 }}>
+            <div style={{ background: 'transparent', borderLeft: '2px solid var(--blue)', padding: '16px', marginBottom: 12 }}>
+              <p style={{ fontSize: 14, lineHeight: 1.55, color: 'var(--text-primary)', marginBottom: 14 }}>
                 It looks like you haven't confirmed all your ingredients. Do you still want to continue?
               </p>
               <div style={{ display: 'flex', gap: 8 }}>
@@ -1302,7 +1453,7 @@ function TimerWidget({ minutes }) {
   return (
     <div className="timer-widget">
       <div>
-        <div style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: "'Courier Prime', monospace", fontWeight: 700, color: '#888', marginBottom: 2 }}>Timer</div>
+        <div style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: "'DM Mono', monospace", fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 2 }}>Timer</div>
         <div className={`timer-display${done ? ' done' : ''}`}>{done ? 'Done!' : fmt(seconds)}</div>
       </div>
       <button className={`timer-start-btn${running ? ' running' : ''}`} onClick={toggle}>
@@ -1312,9 +1463,23 @@ function TimerWidget({ minutes }) {
   );
 }
 
+function matchIngToStep(ingName, stepText) {
+  const norm = s => s.toLowerCase().replace(/[^a-z\s]/g, '');
+  const variants = w => {
+    const vs = [w, w + 's', w + 'es', w + 'ed', w + 'ing'];
+    if (w.endsWith('y') && w.length > 2) vs.push(w.slice(0, -1) + 'ies');
+    if (w.endsWith('e') && w.length > 3) vs.push(w.slice(0, -1) + 'ing');
+    return vs;
+  };
+  const stepWords = new Set(norm(stepText).split(/\s+/));
+  const ingWords = norm(ingName).split(/\s+/).filter(w => w.length >= 3);
+  return ingWords.length > 0 && ingWords.some(iw => variants(iw).some(v => stepWords.has(v)));
+}
+
 function CookModeScreen({ recipe, onFinish }) {
   const [stepIdx, setStepIdx] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [ingrOpen, setIngrOpen] = useState(false);
   const [timers, setTimers] = useState([]);
   const steps = recipe.steps;
   const current = steps[stepIdx];
@@ -1343,14 +1508,19 @@ function CookModeScreen({ recipe, onFinish }) {
     <div className="cook-screen">
       {/* Main cook view — always rendered */}
       <div className="cook-header safe-top">
-        <div className="cook-logo"><span className="line1">MISE EN</span><span className="line2">PLACE</span></div>
+        <div style={{ fontFamily: "'DM Mono', monospace", fontWeight: 400, fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--blue-pale)' }}>The Pass</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div className="cook-dots">
             {steps.map((_, i) => <div key={i} className={`cook-dot${i === stepIdx ? ' active' : i < stepIdx ? ' done' : ''}`} />)}
           </div>
-          <button className={`cook-timer-btn${timers.length > 0 ? ' has-timers' : ''}`} onClick={() => setDrawerOpen(o => !o)}>
-            ⏱{timers.length > 0 && <span className="cook-timer-badge">{timers.length}</span>}
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="cook-timer-btn" onClick={() => { setIngrOpen(o => !o); setDrawerOpen(false); }}>
+              {recipe.ingredients.length}
+            </button>
+            <button className={`cook-timer-btn${timers.length > 0 ? ' has-timers' : ''}`} onClick={() => { setDrawerOpen(o => !o); setIngrOpen(false); }}>
+              ⏱{timers.length > 0 && <span className="cook-timer-badge">{timers.length}</span>}
+            </button>
+          </div>
         </div>
       </div>
       <div className="cook-steps">
@@ -1358,6 +1528,20 @@ function CookModeScreen({ recipe, onFinish }) {
         <div className="cook-current">
           <div className="cook-step-label">Step {stepIdx + 1} of {steps.length}</div>
           <p className="cook-current-text">{current.text}</p>
+          {(() => {
+            const mentioned = recipe.ingredients.filter(ing =>
+              ing.qty && matchIngToStep(ing.name, current.text)
+            );
+            return mentioned.length > 0 ? (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 10px', marginTop: 14 }}>
+                {mentioned.map((ing, i) => (
+                  <span key={i} style={{ fontFamily: "'DM Mono', monospace", fontSize: 13, color: '#E8EEFB', background: 'rgba(27,79,216,0.18)', padding: '3px 8px', borderRadius: 0 }}>
+                    {ing.qty} {ing.name}
+                  </span>
+                ))}
+              </div>
+            ) : null;
+          })()}
           {current.timer && (
             <div className="timer-launch">
               <span className="timer-launch-label">{current.timer} min timer</span>
@@ -1388,6 +1572,22 @@ function CookModeScreen({ recipe, onFinish }) {
       </div>
 
       {/* Timers drawer — overlays from the right */}
+      {ingrOpen && <div className="timers-drawer-overlay" onClick={() => setIngrOpen(false)} />}
+      <div className={`ingr-drawer${ingrOpen ? ' open' : ''}`}>
+        <div className="timers-drawer-head">
+          <span className="timers-drawer-title">Ingredients</span>
+          <button className="timers-drawer-close" onClick={() => setIngrOpen(false)}>×</button>
+        </div>
+        <div className="timers-drawer-body">
+          {recipe.ingredients.map((ing, idx) => (
+            <div key={ing.id || idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+              <span style={{ fontSize: 15, color: '#E8EEFB', fontWeight: 300 }}>{ing.name}</span>
+              {ing.qty && <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 13, color: 'var(--blue)', flexShrink: 0, marginLeft: 12 }}>{ing.qty}</span>}
+            </div>
+          ))}
+        </div>
+      </div>
+
       {drawerOpen && <div className="timers-drawer-overlay" onClick={() => setDrawerOpen(false)} />}
       <div className={`timers-drawer${drawerOpen ? ' open' : ''}`}>
         <div className="timers-drawer-head">
@@ -1444,8 +1644,8 @@ function FeedbackScreen({ recipe, onSave, onSkip }) {
   return (
     <div className="screen">
       <div style={{ padding: '48px 24px 32px' }} className="safe-top">
-        <h1 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 'clamp(48px, 10vw, 72px)', textTransform: 'uppercase', letterSpacing: '-0.01em', lineHeight: 0.92, color: 'var(--black)' }}>How did<br/>it go?</h1>
-        <p style={{ fontSize: 15, color: '#888', marginTop: 10 }}>Quick feedback on your cook</p>
+        <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, fontStyle: 'italic', fontSize: 'clamp(44px, 10vw, 64px)', letterSpacing: '0.02em', lineHeight: 1.05, color: 'var(--ink)' }}>How did<br/>it go?</h1>
+        <p style={{ fontSize: 15, color: 'var(--text-secondary)', marginTop: 10 }}>Quick feedback on your cook</p>
       </div>
       <div className="scroll-body pb-safe" style={{ padding: '0 24px' }}>
         <div style={{ borderTop: '1px solid #EEEEEE' }}>
@@ -1457,14 +1657,14 @@ function FeedbackScreen({ recipe, onSave, onSkip }) {
           ))}
         </div>
         <div style={{ marginTop: 24 }}>
-          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 12, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--black)', marginBottom: 8 }}>Any notes?</div>
+          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, fontWeight: 400, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: 8 }}>Any notes?</div>
           <textarea className="notes-field" placeholder="What would you do differently next time?" value={notes} onChange={e => setNotes(e.target.value)} />
         </div>
         <div style={{ marginTop: 32, display: 'flex', flexDirection: 'column', gap: 12 }}>
           <button className="btn btn-primary btn-full" style={{ height: 52, fontSize: 18 }} onClick={() => onSave(ease, taste, overall, notes)}>
             Save feedback
           </button>
-          <button onClick={onSkip} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Courier Prime', monospace", fontSize: 13, color: '#AAA', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '8px 0' }}>
+          <button onClick={onSkip} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: 13, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '8px 0' }}>
             Skip
           </button>
         </div>
@@ -1558,7 +1758,7 @@ function SearchScreen({ onBack, onOpenUser, currentUserId }) {
       <div className="scroll-body pb-safe">
         {query.trim() ? (
           results.length === 0 ? (
-            <div style={{ padding: '40px 28px', fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#CCC', textTransform: 'uppercase', letterSpacing: '0.08em' }}>No results</div>
+            <div style={{ padding: '40px 28px', fontFamily: "'DM Mono', monospace", fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>No results</div>
           ) : results.map(renderPerson)
         ) : loading ? null : (
           <>
@@ -1575,7 +1775,7 @@ function SearchScreen({ onBack, onOpenUser, currentUserId }) {
               </>
             )}
             {!followingMe.length && !discover.length && (
-              <div style={{ padding: '40px 28px', fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#CCC', textTransform: 'uppercase', letterSpacing: '0.08em' }}>No one to discover yet</div>
+              <div style={{ padding: '40px 28px', fontFamily: "'DM Mono', monospace", fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>No one to discover yet</div>
             )}
           </>
         )}
@@ -1584,9 +1784,13 @@ function SearchScreen({ onBack, onOpenUser, currentUserId }) {
   );
 }
 
-function UserPublicProfileScreen({ userId, currentUserId, onBack }) {
+function UserPublicProfileScreen({ userId, currentUserId, onBack, myCookbooks, onRecipeSaved }) {
   const [data, setData] = useState(null);
   const [following, setFollowing] = useState(false);
+  const [savingRecipe, setSavingRecipe] = useState(null);
+  const [pickingFor, setPickingFor] = useState(null);
+  const [previewRecipe, setPreviewRecipe] = useState(null);
+  const [previewDetail, setPreviewDetail] = useState(null);
 
   useEffect(() => {
     getUserPublicProfile(userId).then(d => {
@@ -1605,10 +1809,32 @@ function UserPublicProfileScreen({ userId, currentUserId, onBack }) {
     }
   };
 
+  const openPreview = (r) => {
+    setPreviewRecipe(r);
+    setPreviewDetail(null);
+    getPublicRecipeDetail(r.id).then(setPreviewDetail).catch(() => {});
+  };
+
+  const closePreview = () => { setPreviewRecipe(null); setPreviewDetail(null); };
+
+  const handleSaveRecipe = async (recipe, cookbookId) => {
+    setSavingRecipe(recipe.id);
+    setPickingFor(null);
+    try {
+      await copyRecipeToMyCookbook(recipe.id, cookbookId);
+      onRecipeSaved?.(cookbookId);
+      closePreview();
+    } catch (err) {
+      alert('Failed to save recipe: ' + (err?.message || 'Unknown error'));
+    } finally {
+      setSavingRecipe(null);
+    }
+  };
+
   if (!data) {
     return (
       <div className="loading-screen">
-        <div className="loading-logo"><span className="line1">MISE EN</span><span className="line2">PLACE</span></div>
+        <div className="loading-logo">The Pass</div>
       </div>
     );
   }
@@ -1623,18 +1849,18 @@ function UserPublicProfileScreen({ userId, currentUserId, onBack }) {
       </div>
       <div className="page-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
-          <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--black)', color: 'var(--white)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 28 }}>{initial}</div>
+          <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--ink)', color: 'var(--white)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'DM Mono', monospace", fontWeight: 400, fontSize: 22 }}>{initial}</div>
           <div>
-            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 28, textTransform: 'uppercase', letterSpacing: '-0.01em', color: 'var(--black)' }}>{profile?.display_name || profile?.username}</div>
-            <div style={{ fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#999' }}>@{profile?.username}</div>
+            <div style={{ fontFamily: "'DM Mono', monospace", fontWeight: 400, fontSize: 22, textTransform: 'uppercase', letterSpacing: '-0.01em', color: 'var(--ink)' }}>{profile?.display_name || profile?.username}</div>
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 12, color: 'var(--text-secondary)' }}>@{profile?.username}</div>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 24, marginBottom: 16 }}>
-          <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#888' }}>
-            <span style={{ color: 'var(--black)', fontWeight: 700, fontSize: 15 }}>{followCounts.followers}</span> followers
+          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 12, color: 'var(--text-secondary)' }}>
+            <span style={{ color: 'var(--text-primary)', fontWeight: 400, fontSize: 15 }}>{followCounts.followers}</span> followers
           </span>
-          <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#888' }}>
-            <span style={{ color: 'var(--black)', fontWeight: 700, fontSize: 15 }}>{followCounts.following}</span> following
+          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 12, color: 'var(--text-secondary)' }}>
+            <span style={{ color: 'var(--text-primary)', fontWeight: 400, fontSize: 15 }}>{followCounts.following}</span> following
           </span>
         </div>
         {userId !== currentUserId && (
@@ -1648,7 +1874,7 @@ function UserPublicProfileScreen({ userId, currentUserId, onBack }) {
           <>
             <div className="people-section-label">Recipes</div>
             {publicRecipes.map(r => (
-              <div key={r.id} className="flat-row" style={{ cursor: 'default' }}>
+              <div key={r.id} className="flat-row" onClick={() => openPreview(r)}>
                 <div className="flat-row-info">
                   <div className="flat-row-name">{r.name}</div>
                   <div className="flat-row-meta">
@@ -1660,11 +1886,7 @@ function UserPublicProfileScreen({ userId, currentUserId, onBack }) {
                     </div>
                   )}
                 </div>
-                {r.cookedCount > 0 && (
-                  <span style={{ fontFamily: "'Courier Prime', monospace", fontSize: 11, color: '#BBB', flexShrink: 0, marginLeft: 12 }}>
-                    {r.cookedCount}× cooked
-                  </span>
-                )}
+                <span className="flat-row-arrow">›</span>
               </div>
             ))}
           </>
@@ -1683,9 +1905,98 @@ function UserPublicProfileScreen({ userId, currentUserId, onBack }) {
           </>
         )}
         {!publicRecipes.length && !cookbooks.length && (
-          <div style={{ padding: '40px 28px', fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#CCC', textTransform: 'uppercase', letterSpacing: '0.08em' }}>No public recipes yet</div>
+          <div style={{ padding: '40px 28px', fontFamily: "'DM Mono', monospace", fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>No public recipes yet</div>
         )}
       </div>
+
+      {pickingFor && (
+        <div className="sheet-overlay" onClick={() => setPickingFor(null)}>
+          <div className="sheet" onClick={e => e.stopPropagation()}>
+            <div className="sheet-handle" />
+            <div className="sheet-title">Save "{pickingFor.name}" to…</div>
+            <div className="flat-list">
+              {(myCookbooks || []).filter(cb => cb.id !== 'favourites').map(cb => (
+                <div key={cb.id} className="flat-row" onClick={() => handleSaveRecipe(pickingFor, cb.id)}>
+                  <div className="flat-row-info">
+                    <div className="flat-row-name">{cb.name}</div>
+                    <div className="flat-row-meta">{cb.recipeCount ?? 0} recipes</div>
+                  </div>
+                  <span className="flat-row-arrow">›</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {previewRecipe && (
+        <div style={{ position: 'fixed', inset: 0, background: 'var(--paper)', zIndex: 100, display: 'flex', flexDirection: 'column', overflowY: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', padding: '0 20px', height: 52, borderBottom: '1px solid var(--rule)', flexShrink: 0, gap: 12 }}>
+            <button onClick={closePreview} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 400, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-secondary)', padding: 0 }}>← Back</button>
+            {userId !== currentUserId && myCookbooks?.length > 0 && (
+              <button
+                onClick={() => setPickingFor(previewDetail || previewRecipe)}
+                disabled={savingRecipe === previewRecipe.id}
+                style={{ marginLeft: 'auto', background: 'transparent', border: '1px solid var(--blue)', color: 'var(--blue)', fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 400, textTransform: 'uppercase', letterSpacing: '0.1em', padding: '8px 18px', cursor: 'pointer' }}
+              >
+                {savingRecipe === previewRecipe.id ? 'Saving…' : 'Save to Cookbook'}
+              </button>
+            )}
+          </div>
+          <div style={{ overflowY: 'auto', flex: 1 }}>
+            {!previewDetail ? (
+              <div style={{ padding: 40, textAlign: 'center', fontFamily: "'DM Mono', monospace", fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Loading…</div>
+            ) : (
+              <>
+                <div className="detail-hero safe-top">
+                  <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, fontStyle: 'italic', fontSize: 40, color: 'var(--ink)', lineHeight: 1.05, letterSpacing: '0.02em' }}>{previewDetail.name}</h1>
+                  {previewDetail.description && <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginTop: 8 }}>{previewDetail.description}</p>}
+                  {previewDetail.tags?.length > 0 && (
+                    <div className="tag-pills" style={{ marginTop: 10 }}>
+                      {previewDetail.tags.map(t => <span key={t} className="tag-pill-display">{t}</span>)}
+                    </div>
+                  )}
+                  <div className="detail-meta">
+                    <span className="detail-meta-item">{previewDetail.time} min</span>
+                    <span className="detail-meta-item">{previewDetail.difficulty}</span>
+                    <span className="detail-meta-item">{previewDetail.servings} servings</span>
+                  </div>
+                </div>
+                <div className="detail-section">
+                  <h2>Ingredients</h2>
+                  {previewDetail.ingredients.map((ing, idx) => (
+                    <div key={ing.id || idx} className="ingredient-item">
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flex: 1 }}>
+                        {ing.qty && <span className="ingredient-qty" style={{ flexShrink: 0 }}>{ing.qty}</span>}
+                        <span>{ing.name}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="detail-section">
+                  <h2>Steps</h2>
+                  {previewDetail.steps.map((step, idx) => (
+                    <div key={step.id || idx} className="step-preview">
+                      <div className="step-num">{idx + 1}</div>
+                      <div>
+                        <div style={{ fontSize: 14, lineHeight: 1.5 }}>{step.text}</div>
+                        {step.timer && <div style={{ fontSize: 12, color: 'var(--blue)', marginTop: 4, fontFamily: "'DM Mono', monospace" }}>{step.timer} min timer</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {userId !== currentUserId && myCookbooks?.length > 0 && (
+                  <div style={{ padding: '0 20px 40px' }}>
+                    <button className="btn btn-primary btn-full" style={{ height: 52, fontSize: 18 }} onClick={() => setPickingFor(previewDetail)}>
+                      Save to Cookbook
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1749,7 +2060,7 @@ function TimelineScreen({ currentUserId, onOpenUser }) {
         <div className="page-header-title">Timeline</div>
       </div>
       {events === null ? (
-        <div style={{ padding: '40px 28px', fontFamily: "'Courier Prime', monospace", fontSize: 12, color: '#CCC', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Loading...</div>
+        <div style={{ padding: '40px 28px', fontFamily: "'DM Mono', monospace", fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Loading...</div>
       ) : events.length === 0 ? (
         <div className="timeline-empty">Nothing here yet.<br/>Follow people to see<br/>their activity.</div>
       ) : (
@@ -1830,7 +2141,7 @@ function PostScreen({ recipe, onPost, onSkip }) {
         >
           {posting ? 'Posting...' : 'Post to timeline'}
         </button>
-        <button onClick={onSkip} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Courier Prime', monospace", fontSize: 13, color: '#AAA', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '8px 0', alignSelf: 'center' }}>
+        <button onClick={onSkip} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: 13, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '8px 0', alignSelf: 'center' }}>
           Skip
         </button>
       </div>
@@ -2017,9 +2328,18 @@ export default function App() {
       const updated = await getRecipes(cbId);
       setRecipesMap(prev => ({ ...prev, [cbId]: updated }));
       navigate('cookbook', { cbId, rId });
+    } catch (err) {
+      alert('Failed to save recipe: ' + (err?.message || 'Unknown error'));
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleToggleRecipePublic = (cbId, rId, isPublic) => {
+    setRecipesMap(prev => ({
+      ...prev,
+      [cbId]: (prev[cbId] || []).map(r => r.id === rId ? { ...r, isPublic } : r),
+    }));
   };
 
   const handleLogout = async () => {
@@ -2038,7 +2358,7 @@ export default function App() {
       <>
         <style>{STYLES}</style>
         <div className="loading-screen">
-          <div className="loading-logo"><span className="line1">MISE EN</span><span className="line2">PLACE</span></div>
+          <div className="loading-logo">The Pass</div>
         </div>
       </>
     );
@@ -2058,7 +2378,7 @@ export default function App() {
       <>
         <style>{STYLES}</style>
         <div className="loading-screen">
-          <div className="loading-logo"><span className="line1">MISE EN</span><span className="line2">PLACE</span></div>
+          <div className="loading-logo">The Pass</div>
         </div>
       </>
     );
@@ -2100,6 +2420,10 @@ export default function App() {
             userId={screen.userId}
             currentUserId={user.id}
             onBack={() => navigate(screen._from || 'home')}
+            myCookbooks={cookbooks}
+            onRecipeSaved={(cbId) => {
+              getRecipes(cbId).then(recipes => setRecipesMap(prev => ({ ...prev, [cbId]: recipes })));
+            }}
           />
         )}
         {s === 'profile' && (
@@ -2123,6 +2447,8 @@ export default function App() {
             shoppingRecipeIds={shoppingRecipeIds}
             initialRecipeId={rId || null}
             onEditRecipe={(cbId, rId) => navigate('edit-recipe', { cbId, rId })}
+            currentUserId={user.id}
+            onTogglePublic={handleToggleRecipePublic}
           />
         )}
         {s === 'new-recipe' && cb && <RecipeFormScreen onBack={() => navigate('cookbook', { cbId })} onSave={data => handleNewRecipe(cbId, data)} saving={saving} unitPreference={profile?.unit_preference || 'metric'} />}
@@ -2138,6 +2464,8 @@ export default function App() {
             onOpenAddToList={handleOpenAddToList}
             inShoppingList={shoppingRecipeIds.has(recipe.id)}
             onEdit={() => navigate('edit-recipe', { cbId, rId })}
+            currentUserId={user.id}
+            onTogglePublic={(rId, isPublic) => handleToggleRecipePublic(cbId, rId, isPublic)}
           />
         )}
         {s === 'prep' && cb && recipe && <PrepChecklistScreen recipe={recipe} onBack={() => navigate('recipe', { cbId, rId })} onStart={() => navigate('cook', { cbId, rId })} />}
