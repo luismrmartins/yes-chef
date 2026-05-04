@@ -34,7 +34,7 @@ const STYLES = `
     --white: #FFFFFF;
   }
 
-  body { font-family: 'DM Mono', monospace; background: var(--paper); color: var(--text-primary); min-height: 100vh; font-weight: 300; }
+  body { font-family: 'DM Mono', monospace; background: var(--paper); color: var(--text-primary); font-weight: 300; }
   .app { width: 100%; min-height: 100vh; position: relative; overflow-x: hidden; background: var(--paper); }
 
   .btn {
@@ -304,8 +304,8 @@ const STYLES = `
   .home-icon-btn:hover { color: var(--text-primary); }
 
   /* ── Home: 3-col layout ─────────────────────────────── */
-  .home-wrapper { display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: var(--paper); }
-  .home-body { flex: 1; overflow: hidden; display: grid; grid-template-columns: 1fr 3fr 1fr; }
+  .home-wrapper { display: flex; flex-direction: column; background: var(--paper); }
+  .home-body { flex: 1; display: flex; flex-direction: column; }
   .home-col { overflow-y: auto; border-right: 1px solid var(--rule); display: flex; flex-direction: column; min-width: 0; }
   .home-col:last-child { border-right: none; }
   .home-col-header { padding: 12px 18px; border-bottom: 1px solid var(--rule); flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--paper); z-index: 1; }
@@ -347,9 +347,9 @@ const STYLES = `
   }
 
   /* ── Two-panel cookbook layout ──────────────────────── */
-  .cookbook-layout { display: flex; height: 100vh; overflow: hidden; background: var(--paper); }
-  .recipe-list-panel { width: 260px; flex-shrink: 0; border-right: 1px solid var(--rule); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-  .recipe-detail-panel { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+  .cookbook-layout { display: block; background: var(--paper); }
+  .recipe-list-panel { width: 100%; display: flex; flex-direction: column; }
+  .recipe-detail-panel { display: none; }
   .list-panel-header { padding: 24px 20px 14px; border-bottom: 1px solid var(--rule); flex-shrink: 0; }
   .list-panel-back { background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; color: var(--text-muted); font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.1em; padding: 0; margin-bottom: 10px; }
   .list-panel-back:hover { color: var(--text-primary); }
@@ -363,7 +363,7 @@ const STYLES = `
   .recipe-list-row-meta { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-muted); margin-top: 2px; font-weight: 300; }
   .list-panel-footer { padding: 12px 16px; border-top: 1px solid var(--rule); flex-shrink: 0; }
   .detail-empty-state { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; min-height: 60vh; }
-  .panel-mobile-back { display: none; }
+  .panel-mobile-back { display: block; border-bottom: 1px solid var(--rule); }
   .panel-mobile-back-btn { background: none; border: none; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); padding: 14px 28px; display: block; }
   .panel-mobile-back-btn:hover { color: var(--text-primary); }
 
@@ -446,6 +446,45 @@ const STYLES = `
   .photo-preview img { width: 100%; max-height: 260px; object-fit: cover; display: block; border: 1px solid var(--rule); }
   .photo-remove { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.55); color: white; border: none; cursor: pointer; width: 28px; height: 28px; border-radius: 0; font-size: 16px; display: flex; align-items: center; justify-content: center; }
   .char-count { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-muted); text-align: right; margin-top: 4px; }
+
+  /* ── App shell ───────────────────────────────────────── */
+  .app-header {
+    position: fixed; top: 0; left: 0; right: 0; height: 52px; z-index: 100;
+    background: var(--paper); border-bottom: 1px solid var(--rule);
+    display: flex; align-items: center; padding: 0 24px; gap: 8px;
+  }
+  .app-header-spacer { flex: 1; }
+  .app-header-btn {
+    width: 36px; height: 36px; background: none; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-primary); transition: opacity 0.15s;
+  }
+  .app-header-btn:hover { opacity: 0.6; }
+  .app-footer {
+    position: fixed; bottom: 0; left: 0; right: 0; height: 56px; z-index: 100;
+    background: var(--paper); border-top: 1px solid var(--rule); display: flex;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .app-footer-tab {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 3px; border: none; background: none;
+    cursor: pointer; color: var(--text-muted); position: relative;
+    transition: color 0.15s;
+  }
+  .app-footer-tab.active { color: var(--blue); }
+  .app-footer-tab.active::before {
+    content: ''; position: absolute; top: 0; left: 12px; right: 12px;
+    height: 2px; background: var(--blue);
+  }
+  .app-footer-label {
+    font-family: 'DM Mono', monospace; font-weight: 300; font-size: 8px;
+    text-transform: uppercase; letter-spacing: 0.1em;
+  }
+  .app-content {
+    position: fixed; top: 52px; bottom: 56px; left: 0; right: 0;
+    overflow-y: auto; -webkit-overflow-scrolling: touch; background: var(--paper);
+  }
+  .app-content-inner { max-width: 480px; margin: 0 auto; }
 
 `;
 
@@ -655,6 +694,57 @@ function AppLogo({ size = 16 }) {
   );
 }
 
+function AppHeader({ onSearch, onProfile }) {
+  return (
+    <header className="app-header">
+      <img src="/logo.png" alt="The Pass" style={{ height: 28, width: 'auto' }} />
+      <div className="app-header-spacer" />
+      <button className="app-header-btn" onClick={onSearch} aria-label="Search">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+      <button className="app-header-btn" onClick={onProfile} aria-label="Profile">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+        </svg>
+      </button>
+    </header>
+  );
+}
+
+function AppFooter({ activeTab, onChangeTab }) {
+  return (
+    <nav className="app-footer">
+      <button className={`app-footer-tab${activeTab === 'feed' ? ' active' : ''}`} onClick={() => onChangeTab('feed')}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        <span className="app-footer-label">Home</span>
+      </button>
+      <button className={`app-footer-tab${activeTab === 'cookbooks' ? ' active' : ''}`} onClick={() => onChangeTab('cookbooks')}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+        </svg>
+        <span className="app-footer-label">Cookbooks</span>
+      </button>
+      <button className={`app-footer-tab${activeTab === 'shopping' ? ' active' : ''}`} onClick={() => onChangeTab('shopping')}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+        </svg>
+        <span className="app-footer-label">Shopping</span>
+      </button>
+      <button className={`app-footer-tab${activeTab === 'profile' ? ' active' : ''}`} onClick={() => onChangeTab('profile')}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span className="app-footer-label">Profile</span>
+      </button>
+    </nav>
+  );
+}
+
 function StarRating({ value, onChange }) {
   return (
     <div className="stars">
@@ -668,8 +758,7 @@ function StarRating({ value, onChange }) {
 const PRIORITY_ORDER = ['today', 'this_week', 'eventually'];
 const PRIORITY_LABELS = { today: 'Today', this_week: 'This Week', eventually: 'Eventually' };
 
-function HomeScreen({ cookbooks, shoppingList, onOpenCookbook, onNewCookbook, onToggleShoppingItem, onDeleteShoppingItem, onClearShoppingList, onOpenProfile, profileInitial, onOpenSearch, currentUserId, onOpenUser }) {
-  const [mobileTab, setMobileTab] = useState('timeline');
+function HomeScreen({ cookbooks, shoppingList, onOpenCookbook, onNewCookbook, onToggleShoppingItem, onDeleteShoppingItem, onClearShoppingList, currentUserId, onOpenUser, activeTab }) {
   const [collapsed, setCollapsed] = useState({});
   const [collapsedRecipes, setCollapsedRecipes] = useState({});
   const [events, setEvents] = useState(null);
@@ -733,111 +822,72 @@ function HomeScreen({ cookbooks, shoppingList, onOpenCookbook, onNewCookbook, on
   }).filter(g => g.count > 0);
   const unchecked = shoppingList.filter(i => !i.checked).length;
 
-  return (
-    <div className="home-wrapper">
-      {/* Top bar */}
-      <div className="home-header">
-        <div style={{ height: 'env(safe-area-inset-top, 0px)' }} />
-        <div className="home-header-row">
-          <button className="home-icon-btn" onClick={onOpenSearch}>⌕</button>
-          <img src="/logo.png" alt="The Pass" style={{ height: 26, width: 'auto' }} />
-          <button className="profile-avatar" onClick={onOpenProfile}>{profileInitial}</button>
-        </div>
-      </div>
-
-      {/* Mobile tab bar */}
-      <div className="home-tab-bar">
-        <button className={`home-tab-btn${mobileTab === 'cookbooks' ? ' active' : ''}`} onClick={() => setMobileTab('cookbooks')}>
-          <span className="home-tab-icon">◎</span>
-          <span className="home-tab-label">Cookbooks</span>
-        </button>
-        <button className={`home-tab-btn${mobileTab === 'timeline' ? ' active' : ''}`} onClick={() => setMobileTab('timeline')}>
-          <span className="home-tab-icon">◌</span>
-          <span className="home-tab-label">Timeline</span>
-        </button>
-        <button className={`home-tab-btn${mobileTab === 'shopping' ? ' active' : ''}`} onClick={() => setMobileTab('shopping')}>
-          <span className="home-tab-icon">◻</span>
-          <span className="home-tab-label">Shopping</span>
+  if (activeTab === 'cookbooks') {
+    return (
+      <div className="home-cb-list">
+        {cookbooks.map(cb => (
+          <button key={cb.id} className="home-cb-list-row" onClick={() => onOpenCookbook(cb.id)}>
+            <span className="home-cb-list-name">{cb.name}</span>
+            <span className="home-cb-list-count">{cb.recipeCount ?? 0}</span>
+          </button>
+        ))}
+        <button className="home-cb-list-row home-cb-new" onClick={onNewCookbook}>
+          <span className="home-cb-list-name">+ New Cookbook</span>
         </button>
       </div>
+    );
+  }
 
-      {/* 3-column body */}
-      <div className="home-body">
-
-        {/* Left col: Cookbooks */}
-        <div className={`home-col home-col-left${mobileTab === 'cookbooks' ? ' active' : ''}`}>
-          <div className="home-col-header">
-            <span className="home-col-title">Cookbooks</span>
-          </div>
-          <div className="home-cb-list">
-            {cookbooks.map(cb => (
-              <button key={cb.id} className="home-cb-list-row" onClick={() => onOpenCookbook(cb.id)}>
-                <span className="home-cb-list-name">{cb.name}</span>
-                <span className="home-cb-list-count">{cb.recipeCount ?? 0}</span>
-              </button>
-            ))}
-            <button className="home-cb-list-row home-cb-new" onClick={onNewCookbook}>
-              <span className="home-cb-list-name">+ New Cookbook</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Center col: Timeline */}
-        <div className={`home-col home-col-center${mobileTab === 'timeline' ? ' active' : ''}`}>
-          <div className="home-col-header">
-            <span className="home-col-title">Timeline</span>
-          </div>
-          {events === null ? (
-            <div className="home-empty">Loading...</div>
-          ) : events.length === 0 ? (
-            <div className="home-empty">Nothing yet.<br />Follow people to see their activity.</div>
-          ) : events.map(renderEvent)}
-        </div>
-
-        {/* Right col: Shopping List */}
-        <div className={`home-col home-col-right${mobileTab === 'shopping' ? ' active' : ''}`}>
-          <div className="home-col-header">
-            <span className="home-col-title">Shopping List</span>
-            {unchecked > 0 && <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: 'var(--text-secondary)' }}>{unchecked} to buy</span>}
-          </div>
-          {shoppingList.length === 0 ? (
-            <div className="home-empty">Your list is empty.</div>
-          ) : (
-            <>
-              {byPriority.map(({ priority, label, byRecipe }) => (
-                <div key={priority} className="shopping-group">
-                  <div className="shopping-group-header" onClick={() => togglePriority(priority)}>
-                    <span>{label}</span>
-                    <span className="shopping-group-toggle">{collapsed[priority] ? '▶' : '▼'}</span>
-                  </div>
-                  {!collapsed[priority] && Object.entries(byRecipe).map(([recipeName, recipeItems]) => (
-                    <div key={recipeName}>
-                      <div className="shopping-recipe-header" onClick={() => toggleRecipe(`${priority}:${recipeName}`)}>
-                        <span>{recipeName}</span>
-                        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: 'var(--text-secondary)' }}>{collapsedRecipes[`${priority}:${recipeName}`] ? '▶' : '▼'}</span>
-                      </div>
-                      {!collapsedRecipes[`${priority}:${recipeName}`] && recipeItems.map(item => (
-                        <div key={item.id} className={`shopping-item${item.checked ? ' done' : ''}`} onClick={() => onToggleShoppingItem(item.id, item.checked)}>
-                          <span className="shopping-item-name">{item.ingredient_name}</span>
-                          <div className="shopping-item-right">
-                            <span className="shopping-item-qty">{item.qty}</span>
-                            <a href={ahUrl(item.ingredient_name)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 500, color: 'var(--blue)', textDecoration: 'none' }}>AH →</a>
-                            <button className="shopping-item-delete" onClick={e => { e.stopPropagation(); onDeleteShoppingItem(item.id); }}>×</button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ))}
+  if (activeTab === 'shopping') {
+    return (
+      <div>
+        {shoppingList.length === 0 ? (
+          <div className="home-empty">Your list is empty.</div>
+        ) : (
+          <>
+            {byPriority.map(({ priority, label, byRecipe }) => (
+              <div key={priority} className="shopping-group">
+                <div className="shopping-group-header" onClick={() => togglePriority(priority)}>
+                  <span>{label}</span>
+                  <span className="shopping-group-toggle">{collapsed[priority] ? '▶' : '▼'}</span>
                 </div>
-              ))}
-              <div style={{ padding: '12px 16px 32px', textAlign: 'center' }}>
-                <button onClick={onClearShoppingList} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Clear list</button>
+                {!collapsed[priority] && Object.entries(byRecipe).map(([recipeName, recipeItems]) => (
+                  <div key={recipeName}>
+                    <div className="shopping-recipe-header" onClick={() => toggleRecipe(`${priority}:${recipeName}`)}>
+                      <span>{recipeName}</span>
+                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: 'var(--text-secondary)' }}>{collapsedRecipes[`${priority}:${recipeName}`] ? '▶' : '▼'}</span>
+                    </div>
+                    {!collapsedRecipes[`${priority}:${recipeName}`] && recipeItems.map(item => (
+                      <div key={item.id} className={`shopping-item${item.checked ? ' done' : ''}`} onClick={() => onToggleShoppingItem(item.id, item.checked)}>
+                        <span className="shopping-item-name">{item.ingredient_name}</span>
+                        <div className="shopping-item-right">
+                          <span className="shopping-item-qty">{item.qty}</span>
+                          <a href={ahUrl(item.ingredient_name)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 500, color: 'var(--blue)', textDecoration: 'none' }}>AH →</a>
+                          <button className="shopping-item-delete" onClick={e => { e.stopPropagation(); onDeleteShoppingItem(item.id); }}>×</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
               </div>
-            </>
-          )}
-        </div>
+            ))}
+            <div style={{ padding: '12px 16px 32px', textAlign: 'center' }}>
+              <button onClick={onClearShoppingList} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Clear list</button>
+            </div>
+          </>
+        )}
       </div>
+    );
+  }
 
+  // Default: feed/timeline
+  return (
+    <div>
+      {events === null ? (
+        <div className="home-empty">Loading...</div>
+      ) : events.length === 0 ? (
+        <div className="home-empty">Nothing yet.<br />Follow people to see their activity.</div>
+      ) : events.map(renderEvent)}
     </div>
   );
 }
@@ -2159,6 +2209,7 @@ export default function App() {
   const [favouriteRecipes, setFavouriteRecipes] = useState([]);
   const [shoppingList, setShoppingList] = useState([]);
   const [sheet, setSheet] = useState(null);
+  const [mainTab, setMainTab] = useState('feed');
   const [pendingAddRecipeId, setPendingAddRecipeId] = useState(null);
 
   useEffect(() => {
@@ -2194,6 +2245,15 @@ export default function App() {
         setRecipesMap(prev => ({ ...prev, [params.cbId]: null }));
         getRecipes(params.cbId).then(recipes => setRecipesMap(prev => ({ ...prev, [params.cbId]: recipes })));
       }
+    }
+  };
+
+  const handleTabChange = (tab) => {
+    if (tab === 'profile') {
+      navigate('profile');
+    } else {
+      setMainTab(tab);
+      if (screen.name !== 'home') navigate('home');
     }
   };
 
@@ -2344,12 +2404,17 @@ export default function App() {
     await supabase.auth.signOut();
   };
 
-  const profileInitial = (profile?.first_name?.[0] || user?.email?.[0] || '?').toUpperCase();
-
   const { name: s, cbId, rId } = screen;
   const cb = cbId ? getCookbook(cbId) : null;
   const recipe = (cbId && rId) ? getRecipe(cbId, rId) : null;
   const shoppingRecipeIds = new Set(shoppingList.map(i => i.recipe_id).filter(Boolean));
+
+  const activeFooterTab = (() => {
+    if (s === 'profile') return 'profile';
+    if (['cookbook', 'new-cookbook', 'new-recipe', 'edit-recipe', 'recipe', 'prep'].includes(s)) return 'cookbooks';
+    if (s === 'home') return mainTab;
+    return mainTab;
+  })();
 
   if (user === undefined) {
     return (
@@ -2386,99 +2451,108 @@ export default function App() {
     navigate('cookbook', { cbId: recipe.cookbookId, rId: recipe.id });
   };
 
+  if (s === 'cook' && recipe) {
+    return (
+      <>
+        <style>{STYLES}</style>
+        <CookModeScreen recipe={recipe} onFinish={() => handleFinishCook(cbId, rId)} />
+      </>
+    );
+  }
+
   return (
     <>
       <style>{STYLES}</style>
-      <div className="app">
-        {s === 'home' && (
-          <HomeScreen
-            cookbooks={cookbooks}
-            shoppingList={shoppingList}
-            onOpenCookbook={id => navigate('cookbook', { cbId: id })}
-            onNewCookbook={() => navigate('new-cookbook')}
-            onToggleShoppingItem={handleToggleShoppingItem}
-            onDeleteShoppingItem={handleDeleteShoppingItem}
-            onClearShoppingList={handleClearShoppingList}
-            onOpenProfile={() => navigate('profile')}
-            profileInitial={profileInitial}
-            onOpenSearch={() => navigate('search')}
-            currentUserId={user.id}
-            onOpenUser={userId => navigate('user-profile', { userId })}
-          />
-        )}
-        {s === 'search' && (
-          <SearchScreen
-            onBack={() => navigate('home')}
-            onOpenUser={userId => navigate('user-profile', { userId })}
-            currentUserId={user.id}
-          />
-        )}
-        {s === 'user-profile' && screen.userId && (
-          <UserPublicProfileScreen
-            userId={screen.userId}
-            currentUserId={user.id}
-            onBack={() => navigate(screen._from || 'home')}
-            myCookbooks={cookbooks}
-            onRecipeSaved={(cbId) => {
-              getRecipes(cbId).then(recipes => setRecipesMap(prev => ({ ...prev, [cbId]: recipes })));
-            }}
-          />
-        )}
-        {s === 'profile' && (
-          <ProfileScreen
-            user={user}
-            onBack={() => navigate('home')}
-            onLogout={handleLogout}
-          />
-        )}
-        {s === 'new-cookbook' && <NewCookbookScreen onBack={() => navigate('home')} onSave={handleNewCookbook} saving={saving} />}
-        {s === 'cookbook' && cb && (
-          <CookbookScreen
-            cookbook={cb}
-            onBack={() => navigate('home')}
-            onNewRecipe={() => navigate('new-recipe', { cbId })}
-            onStartCook={(rId) => navigate('prep', { cbId: cb.id, rId })}
-            favouriteIds={favouriteIds}
-            onToggleFavourite={handleToggleFavourite}
-            onAddToCookbook={handleOpenAddToCookbook}
-            onOpenAddToList={handleOpenAddToList}
-            shoppingRecipeIds={shoppingRecipeIds}
-            initialRecipeId={rId || null}
-            onEditRecipe={(cbId, rId) => navigate('edit-recipe', { cbId, rId })}
-            currentUserId={user.id}
-            onTogglePublic={handleToggleRecipePublic}
-          />
-        )}
-        {s === 'new-recipe' && cb && <RecipeFormScreen onBack={() => navigate('cookbook', { cbId })} onSave={data => handleNewRecipe(cbId, data)} saving={saving} unitPreference={profile?.unit_preference || 'metric'} />}
-        {s === 'edit-recipe' && cb && recipe && <RecipeFormScreen initialData={recipe} onBack={() => navigate('cookbook', { cbId, rId })} onSave={data => handleEditRecipe(cbId, rId, data)} saving={saving} unitPreference={profile?.unit_preference || 'metric'} />}
-        {s === 'recipe' && cb && recipe && (
-          <RecipeDetailScreen
-            recipe={recipe} cookbook={cb}
-            onBack={() => navigate('cookbook', { cbId, rId })}
-            onStartCook={() => navigate('prep', { cbId, rId })}
-            isFavourite={favouriteIds.has(recipe.id)}
-            onToggleFavourite={handleToggleFavourite}
-            onAddToCookbook={handleOpenAddToCookbook}
-            onOpenAddToList={handleOpenAddToList}
-            inShoppingList={shoppingRecipeIds.has(recipe.id)}
-            onEdit={() => navigate('edit-recipe', { cbId, rId })}
-            currentUserId={user.id}
-            onTogglePublic={(rId, isPublic) => handleToggleRecipePublic(cbId, rId, isPublic)}
-          />
-        )}
-        {s === 'prep' && cb && recipe && <PrepChecklistScreen recipe={recipe} onBack={() => navigate('recipe', { cbId, rId })} onStart={() => navigate('cook', { cbId, rId })} />}
-        {s === 'cook' && recipe && <CookModeScreen recipe={recipe} onFinish={() => handleFinishCook(cbId, rId)} />}
-        {s === 'done' && recipe && <DoneScreen recipe={recipe} onContinue={() => navigate('feedback', { cbId, rId })} />}
-        {s === 'feedback' && recipe && <FeedbackScreen recipe={recipe} onSave={(e, t, o, n) => handleSaveFeedback(cbId, rId, e, t, o, n)} onSkip={() => navigate('post', { cbId, rId })} />}
-        {s === 'post' && recipe && <PostScreen recipe={recipe} onPost={(text, url) => handlePost(cbId, rId, text, url)} onSkip={() => navigate('recipe', { cbId, rId })} />}
-
-        {sheet?.type === 'addToCookbook' && (
-          <AddToCookbookSheet cookbooks={cookbooks} currentCbId={sheet.currentCbId} onSelect={handleSelectCookbookForAdd} onClose={() => setSheet(null)} />
-        )}
-        {sheet?.type === 'addToList' && (
-          <AddToListSheet recipe={sheet.recipe} onSelect={(priority) => handleAddToShoppingList(sheet.recipe, priority)} onClose={() => setSheet(null)} />
-        )}
+      <AppHeader onSearch={() => navigate('search')} onProfile={() => navigate('profile')} />
+      <div className="app-content">
+        <div className="app-content-inner">
+          {s === 'home' && (
+            <HomeScreen
+              cookbooks={cookbooks}
+              shoppingList={shoppingList}
+              onOpenCookbook={id => navigate('cookbook', { cbId: id })}
+              onNewCookbook={() => navigate('new-cookbook')}
+              onToggleShoppingItem={handleToggleShoppingItem}
+              onDeleteShoppingItem={handleDeleteShoppingItem}
+              onClearShoppingList={handleClearShoppingList}
+              currentUserId={user.id}
+              onOpenUser={userId => navigate('user-profile', { userId })}
+              activeTab={mainTab}
+            />
+          )}
+          {s === 'search' && (
+            <SearchScreen
+              onBack={() => navigate('home')}
+              onOpenUser={userId => navigate('user-profile', { userId })}
+              currentUserId={user.id}
+            />
+          )}
+          {s === 'user-profile' && screen.userId && (
+            <UserPublicProfileScreen
+              userId={screen.userId}
+              currentUserId={user.id}
+              onBack={() => navigate(screen._from || 'home')}
+              myCookbooks={cookbooks}
+              onRecipeSaved={(cbId) => {
+                getRecipes(cbId).then(recipes => setRecipesMap(prev => ({ ...prev, [cbId]: recipes })));
+              }}
+            />
+          )}
+          {s === 'profile' && (
+            <ProfileScreen
+              user={user}
+              onBack={() => navigate('home')}
+              onLogout={handleLogout}
+            />
+          )}
+          {s === 'new-cookbook' && <NewCookbookScreen onBack={() => navigate('home')} onSave={handleNewCookbook} saving={saving} />}
+          {s === 'cookbook' && cb && (
+            <CookbookScreen
+              cookbook={cb}
+              onBack={() => { setMainTab('cookbooks'); navigate('home'); }}
+              onNewRecipe={() => navigate('new-recipe', { cbId })}
+              onStartCook={(rId) => navigate('prep', { cbId: cb.id, rId })}
+              favouriteIds={favouriteIds}
+              onToggleFavourite={handleToggleFavourite}
+              onAddToCookbook={handleOpenAddToCookbook}
+              onOpenAddToList={handleOpenAddToList}
+              shoppingRecipeIds={shoppingRecipeIds}
+              initialRecipeId={rId || null}
+              onEditRecipe={(cbId, rId) => navigate('edit-recipe', { cbId, rId })}
+              currentUserId={user.id}
+              onTogglePublic={handleToggleRecipePublic}
+            />
+          )}
+          {s === 'new-recipe' && cb && <RecipeFormScreen onBack={() => navigate('cookbook', { cbId })} onSave={data => handleNewRecipe(cbId, data)} saving={saving} unitPreference={profile?.unit_preference || 'metric'} />}
+          {s === 'edit-recipe' && cb && recipe && <RecipeFormScreen initialData={recipe} onBack={() => navigate('cookbook', { cbId, rId })} onSave={data => handleEditRecipe(cbId, rId, data)} saving={saving} unitPreference={profile?.unit_preference || 'metric'} />}
+          {s === 'recipe' && cb && recipe && (
+            <RecipeDetailScreen
+              recipe={recipe} cookbook={cb}
+              onBack={() => navigate('cookbook', { cbId, rId })}
+              onStartCook={() => navigate('prep', { cbId, rId })}
+              isFavourite={favouriteIds.has(recipe.id)}
+              onToggleFavourite={handleToggleFavourite}
+              onAddToCookbook={handleOpenAddToCookbook}
+              onOpenAddToList={handleOpenAddToList}
+              inShoppingList={shoppingRecipeIds.has(recipe.id)}
+              onEdit={() => navigate('edit-recipe', { cbId, rId })}
+              currentUserId={user.id}
+              onTogglePublic={(rId, isPublic) => handleToggleRecipePublic(cbId, rId, isPublic)}
+            />
+          )}
+          {s === 'prep' && cb && recipe && <PrepChecklistScreen recipe={recipe} onBack={() => navigate('recipe', { cbId, rId })} onStart={() => navigate('cook', { cbId, rId })} />}
+          {s === 'done' && recipe && <DoneScreen recipe={recipe} onContinue={() => navigate('feedback', { cbId, rId })} />}
+          {s === 'feedback' && recipe && <FeedbackScreen recipe={recipe} onSave={(e, t, o, n) => handleSaveFeedback(cbId, rId, e, t, o, n)} onSkip={() => navigate('post', { cbId, rId })} />}
+          {s === 'post' && recipe && <PostScreen recipe={recipe} onPost={(text, url) => handlePost(cbId, rId, text, url)} onSkip={() => navigate('recipe', { cbId, rId })} />}
+        </div>
       </div>
+      <AppFooter activeTab={activeFooterTab} onChangeTab={handleTabChange} />
+      {sheet?.type === 'addToCookbook' && (
+        <AddToCookbookSheet cookbooks={cookbooks} currentCbId={sheet.currentCbId} onSelect={handleSelectCookbookForAdd} onClose={() => setSheet(null)} />
+      )}
+      {sheet?.type === 'addToList' && (
+        <AddToListSheet recipe={sheet.recipe} onSelect={(priority) => handleAddToShoppingList(sheet.recipe, priority)} onClose={() => setSheet(null)} />
+      )}
     </>
   );
 }
