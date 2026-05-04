@@ -304,8 +304,8 @@ const STYLES = `
   .home-icon-btn:hover { color: var(--text-primary); }
 
   /* ── Home: 3-col layout ─────────────────────────────── */
-  .home-wrapper { display: flex; flex-direction: column; background: var(--paper); }
-  .home-body { flex: 1; display: flex; flex-direction: column; }
+  .home-wrapper { display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: var(--paper); }
+  .home-body { flex: 1; overflow: hidden; display: grid; grid-template-columns: 1fr 3fr 1fr; }
   .home-col { overflow-y: auto; border-right: 1px solid var(--rule); display: flex; flex-direction: column; min-width: 0; }
   .home-col:last-child { border-right: none; }
   .home-col-header { padding: 12px 18px; border-bottom: 1px solid var(--rule); flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--paper); z-index: 1; }
@@ -337,19 +337,18 @@ const STYLES = `
   .home-tab-btn.active .home-tab-label { color: var(--blue); }
 
   @media (max-width: 767px) {
-    .home-body { display: flex; flex-direction: column; }
+    .home-body { display: flex !important; flex-direction: column; overflow: visible; }
     .home-col { display: none; flex: 1; border-right: none; }
     .home-col.active { display: flex; }
-    .home-tab-bar { display: flex; border-bottom: 1px solid var(--rule); background: var(--paper); }
     .home-col-right .shopping-group-header { padding: 12px 20px 8px; }
     .home-col-right .shopping-recipe-header { padding: 6px 20px; }
     .home-col-right .shopping-item { padding: 10px 20px; }
   }
 
   /* ── Two-panel cookbook layout ──────────────────────── */
-  .cookbook-layout { display: block; background: var(--paper); }
-  .recipe-list-panel { width: 100%; display: flex; flex-direction: column; }
-  .recipe-detail-panel { display: none; }
+  .cookbook-layout { display: flex; height: 100vh; overflow: hidden; background: var(--paper); }
+  .recipe-list-panel { width: 260px; flex-shrink: 0; border-right: 1px solid var(--rule); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+  .recipe-detail-panel { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
   .list-panel-header { padding: 24px 20px 14px; border-bottom: 1px solid var(--rule); flex-shrink: 0; }
   .list-panel-back { background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; color: var(--text-muted); font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.1em; padding: 0; margin-bottom: 10px; }
   .list-panel-back:hover { color: var(--text-primary); }
@@ -363,7 +362,7 @@ const STYLES = `
   .recipe-list-row-meta { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-muted); margin-top: 2px; font-weight: 300; }
   .list-panel-footer { padding: 12px 16px; border-top: 1px solid var(--rule); flex-shrink: 0; }
   .detail-empty-state { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; min-height: 60vh; }
-  .panel-mobile-back { display: block; border-bottom: 1px solid var(--rule); }
+  .panel-mobile-back { display: none; }
   .panel-mobile-back-btn { background: none; border: none; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); padding: 14px 28px; display: block; }
   .panel-mobile-back-btn:hover { color: var(--text-primary); }
 
@@ -447,12 +446,8 @@ const STYLES = `
   .photo-remove { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.55); color: white; border: none; cursor: pointer; width: 28px; height: 28px; border-radius: 0; font-size: 16px; display: flex; align-items: center; justify-content: center; }
   .char-count { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-muted); text-align: right; margin-top: 4px; }
 
-  /* ── App shell ───────────────────────────────────────── */
-  .app-header {
-    position: fixed; top: 0; left: 0; right: 0; height: 52px; z-index: 100;
-    background: var(--paper); border-bottom: 1px solid var(--rule);
-    display: flex; align-items: center; padding: 0 24px; gap: 8px;
-  }
+  /* ── App shell (mobile only) ────────────────────────── */
+  .app-header { display: none; }
   .app-header-spacer { flex: 1; }
   .app-header-btn {
     width: 36px; height: 36px; background: none; border: none; cursor: pointer;
@@ -460,11 +455,7 @@ const STYLES = `
     color: var(--text-primary); transition: opacity 0.15s;
   }
   .app-header-btn:hover { opacity: 0.6; }
-  .app-footer {
-    position: fixed; bottom: 0; left: 0; right: 0; height: 56px; z-index: 100;
-    background: var(--paper); border-top: 1px solid var(--rule); display: flex;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-  }
+  .app-footer { display: none; }
   .app-footer-tab {
     flex: 1; display: flex; flex-direction: column; align-items: center;
     justify-content: center; gap: 3px; border: none; background: none;
@@ -480,11 +471,27 @@ const STYLES = `
     font-family: 'DM Mono', monospace; font-weight: 300; font-size: 8px;
     text-transform: uppercase; letter-spacing: 0.1em;
   }
-  .app-content {
-    position: fixed; top: 52px; bottom: 56px; left: 0; right: 0;
-    overflow-y: auto; -webkit-overflow-scrolling: touch; background: var(--paper);
+  .app-content-inner { }
+
+  @media (max-width: 767px) {
+    .app-header {
+      display: flex; position: fixed; top: 0; left: 0; right: 0; height: 52px; z-index: 100;
+      background: var(--paper); border-bottom: 1px solid var(--rule);
+      align-items: center; padding: 0 24px; gap: 8px;
+    }
+    .app-footer {
+      display: flex; position: fixed; bottom: 0; left: 0; right: 0; height: 56px; z-index: 100;
+      background: var(--paper); border-top: 1px solid var(--rule);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    .app-content {
+      position: fixed; top: 52px; bottom: 56px; left: 0; right: 0;
+      overflow-y: auto; -webkit-overflow-scrolling: touch; background: var(--paper);
+    }
+    .app-content-inner { max-width: 480px; margin: 0 auto; }
+    .home-header { display: none; }
+    .home-wrapper { height: auto !important; overflow: visible !important; }
   }
-  .app-content-inner { max-width: 480px; margin: 0 auto; }
 
 `;
 
@@ -758,7 +765,7 @@ function StarRating({ value, onChange }) {
 const PRIORITY_ORDER = ['today', 'this_week', 'eventually'];
 const PRIORITY_LABELS = { today: 'Today', this_week: 'This Week', eventually: 'Eventually' };
 
-function HomeScreen({ cookbooks, shoppingList, onOpenCookbook, onNewCookbook, onToggleShoppingItem, onDeleteShoppingItem, onClearShoppingList, currentUserId, onOpenUser, activeTab }) {
+function HomeScreen({ cookbooks, shoppingList, onOpenCookbook, onNewCookbook, onToggleShoppingItem, onDeleteShoppingItem, onClearShoppingList, currentUserId, onOpenUser, activeTab, profileInitial, onOpenSearch, onOpenProfile }) {
   const [collapsed, setCollapsed] = useState({});
   const [collapsedRecipes, setCollapsedRecipes] = useState({});
   const [events, setEvents] = useState(null);
@@ -822,72 +829,95 @@ function HomeScreen({ cookbooks, shoppingList, onOpenCookbook, onNewCookbook, on
   }).filter(g => g.count > 0);
   const unchecked = shoppingList.filter(i => !i.checked).length;
 
-  if (activeTab === 'cookbooks') {
-    return (
-      <div className="home-cb-list">
-        {cookbooks.map(cb => (
-          <button key={cb.id} className="home-cb-list-row" onClick={() => onOpenCookbook(cb.id)}>
-            <span className="home-cb-list-name">{cb.name}</span>
-            <span className="home-cb-list-count">{cb.recipeCount ?? 0}</span>
-          </button>
-        ))}
-        <button className="home-cb-list-row home-cb-new" onClick={onNewCookbook}>
-          <span className="home-cb-list-name">+ New Cookbook</span>
-        </button>
-      </div>
-    );
-  }
-
-  if (activeTab === 'shopping') {
-    return (
-      <div>
-        {shoppingList.length === 0 ? (
-          <div className="home-empty">Your list is empty.</div>
-        ) : (
-          <>
-            {byPriority.map(({ priority, label, byRecipe }) => (
-              <div key={priority} className="shopping-group">
-                <div className="shopping-group-header" onClick={() => togglePriority(priority)}>
-                  <span>{label}</span>
-                  <span className="shopping-group-toggle">{collapsed[priority] ? '▶' : '▼'}</span>
-                </div>
-                {!collapsed[priority] && Object.entries(byRecipe).map(([recipeName, recipeItems]) => (
-                  <div key={recipeName}>
-                    <div className="shopping-recipe-header" onClick={() => toggleRecipe(`${priority}:${recipeName}`)}>
-                      <span>{recipeName}</span>
-                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: 'var(--text-secondary)' }}>{collapsedRecipes[`${priority}:${recipeName}`] ? '▶' : '▼'}</span>
-                    </div>
-                    {!collapsedRecipes[`${priority}:${recipeName}`] && recipeItems.map(item => (
-                      <div key={item.id} className={`shopping-item${item.checked ? ' done' : ''}`} onClick={() => onToggleShoppingItem(item.id, item.checked)}>
-                        <span className="shopping-item-name">{item.ingredient_name}</span>
-                        <div className="shopping-item-right">
-                          <span className="shopping-item-qty">{item.qty}</span>
-                          <a href={ahUrl(item.ingredient_name)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 500, color: 'var(--blue)', textDecoration: 'none' }}>AH →</a>
-                          <button className="shopping-item-delete" onClick={e => { e.stopPropagation(); onDeleteShoppingItem(item.id); }}>×</button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            ))}
-            <div style={{ padding: '12px 16px 32px', textAlign: 'center' }}>
-              <button onClick={onClearShoppingList} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Clear list</button>
-            </div>
-          </>
-        )}
-      </div>
-    );
-  }
-
-  // Default: feed/timeline
   return (
-    <div>
-      {events === null ? (
-        <div className="home-empty">Loading...</div>
-      ) : events.length === 0 ? (
-        <div className="home-empty">Nothing yet.<br />Follow people to see their activity.</div>
-      ) : events.map(renderEvent)}
+    <div className="home-wrapper">
+      {/* Desktop header — hidden on mobile, replaced by AppHeader */}
+      <div className="home-header">
+        <div style={{ height: 'env(safe-area-inset-top, 0px)' }} />
+        <div className="home-header-row">
+          <button className="home-icon-btn" onClick={onOpenSearch}>⌕</button>
+          <img src="/logo.png" alt="The Pass" style={{ height: 26, width: 'auto' }} />
+          <button className="profile-avatar" onClick={onOpenProfile}>{profileInitial}</button>
+        </div>
+      </div>
+
+      {/* 3-column body — on mobile shows only the active col */}
+      <div className="home-body">
+
+        {/* Left col: Cookbooks */}
+        <div className={`home-col home-col-left${activeTab === 'cookbooks' ? ' active' : ''}`}>
+          <div className="home-col-header">
+            <span className="home-col-title">Cookbooks</span>
+          </div>
+          <div className="home-cb-list">
+            {cookbooks.map(cb => (
+              <button key={cb.id} className="home-cb-list-row" onClick={() => onOpenCookbook(cb.id)}>
+                <span className="home-cb-list-name">{cb.name}</span>
+                <span className="home-cb-list-count">{cb.recipeCount ?? 0}</span>
+              </button>
+            ))}
+            <button className="home-cb-list-row home-cb-new" onClick={onNewCookbook}>
+              <span className="home-cb-list-name">+ New Cookbook</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Center col: Feed */}
+        <div className={`home-col home-col-center${activeTab === 'feed' ? ' active' : ''}`}>
+          <div className="home-col-header">
+            <span className="home-col-title">Home</span>
+          </div>
+          {events === null ? (
+            <div className="home-empty">Loading...</div>
+          ) : events.length === 0 ? (
+            <div className="home-empty">Nothing yet.<br />Follow people to see their activity.</div>
+          ) : events.map(renderEvent)}
+        </div>
+
+        {/* Right col: Shopping List */}
+        <div className={`home-col home-col-right${activeTab === 'shopping' ? ' active' : ''}`}>
+          <div className="home-col-header">
+            <span className="home-col-title">Shopping List</span>
+            {unchecked > 0 && <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: 'var(--text-secondary)' }}>{unchecked} to buy</span>}
+          </div>
+          {shoppingList.length === 0 ? (
+            <div className="home-empty">Your list is empty.</div>
+          ) : (
+            <>
+              {byPriority.map(({ priority, label, byRecipe }) => (
+                <div key={priority} className="shopping-group">
+                  <div className="shopping-group-header" onClick={() => togglePriority(priority)}>
+                    <span>{label}</span>
+                    <span className="shopping-group-toggle">{collapsed[priority] ? '▶' : '▼'}</span>
+                  </div>
+                  {!collapsed[priority] && Object.entries(byRecipe).map(([recipeName, recipeItems]) => (
+                    <div key={recipeName}>
+                      <div className="shopping-recipe-header" onClick={() => toggleRecipe(`${priority}:${recipeName}`)}>
+                        <span>{recipeName}</span>
+                        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: 'var(--text-secondary)' }}>{collapsedRecipes[`${priority}:${recipeName}`] ? '▶' : '▼'}</span>
+                      </div>
+                      {!collapsedRecipes[`${priority}:${recipeName}`] && recipeItems.map(item => (
+                        <div key={item.id} className={`shopping-item${item.checked ? ' done' : ''}`} onClick={() => onToggleShoppingItem(item.id, item.checked)}>
+                          <span className="shopping-item-name">{item.ingredient_name}</span>
+                          <div className="shopping-item-right">
+                            <span className="shopping-item-qty">{item.qty}</span>
+                            <a href={ahUrl(item.ingredient_name)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 500, color: 'var(--blue)', textDecoration: 'none' }}>AH →</a>
+                            <button className="shopping-item-delete" onClick={e => { e.stopPropagation(); onDeleteShoppingItem(item.id); }}>×</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              ))}
+              <div style={{ padding: '12px 16px 32px', textAlign: 'center' }}>
+                <button onClick={onClearShoppingList} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Clear list</button>
+              </div>
+            </>
+          )}
+        </div>
+
+      </div>
     </div>
   );
 }
@@ -2404,6 +2434,8 @@ export default function App() {
     await supabase.auth.signOut();
   };
 
+  const profileInitial = (profile?.first_name?.[0] || user?.email?.[0] || '?').toUpperCase();
+
   const { name: s, cbId, rId } = screen;
   const cb = cbId ? getCookbook(cbId) : null;
   const recipe = (cbId && rId) ? getRecipe(cbId, rId) : null;
@@ -2478,6 +2510,9 @@ export default function App() {
               currentUserId={user.id}
               onOpenUser={userId => navigate('user-profile', { userId })}
               activeTab={mainTab}
+              profileInitial={profileInitial}
+              onOpenSearch={() => navigate('search')}
+              onOpenProfile={() => navigate('profile')}
             />
           )}
           {s === 'search' && (
