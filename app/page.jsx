@@ -149,7 +149,7 @@ const STYLES = `
   .checklist-progress { height: 1px; background: var(--rule); overflow: hidden; }
   .checklist-progress-fill { height: 100%; background: var(--blue); transition: width 0.3s ease; }
 
-  .cook-screen { background: var(--ink); min-height: 100vh; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+  .cook-screen { background: var(--ink); height: 100vh; height: 100dvh; display: flex; flex-direction: column; position: relative; overflow: hidden; }
   .timers-drawer { position: absolute; top: 0; right: 0; bottom: 0; width: min(300px, 88vw); background: var(--ink); border-left: 1px solid #252320; z-index: 50; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.22s cubic-bezier(.4,0,.2,1); }
   .timers-drawer.open { transform: translateX(0); }
   .ingr-drawer { position: absolute; top: 0; left: 0; bottom: 0; width: min(300px, 88vw); background: var(--ink); border-right: 1px solid #252320; z-index: 50; display: flex; flex-direction: column; transform: translateX(-100%); transition: transform 0.22s cubic-bezier(.4,0,.2,1); }
@@ -166,7 +166,7 @@ const STYLES = `
   .cook-dot { width: 4px; height: 4px; background: #252320; transition: all 0.2s; }
   .cook-dot.active { background: var(--blue); width: 14px; }
   .cook-dot.done { background: #3A3835; }
-  .cook-steps { flex: 1; display: flex; flex-direction: column; padding: 0 28px; justify-content: center; }
+  .cook-steps { flex: 1; display: flex; flex-direction: column; padding: 0 28px; justify-content: center; overflow-y: auto; min-height: 0; }
   .cook-prev { padding: 20px 0 24px; border-bottom: 1px solid #252320; }
   .cook-prev-text { font-family: 'DM Mono', monospace; font-size: 14px; text-decoration: line-through; line-height: 1.6; color: #3A3835; font-weight: 300; letter-spacing: 0.02em; }
   .cook-current { padding: 36px 0; flex: 1; display: flex; flex-direction: column; justify-content: center; }
