@@ -13,7 +13,9 @@ import {
   setRecipePublic,
   publishRecipe, saveRecipeToLibrary, unsaveRecipe, isRecipeSaved, getSavedRecipeIds,
   getAnnotations, saveAnnotation, updateAnnotation, deleteAnnotation,
-  getPublicRecipes, getRecipeWithAuthor,
+  getPublicRecipes, getRecipeWithAuthor, formatCount, searchPublicRecipes,
+  getDailyPicks, getRandomSuggestions, getTrendingRecipes,
+  addRecipePhoto, getRecipePhotos, deleteRecipePhoto, attachExistingPhotoToRecipe,
 } from '../lib/db';
 import { supabase } from '../lib/supabase';
 
@@ -738,6 +740,12 @@ function AppFooter({ activeTab, onChangeTab }) {
         </svg>
         <span className="app-footer-label">Cookbooks</span>
       </button>
+      <button className={`app-footer-tab${activeTab === 'discover' ? ' active' : ''}`} onClick={() => onChangeTab('discover')}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+        </svg>
+        <span className="app-footer-label">Discover</span>
+      </button>
       <button className={`app-footer-tab${activeTab === 'shopping' ? ' active' : ''}`} onClick={() => onChangeTab('shopping')}>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
@@ -855,6 +863,10 @@ function HomeScreen({ cookbooks, shoppingList, onOpenCookbook, onNewCookbook, on
             <span className="home-col-title">Cookbooks</span>
           </div>
           <div className="home-cb-list">
+            <button className="home-cb-list-row" onClick={() => onOpenCookbook('community')}>
+              <span className="home-cb-list-name">Community Recipes</span>
+              <span className="home-cb-list-count" style={{ color: 'var(--blue)' }}>↗</span>
+            </button>
             {cookbooks.map(cb => (
               <button key={cb.id} className="home-cb-list-row" onClick={() => onOpenCookbook(cb.id)}>
                 <span className="home-cb-list-name">{cb.name}</span>
@@ -910,6 +922,11 @@ function HomeScreen({ cookbooks, shoppingList, onOpenCookbook, onNewCookbook, on
                       <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--text-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                         {[r.time && `${r.time} min`, r.difficulty].filter(Boolean).join(' · ')}
                       </div>
+                      {r.cookedCount > 0 && (
+                        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
+                          Cooked {formatCount(r.cookedCount)} time{r.cookedCount !== 1 ? 's' : ''}
+                        </div>
+                      )}
                     </div>
                     <button
                       onClick={(e) => { e.stopPropagation(); !saved && onSaveToLibrary?.(r.id, null); }}
@@ -973,6 +990,278 @@ function HomeScreen({ cookbooks, shoppingList, onOpenCookbook, onNewCookbook, on
           )}
         </div>
 
+      </div>
+    </div>
+  );
+}
+
+function DiscoverPickCard({ recipe, onOpen, onSave, saved }) {
+  return (
+    <div style={{ padding: '20px 20px', borderBottom: '1px solid var(--rule)' }}>
+      <div onClick={onOpen} style={{ cursor: 'pointer' }}>
+        <div style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 20, color: 'var(--ink)', lineHeight: 1.2 }}>
+          {recipe.name}
+        </div>
+        {recipe.author && (
+          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--text-secondary)', marginTop: 6 }}>
+            By @{recipe.author.username}
+          </div>
+        )}
+        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--text-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          {[recipe.time && `${recipe.time} min`, recipe.difficulty].filter(Boolean).join(' · ')}
+        </div>
+        {recipe.cookedCount > 0 && (
+          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
+            Cooked {formatCount(recipe.cookedCount)} time{recipe.cookedCount !== 1 ? 's' : ''}
+          </div>
+        )}
+      </div>
+      <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+        <button
+          onClick={onSave}
+          disabled={saved}
+          style={{
+            flex: 1, height: 40, border: '1px solid var(--text-primary)', background: 'transparent',
+            fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 400,
+            textTransform: 'uppercase', letterSpacing: '0.1em',
+            color: saved ? 'var(--text-muted)' : 'var(--text-primary)',
+            borderColor: saved ? 'var(--rule)' : 'var(--text-primary)',
+            cursor: saved ? 'default' : 'pointer', borderRadius: 0,
+          }}
+        >
+          {saved ? '✓ Saved' : 'Save'}
+        </button>
+        <button
+          onClick={onOpen}
+          style={{
+            flex: 1, height: 40, border: 'none', background: 'var(--blue)',
+            color: 'var(--white)',
+            fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 400,
+            textTransform: 'uppercase', letterSpacing: '0.1em',
+            cursor: 'pointer', borderRadius: 0,
+          }}
+        >
+          Cook now →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function DiscoverScreen({ currentUserId, onOpenRecipe, onSaveToLibrary, savedRecipeIds }) {
+  const [picks, setPicks] = useState(null);
+  const [extras, setExtras] = useState([]);
+  const [hasLoadedExtras, setHasLoadedExtras] = useState(false);
+  const [trending, setTrending] = useState(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  useEffect(() => {
+    getDailyPicks(currentUserId, 5).then(setPicks);
+    getTrendingRecipes(7, 10).then(setTrending);
+  }, [currentUserId]);
+
+  const loadMore = async () => {
+    setLoadingMore(true);
+    try {
+      const shown = [...(picks || []), ...extras].map(r => r.id);
+      const more = await getRandomSuggestions(currentUserId, 5, shown);
+      setExtras(prev => [...prev, ...more]);
+      setHasLoadedExtras(true);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  return (
+    <div className="screen">
+      <div className="page-header safe-top" style={{ paddingBottom: 16 }}>
+        <div className="page-header-title">Discover</div>
+        <div className="page-header-sub">{today}</div>
+      </div>
+
+      <div className="scroll-body pb-safe">
+        <div style={{ padding: '20px 20px 8px' }}>
+          <div style={{ fontFamily: "'DM Mono', monospace", fontWeight: 400, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--text-primary)' }}>Today's Picks</div>
+          <div style={{ fontFamily: "'DM Mono', monospace", fontWeight: 300, fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>Refreshes daily</div>
+        </div>
+        {picks === null ? (
+          <div style={{ padding: '20px', fontFamily: "'DM Mono', monospace", fontSize: 11, color: 'var(--text-muted)' }}>Loading…</div>
+        ) : picks.length === 0 ? (
+          <div style={{ padding: '20px', fontFamily: "'Courier Prime', 'Courier New', monospace", fontSize: 14, color: 'var(--text-muted)' }}>No picks today — you've cooked or saved everything we have!</div>
+        ) : (
+          picks.map(r => (
+            <DiscoverPickCard
+              key={r.id}
+              recipe={r}
+              onOpen={() => onOpenRecipe?.(r.id)}
+              onSave={() => onSaveToLibrary?.(r.id, null)}
+              saved={savedRecipeIds?.has?.(r.id) ?? false}
+            />
+          ))
+        )}
+        {extras.map(r => (
+          <DiscoverPickCard
+            key={r.id}
+            recipe={r}
+            onOpen={() => onOpenRecipe?.(r.id)}
+            onSave={() => onSaveToLibrary?.(r.id, null)}
+            saved={savedRecipeIds?.has?.(r.id) ?? false}
+          />
+        ))}
+        <div style={{ padding: '16px 20px' }}>
+          <button
+            onClick={loadMore}
+            disabled={loadingMore}
+            style={{
+              width: '100%', height: 40, border: '1px solid var(--rule)', background: 'transparent',
+              fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 400,
+              textTransform: 'uppercase', letterSpacing: '0.1em',
+              color: 'var(--text-primary)', cursor: loadingMore ? 'default' : 'pointer', borderRadius: 0,
+            }}
+          >
+            {loadingMore ? '…' : (hasLoadedExtras ? '↻ Load more' : '↻ More suggestions')}
+          </button>
+        </div>
+
+        <div style={{ padding: '20px 20px 8px', marginTop: 12, borderTop: '1px solid var(--rule)' }}>
+          <div style={{ fontFamily: "'DM Mono', monospace", fontWeight: 400, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--text-primary)' }}>Trending This Week</div>
+        </div>
+        {trending === null ? (
+          <div style={{ padding: '20px', fontFamily: "'DM Mono', monospace", fontSize: 11, color: 'var(--text-muted)' }}>Loading…</div>
+        ) : trending.length === 0 ? (
+          <div style={{ padding: '20px', fontFamily: "'Courier Prime', 'Courier New', monospace", fontSize: 14, color: 'var(--text-muted)' }}>No trending recipes yet — be the first to cook!</div>
+        ) : (
+          trending.map(r => (
+            <div key={r.id} className="flat-row" onClick={() => onOpenRecipe?.(r.id)}>
+              <div className="flat-row-info">
+                <div style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 16, color: 'var(--ink)', lineHeight: 1.25 }}>
+                  {r.name}
+                </div>
+                {r.author && (
+                  <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--text-secondary)', marginTop: 4 }}>
+                    By @{r.author.username}
+                  </div>
+                )}
+                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--text-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  {[r.time && `${r.time} min`, r.difficulty].filter(Boolean).join(' · ')}
+                </div>
+                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
+                  Cooked {formatCount(r.weeklyCount)} time{r.weeklyCount !== 1 ? 's' : ''} this week
+                </div>
+              </div>
+              <span className="flat-row-arrow">›</span>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CommunityCookbookScreen({ onBack, onOpenRecipe }) {
+  const [query, setQuery] = useState('');
+  const [timeBucket, setTimeBucket] = useState('All');
+  const [difficulty, setDifficulty] = useState('All');
+  const [recipes, setRecipes] = useState([]);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(false);
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setRecipes([]);
+    setPage(0);
+    setHasMore(true);
+  }, [query, timeBucket, difficulty]);
+
+  useEffect(() => {
+    const filters = { ...TIME_BUCKETS[timeBucket], ...(difficulty !== 'All' ? { difficulty } : {}) };
+    setLoading(true);
+    const t = setTimeout(() => {
+      searchPublicRecipes(query, filters, page, 20).then(more => {
+        setRecipes(prev => page === 0 ? more : [...prev, ...more]);
+        setHasMore(more.length === 20);
+        setLoading(false);
+      });
+    }, 250);
+    return () => clearTimeout(t);
+  }, [query, timeBucket, difficulty, page]);
+
+  return (
+    <div className="screen">
+      <div className="back-row safe-top">
+        <button className="back-btn" onClick={onBack}>← Back</button>
+      </div>
+      <div className="page-header" style={{ paddingTop: 12 }}>
+        <div className="page-header-title">Community Recipes</div>
+        <div className="page-header-sub">All public recipes from The Pass community</div>
+      </div>
+      <div className="search-input-wrap">
+        <input
+          className="search-input"
+          placeholder="Search…"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+        />
+      </div>
+      <div style={{ padding: '6px 28px 4px', display: 'flex', flexWrap: 'wrap' }}>
+        {Object.keys(TIME_BUCKETS).map(b => (
+          <FilterPill key={b} label={b} active={timeBucket === b} onClick={() => setTimeBucket(b)} />
+        ))}
+      </div>
+      <div style={{ padding: '0 28px 12px', display: 'flex', flexWrap: 'wrap', borderBottom: '1px solid var(--rule)' }}>
+        {['All', 'Easy', 'Medium', 'Advanced'].map(d => (
+          <FilterPill key={d} label={d} active={difficulty === d} onClick={() => setDifficulty(d)} />
+        ))}
+      </div>
+      <div className="scroll-body pb-safe">
+        {recipes.length === 0 && !loading ? (
+          <div style={{ padding: '40px 28px', fontFamily: "'Courier Prime', 'Courier New', monospace", fontSize: 14, color: 'var(--text-muted)' }}>
+            No recipes found
+          </div>
+        ) : (
+          recipes.map(r => (
+            <div key={r.id} className="flat-row" onClick={() => onOpenRecipe?.(r.id)}>
+              <div className="flat-row-info">
+                <div style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 16, color: 'var(--ink)', lineHeight: 1.25 }}>
+                  {r.name}
+                </div>
+                {r.author && (
+                  <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--text-secondary)', marginTop: 4 }}>
+                    By @{r.author.username}
+                  </div>
+                )}
+                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--text-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  {[r.time && `${r.time} min`, r.difficulty].filter(Boolean).join(' · ')}
+                </div>
+                {r.cookedCount > 0 && (
+                  <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
+                    Cooked {formatCount(r.cookedCount)} time{r.cookedCount !== 1 ? 's' : ''}
+                  </div>
+                )}
+              </div>
+              <span className="flat-row-arrow">›</span>
+            </div>
+          ))
+        )}
+        {hasMore && recipes.length > 0 && (
+          <div style={{ padding: '16px 20px' }}>
+            <button
+              onClick={() => setPage(p => p + 1)}
+              disabled={loading}
+              style={{
+                width: '100%', height: 40, border: '1px solid var(--rule)', background: 'transparent',
+                fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 400,
+                textTransform: 'uppercase', letterSpacing: '0.1em',
+                color: 'var(--text-primary)', cursor: loading ? 'default' : 'pointer', borderRadius: 0,
+              }}
+            >
+              {loading ? '…' : 'Load more'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1298,6 +1587,181 @@ function PublishConfirmSheet({ onConfirm, onCancel, busy }) {
   );
 }
 
+function RecipePhotosSection({ recipeId, currentUserId }) {
+  const [photos, setPhotos] = useState(null);
+  const [pendingFile, setPendingFile] = useState(null);
+  const [pendingPreview, setPendingPreview] = useState(null);
+  const [caption, setCaption] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getRecipePhotos(recipeId).then(p => { if (!cancelled) setPhotos(p); });
+    return () => { cancelled = true; };
+  }, [recipeId]);
+
+  const onFile = (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setPendingFile(f);
+    setPendingPreview(URL.createObjectURL(f));
+    setCaption('');
+  };
+
+  const cancelPending = () => {
+    setPendingFile(null);
+    setPendingPreview(null);
+    setCaption('');
+  };
+
+  const handleUpload = async () => {
+    if (!pendingFile) return;
+    setUploading(true);
+    try {
+      const row = await addRecipePhoto(recipeId, pendingFile, caption.trim() || null);
+      const refreshed = await getRecipePhotos(recipeId);
+      setPhotos(refreshed);
+      cancelPending();
+      return row;
+    } catch (err) {
+      alert('Upload failed: ' + (err?.message || 'Unknown error'));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!confirm('Delete this photo?')) return;
+    try {
+      await deleteRecipePhoto(id);
+      setPhotos(prev => (prev || []).filter(p => p.id !== id));
+    } catch (err) {
+      alert('Failed to delete: ' + (err?.message || 'Unknown error'));
+    }
+  };
+
+  if (photos === null) return null;
+  const empty = photos.length === 0;
+
+  return (
+    <div style={{ padding: '14px 0 8px', borderBottom: '1px solid var(--rule)' }}>
+      <input ref={fileRef} type="file" accept="image/*" onChange={onFile} style={{ display: 'none' }} />
+
+      {empty && !pendingPreview && (
+        <div style={{ padding: '0 20px' }}>
+          <div
+            onClick={() => currentUserId && fileRef.current?.click()}
+            style={{
+              height: 160, border: '1px dashed var(--rule)', display: 'flex',
+              alignItems: 'center', justifyContent: 'center',
+              fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--text-muted)',
+              textTransform: 'uppercase', letterSpacing: '0.1em',
+              cursor: currentUserId ? 'pointer' : 'default',
+            }}
+          >
+            ＋ Add a photo
+          </div>
+        </div>
+      )}
+
+      {!empty && !pendingPreview && (
+        <>
+          <div style={{ display: 'flex', overflowX: 'auto', gap: 12, padding: '0 20px 8px' }}>
+            {photos.map(p => (
+              <div key={p.id} style={{ flexShrink: 0, width: 280 }}>
+                <div style={{ width: 280, height: 200, border: '1px solid var(--rule)', overflow: 'hidden', borderRadius: 0 }}>
+                  <img src={p.photo_url} alt={p.caption || ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+                {p.caption && (
+                  <div style={{ fontFamily: "'DM Mono', monospace", fontWeight: 300, fontSize: 10, color: 'var(--text-muted)', marginTop: 6 }}>
+                    {p.caption}
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                  {p.uploader && (
+                    <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--text-secondary)' }}>
+                      @{p.uploader.username}
+                    </div>
+                  )}
+                  {currentUserId === p.user_id && (
+                    <button
+                      onClick={() => handleDelete(p.id)}
+                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--text-muted)' }}
+                    >
+                      delete
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          {currentUserId && (
+            <div style={{ padding: '4px 20px 0' }}>
+              <button
+                onClick={() => fileRef.current?.click()}
+                style={{
+                  border: '1px solid var(--rule)', background: 'transparent',
+                  padding: '8px 14px', fontFamily: "'DM Mono', monospace", fontSize: 11,
+                  fontWeight: 400, textTransform: 'uppercase', letterSpacing: '0.1em',
+                  color: 'var(--text-primary)', cursor: 'pointer', borderRadius: 0,
+                }}
+              >
+                ＋ Add photo
+              </button>
+            </div>
+          )}
+        </>
+      )}
+
+      {pendingPreview && (
+        <div style={{ padding: '0 20px' }}>
+          <img src={pendingPreview} alt="Preview" style={{ width: '100%', maxHeight: 240, objectFit: 'cover', border: '1px solid var(--rule)' }} />
+          <input
+            type="text"
+            placeholder="Caption (optional)"
+            value={caption}
+            onChange={e => setCaption(e.target.value)}
+            style={{
+              width: '100%', marginTop: 8, padding: '8px 10px',
+              border: '1px solid var(--rule)', background: 'var(--surface)',
+              fontFamily: "'DM Mono', monospace", fontSize: 12, color: 'var(--text-primary)',
+              borderRadius: 0, outline: 'none',
+            }}
+          />
+          <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+            <button
+              onClick={handleUpload}
+              disabled={uploading}
+              style={{
+                flex: 1, height: 40, border: 'none', background: 'var(--blue)',
+                color: 'var(--white)', fontFamily: "'DM Mono', monospace", fontSize: 11,
+                fontWeight: 400, textTransform: 'uppercase', letterSpacing: '0.1em',
+                cursor: uploading ? 'default' : 'pointer', borderRadius: 0,
+              }}
+            >
+              {uploading ? 'Uploading…' : 'Upload'}
+            </button>
+            <button
+              onClick={cancelPending}
+              disabled={uploading}
+              style={{
+                height: 40, padding: '0 16px', background: 'transparent',
+                border: '1px solid var(--rule)', color: 'var(--text-muted)',
+                fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 400,
+                textTransform: 'uppercase', letterSpacing: '0.1em',
+                cursor: 'pointer', borderRadius: 0,
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SaveToLibrarySheet({ recipeName, cookbooks, onSelect, onClose }) {
   const list = (cookbooks || []).filter(cb => cb.id !== 'favourites');
   return (
@@ -1470,6 +1934,11 @@ function RecipeDetailScreen({
       >@{authorHandle}</span>
     </div>
   ) : null;
+  const cookedLine = recipe.cookedCount > 0 ? (
+    <div style={{ marginTop: 4, fontFamily: "'DM Mono', monospace", fontWeight: 300, fontSize: 11, color: 'var(--text-secondary)' }}>
+      Cooked {formatCount(recipe.cookedCount)} time{recipe.cookedCount !== 1 ? 's' : ''}
+    </div>
+  ) : null;
 
   return (
     <div className="screen">
@@ -1493,6 +1962,7 @@ function RecipeDetailScreen({
         )}
         <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, fontStyle: 'italic', fontSize: 40, color: 'var(--ink)', lineHeight: 1.05, letterSpacing: '0.02em' }}>{recipe.name}</h1>
         {authorLine}
+        {cookedLine}
         {recipe.description && <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginTop: 8 }}>{recipe.description}</p>}
         {recipe.tags?.length > 0 && (
           <div className="tag-pills" style={{ marginTop: 10 }}>
@@ -1503,7 +1973,7 @@ function RecipeDetailScreen({
           <span className="detail-meta-item">{recipe.time} min</span>
           <span className="detail-meta-item">{recipe.difficulty}</span>
           <span className="detail-meta-item">{recipe.servings} servings</span>
-          {recipe.cookedCount > 0 && <span className="detail-meta-item">Cooked {recipe.cookedCount}×</span>}
+          {recipe.cookedCount > 0 && <span className="detail-meta-item">Cooked {formatCount(recipe.cookedCount)} time{recipe.cookedCount !== 1 ? 's' : ''}</span>}
           {isAuthor && (recipe.lastCookedAt
             ? <span className="detail-meta-item">Last cooked {timeAgo(recipe.lastCookedAt)}</span>
             : <span className="detail-meta-item" style={{ color: 'var(--text-muted)' }}>Never cooked</span>
@@ -1583,6 +2053,7 @@ function RecipeDetailScreen({
       ) : null}
 
       <div className="scroll-body pb-safe">
+        <RecipePhotosSection recipeId={recipe.id} currentUserId={currentUserId} />
         {/* General annotation — only shown when viewing as saved non-author */}
         {showAnnotations && (
           <div style={{ padding: '14px 28px 0' }}>
@@ -2248,7 +2719,104 @@ function BottomNav({ tab, onHome, onTimeline }) {
   );
 }
 
-function SearchScreen({ onBack, onOpenUser, currentUserId }) {
+const TIME_BUCKETS = {
+  All: {},
+  Quick: { max_time: 20 },
+  Medium: { min_time: 21, max_time: 45 },
+  Long: { min_time: 46 },
+};
+
+function FilterPill({ label, active, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        background: 'none', border: 'none', padding: '6px 0', marginRight: 14, cursor: 'pointer',
+        fontFamily: "'DM Mono', monospace", fontSize: 10, fontWeight: 400,
+        textTransform: 'uppercase', letterSpacing: '0.1em',
+        color: active ? 'var(--blue)' : 'var(--text-muted)',
+        borderBottom: active ? '1px solid var(--blue)' : '1px solid transparent',
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+function RecipesSearchTab({ onOpenRecipe }) {
+  const [query, setQuery] = useState('');
+  const [timeBucket, setTimeBucket] = useState('All');
+  const [difficulty, setDifficulty] = useState('All');
+  const [results, setResults] = useState(null);
+
+  useEffect(() => {
+    const filters = {
+      ...TIME_BUCKETS[timeBucket],
+      ...(difficulty !== 'All' ? { difficulty } : {}),
+    };
+    setResults(null);
+    const t = setTimeout(() => searchPublicRecipes(query, filters, 0, 20).then(setResults), 250);
+    return () => clearTimeout(t);
+  }, [query, timeBucket, difficulty]);
+
+  return (
+    <>
+      <div className="search-input-wrap">
+        <input
+          className="search-input"
+          placeholder="Search recipes…"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          autoFocus
+        />
+      </div>
+      <div style={{ padding: '6px 28px 4px', display: 'flex', flexWrap: 'wrap' }}>
+        {Object.keys(TIME_BUCKETS).map(b => (
+          <FilterPill key={b} label={b} active={timeBucket === b} onClick={() => setTimeBucket(b)} />
+        ))}
+      </div>
+      <div style={{ padding: '0 28px 12px', display: 'flex', flexWrap: 'wrap', borderBottom: '1px solid var(--rule)' }}>
+        {['All', 'Easy', 'Medium', 'Advanced'].map(d => (
+          <FilterPill key={d} label={d} active={difficulty === d} onClick={() => setDifficulty(d)} />
+        ))}
+      </div>
+      <div className="scroll-body pb-safe">
+        {results === null ? null : results.length === 0 ? (
+          <div style={{ padding: '40px 28px', fontFamily: "'Courier Prime', 'Courier New', monospace", fontSize: 14, color: 'var(--text-muted)' }}>
+            No recipes found
+          </div>
+        ) : (
+          results.map(r => (
+            <div key={r.id} className="flat-row" onClick={() => onOpenRecipe?.(r.id)}>
+              <div className="flat-row-info">
+                <div style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 16, color: 'var(--ink)', lineHeight: 1.25 }}>
+                  {r.name}
+                </div>
+                {r.author && (
+                  <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--text-secondary)', marginTop: 4 }}>
+                    By @{r.author.username}
+                  </div>
+                )}
+                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--text-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  {[r.time && `${r.time} min`, r.difficulty].filter(Boolean).join(' · ')}
+                </div>
+                {r.cookedCount > 0 && (
+                  <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
+                    Cooked {formatCount(r.cookedCount)} time{r.cookedCount !== 1 ? 's' : ''}
+                  </div>
+                )}
+              </div>
+              <span className="flat-row-arrow">›</span>
+            </div>
+          ))
+        )}
+      </div>
+    </>
+  );
+}
+
+function SearchScreen({ onBack, onOpenUser, currentUserId, onOpenRecipe }) {
+  const [activeTab, setActiveTab] = useState('recipes'); // 'recipes' | 'people'
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [discover, setDiscover] = useState([]);
@@ -2306,12 +2874,31 @@ function SearchScreen({ onBack, onOpenUser, currentUserId }) {
 
   return (
     <div className="search-screen">
-      <div className="page-header safe-top" style={{ paddingBottom: 16 }}>
+      <div className="page-header safe-top" style={{ paddingBottom: 12 }}>
         <div style={{ marginBottom: 12 }}>
           <button className="back-btn" onClick={onBack}>← Back</button>
         </div>
-        <div className="page-header-title">Find People</div>
+        <div style={{ display: 'flex', gap: 24 }}>
+          <button onClick={() => setActiveTab('recipes')} style={{
+            background: 'none', border: 'none', padding: '8px 0', cursor: 'pointer',
+            fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 400,
+            textTransform: 'uppercase', letterSpacing: '0.14em',
+            color: activeTab === 'recipes' ? 'var(--text-primary)' : 'var(--text-muted)',
+            borderBottom: activeTab === 'recipes' ? '1px solid var(--text-primary)' : '1px solid transparent',
+          }}>Recipes</button>
+          <button onClick={() => setActiveTab('people')} style={{
+            background: 'none', border: 'none', padding: '8px 0', cursor: 'pointer',
+            fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 400,
+            textTransform: 'uppercase', letterSpacing: '0.14em',
+            color: activeTab === 'people' ? 'var(--text-primary)' : 'var(--text-muted)',
+            borderBottom: activeTab === 'people' ? '1px solid var(--text-primary)' : '1px solid transparent',
+          }}>People</button>
+        </div>
       </div>
+      {activeTab === 'recipes' ? (
+        <RecipesSearchTab onOpenRecipe={onOpenRecipe} />
+      ) : (
+      <>
       <div className="search-input-wrap">
         <input className="search-input" placeholder="Search by name or @username..." value={query} onChange={e => setQuery(e.target.value)} autoFocus />
       </div>
@@ -2340,6 +2927,8 @@ function SearchScreen({ onBack, onOpenUser, currentUserId }) {
           </>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 }
@@ -2416,7 +3005,7 @@ function UserPublicProfileScreen({ userId, currentUserId, onBack, onOpenPublicRe
                     {[r.time && `${r.time} min`, r.difficulty, r.servings && `${r.servings} servings`].filter(Boolean).join(' · ')}
                   </div>
                   {r.cookedCount > 0 && (
-                    <div className="flat-row-meta">Cooked {r.cookedCount} time{r.cookedCount !== 1 ? 's' : ''} by the community</div>
+                    <div className="flat-row-meta">Cooked {formatCount(r.cookedCount)} time{r.cookedCount !== 1 ? 's' : ''} by the community</div>
                   )}
                   {r.tags?.length > 0 && (
                     <div className="tag-pills" style={{ marginTop: 4 }}>
@@ -2539,6 +3128,7 @@ function PostScreen({ recipe, onPost, onSkip }) {
   const [text, setText] = useState('');
   const [photo, setPhoto] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
+  const [addToRecipe, setAddToRecipe] = useState(false);
   const [posting, setPosting] = useState(false);
   const fileRef = useRef(null);
   const MAX_CHARS = 300;
@@ -2555,6 +3145,10 @@ function PostScreen({ recipe, onPost, onSkip }) {
     try {
       let uploadedUrl = null;
       if (photo) uploadedUrl = await uploadPostPhoto(photo);
+      if (uploadedUrl && addToRecipe) {
+        try { await attachExistingPhotoToRecipe(recipe.id, uploadedUrl); }
+        catch (err) { console.error('Failed to add photo to recipe:', err); }
+      }
       await onPost(text.trim(), uploadedUrl);
     } catch (err) {
       console.error(err);
@@ -2588,7 +3182,7 @@ function PostScreen({ recipe, onPost, onSkip }) {
           {photoPreview ? (
             <div className="photo-preview">
               <img src={photoPreview} alt="Post" />
-              <button className="photo-remove" onClick={() => { setPhoto(null); setPhotoPreview(null); }}>×</button>
+              <button className="photo-remove" onClick={() => { setPhoto(null); setPhotoPreview(null); setAddToRecipe(false); }}>×</button>
             </div>
           ) : (
             <div className="photo-upload-area" onClick={() => fileRef.current?.click()}>
@@ -2596,6 +3190,12 @@ function PostScreen({ recipe, onPost, onSkip }) {
               <span className="photo-upload-icon">&#128247;</span>
               <span className="photo-upload-label">Tap to add a photo</span>
             </div>
+          )}
+          {photoPreview && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, fontFamily: "'DM Mono', monospace", fontSize: 11, color: 'var(--text-secondary)', cursor: 'pointer' }}>
+              <input type="checkbox" checked={addToRecipe} onChange={e => setAddToRecipe(e.target.checked)} />
+              Add this photo to the recipe
+            </label>
           )}
         </div>
         <button
@@ -2673,9 +3273,12 @@ export default function App() {
   const handleTabChange = (tab) => {
     if (tab === 'profile') {
       navigate('profile');
+    } else if (tab === 'discover') {
+      navigate('discover');
     } else {
       setMainTab(tab);
-      if (screen.name !== 'home') navigate('home');
+      if (screen.name !== 'home' && screen.name !== 'discover') navigate('home');
+      else if (screen.name === 'discover') navigate('home');
     }
   };
 
@@ -2904,7 +3507,8 @@ export default function App() {
 
   const activeFooterTab = (() => {
     if (s === 'profile') return 'profile';
-    if (['cookbook', 'new-cookbook', 'new-recipe', 'edit-recipe', 'recipe', 'prep'].includes(s)) return 'cookbooks';
+    if (s === 'discover') return 'discover';
+    if (['cookbook', 'new-cookbook', 'new-recipe', 'edit-recipe', 'recipe', 'prep', 'community-cookbook'].includes(s)) return 'cookbooks';
     if (s === 'public-recipe' || s === 'prep-public') return mainTab;
     if (s === 'home') return mainTab;
     return mainTab;
@@ -2977,7 +3581,7 @@ export default function App() {
             <HomeScreen
               cookbooks={cookbooks}
               shoppingList={shoppingList}
-              onOpenCookbook={id => navigate('cookbook', { cbId: id })}
+              onOpenCookbook={id => id === 'community' ? navigate('community-cookbook') : navigate('cookbook', { cbId: id })}
               onNewCookbook={() => navigate('new-cookbook')}
               onToggleShoppingItem={handleToggleShoppingItem}
               onDeleteShoppingItem={handleDeleteShoppingItem}
@@ -2998,6 +3602,21 @@ export default function App() {
               onBack={() => navigate('home')}
               onOpenUser={userId => navigate('user-profile', { userId })}
               currentUserId={user.id}
+              onOpenRecipe={(rId) => handleOpenPublicRecipe(rId)}
+            />
+          )}
+          {s === 'discover' && (
+            <DiscoverScreen
+              currentUserId={user.id}
+              onOpenRecipe={(rId) => handleOpenPublicRecipe(rId)}
+              onSaveToLibrary={handleSaveToLibrary}
+              savedRecipeIds={new Set(savedRecipes.map(r => r.recipe_id))}
+            />
+          )}
+          {s === 'community-cookbook' && (
+            <CommunityCookbookScreen
+              onBack={() => { setMainTab('cookbooks'); navigate('home'); }}
+              onOpenRecipe={(rId) => handleOpenPublicRecipe(rId)}
             />
           )}
           {s === 'user-profile' && screen.userId && (
