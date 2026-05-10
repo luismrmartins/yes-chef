@@ -18,6 +18,7 @@ import {
   addRecipePhoto, getRecipePhotos, deleteRecipePhoto, attachExistingPhotoToRecipe,
 } from '../lib/db';
 import { supabase } from '../lib/supabase';
+import { track } from '../lib/analytics';
 
 const STYLES = `
 
@@ -1056,6 +1057,7 @@ function DiscoverScreen({ currentUserId, onOpenRecipe, onSaveToLibrary, savedRec
   const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
+    track('discovery_opened');
     getDailyPicks(currentUserId, 5).then(setPicks);
     getTrendingRecipes(7, 10).then(setTrending);
   }, [currentUserId]);
@@ -1185,6 +1187,7 @@ function CommunityCookbookScreen({ onBack, onOpenRecipe }) {
         setHasMore(more.length === 20);
         setLoading(false);
       });
+      if (query.trim() && page === 0) track('search_performed');
     }, 250);
     return () => clearTimeout(t);
   }, [query, timeBucket, difficulty, page]);
@@ -1750,6 +1753,7 @@ function RecipePhotosSection({ recipeId, currentUserId }) {
     setUploading(true);
     try {
       const row = await addRecipePhoto(recipeId, pendingFile, caption.trim() || null);
+      track('photo_uploaded');
       const refreshed = await getRecipePhotos(recipeId);
       setPhotos(refreshed);
       cancelPending();
@@ -1950,6 +1954,7 @@ function RecipeDetailScreen({
   const showAnnotations = !isAuthor && !!savedRow;
 
   useEffect(() => {
+    track('recipe_viewed');
     getRecipeLikes(recipe.id).then(({ count, likedByMe }) => {
       setLikeCount(count); setLikedByMe(likedByMe);
     });
@@ -2610,6 +2615,8 @@ function CookModeScreen({ recipe, onFinish, currentUserId }) {
   const next = stepIdx < steps.length - 1 ? steps[stepIdx + 1] : null;
   const isAuthor = !!currentUserId && recipe.userId === currentUserId;
 
+  useEffect(() => { track('cook_mode_started'); }, []);
+
   useEffect(() => {
     if (!currentUserId || isAuthor) { setAnnotations([]); return; }
     getAnnotations(recipe.id, currentUserId).then(setAnnotations);
@@ -2971,7 +2978,10 @@ function RecipesSearchTab({ onOpenRecipe }) {
       ...(difficulty !== 'All' ? { difficulty } : {}),
     };
     setResults(null);
-    const t = setTimeout(() => searchPublicRecipes(query, filters, 0, 20).then(setResults), 250);
+    const t = setTimeout(() => {
+      searchPublicRecipes(query, filters, 0, 20).then(setResults);
+      if (query.trim()) track('search_performed');
+    }, 250);
     return () => clearTimeout(t);
   }, [query, timeBucket, difficulty]);
 
@@ -3066,6 +3076,7 @@ function SearchScreen({ onBack, onOpenUser, currentUserId, onOpenRecipe }) {
       setFollowingIds(prev => { const n = new Set(prev); n.delete(userId); return n; });
     } else {
       await followUser(userId);
+      track('user_followed');
       setFollowingIds(prev => new Set([...prev, userId]));
     }
   };
@@ -3162,7 +3173,7 @@ function UserPublicProfileScreen({ userId, currentUserId, onBack, onOpenPublicRe
 
   const handleFollow = async () => {
     if (following) { await unfollowUser(userId); setFollowing(false); }
-    else { await followUser(userId); setFollowing(true); }
+    else { await followUser(userId); track('user_followed'); setFollowing(true); }
   };
 
   if (!data) {
@@ -3610,6 +3621,7 @@ export default function App() {
       [cbId]: (prev[cbId] || []).map(r => r.id === rId ? { ...r, cookedCount: (r.cookedCount || 0) + 1, lastCookedAt: now } : r),
     }));
     await createEvent('cooked_recipe', { recipeId: rId });
+    track('cook_mode_completed');
     navigate('done', { cbId, rId });
   };
 
@@ -3668,6 +3680,7 @@ export default function App() {
     }
     try {
       const row = await saveRecipeToLibrary(recipeId, cookbookId);
+      track('recipe_saved');
       setSavedRecipes(prev => {
         const next = prev.filter(r => r.recipe_id !== recipeId);
         next.push({ recipe_id: recipeId, cookbook_id: cookbookId });
