@@ -2666,11 +2666,19 @@ function DoneScreen({ recipe, onContinue }) {
   );
 }
 
+const LEFT_APP_OPTIONS = [
+  { value: 'none',           label: 'No, stayed in the app' },
+  { value: 'once_or_twice',  label: 'Once or twice' },
+  { value: 'several',        label: 'Several times' },
+];
+
 function FeedbackScreen({ recipe, onSave, onSkip }) {
   const [ease, setEase] = useState(0);
   const [taste, setTaste] = useState(0);
   const [overall, setOverall] = useState(0);
   const [notes, setNotes] = useState('');
+  const [leftApp, setLeftApp] = useState(null);
+  const [improvementNotes, setImprovementNotes] = useState('');
 
   return (
     <div className="screen">
@@ -2687,12 +2695,57 @@ function FeedbackScreen({ recipe, onSave, onSkip }) {
             </div>
           ))}
         </div>
-        <div style={{ marginTop: 24 }}>
+
+        <div style={{ marginTop: 28 }}>
+          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, fontWeight: 400, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: 10 }}>
+            Did you leave the app at any point while cooking?
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {LEFT_APP_OPTIONS.map(opt => {
+              const active = leftApp === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => setLeftApp(opt.value)}
+                  style={{
+                    padding: '8px 14px', borderRadius: 0, cursor: 'pointer',
+                    fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 400,
+                    textTransform: 'uppercase', letterSpacing: '0.08em',
+                    border: `1px solid ${active ? 'var(--blue)' : 'var(--rule)'}`,
+                    color: active ? 'var(--blue)' : 'var(--text-secondary)',
+                    background: active ? 'var(--blue-pale)' : 'transparent',
+                  }}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ marginTop: 28 }}>
+          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, fontWeight: 400, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: 8 }}>
+            What would have made this easier?
+          </div>
+          <textarea
+            className="notes-field"
+            placeholder="Missing information, confusing steps, anything at all..."
+            value={improvementNotes}
+            onChange={e => setImprovementNotes(e.target.value)}
+          />
+        </div>
+
+        <div style={{ marginTop: 28 }}>
           <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, fontWeight: 400, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: 8 }}>Any notes?</div>
           <textarea className="notes-field" placeholder="What would you do differently next time?" value={notes} onChange={e => setNotes(e.target.value)} />
         </div>
+
         <div style={{ marginTop: 32, display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <button className="btn btn-primary btn-full" style={{ height: 52, fontSize: 18 }} onClick={() => onSave(ease, taste, overall, notes)}>
+          <button
+            className="btn btn-primary btn-full"
+            style={{ height: 52, fontSize: 18 }}
+            onClick={() => onSave(ease, taste, overall, notes, { left_app: leftApp, improvement_notes: improvementNotes.trim() })}
+          >
             Save feedback
           </button>
           <button onClick={onSkip} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: 13, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '8px 0' }}>
@@ -3397,8 +3450,8 @@ export default function App() {
     navigate('done', { cbId, rId });
   };
 
-  const handleSaveFeedback = async (cbId, rId, ease, taste, overall, notes) => {
-    await saveRecipeFeedback(rId, ease, taste, overall, notes);
+  const handleSaveFeedback = async (cbId, rId, ease, taste, overall, notes, extras) => {
+    await saveRecipeFeedback(rId, ease, taste, overall, notes, extras);
     navigate('post', { cbId, rId });
   };
 
@@ -3697,7 +3750,7 @@ export default function App() {
           {s === 'prep-public' && publicRecipeView?.recipe && <PrepChecklistScreen recipe={publicRecipeView.recipe} currentUserId={user.id} onBack={() => navigate('public-recipe', { publicRecipeId: screen.publicRecipeId, _returnTo: screen._returnTo })} onStart={() => navigate('cook-public', { publicRecipeId: screen.publicRecipeId, _returnTo: screen._returnTo })} />}
           {s === 'prep' && cb && recipe && <PrepChecklistScreen recipe={recipe} currentUserId={user.id} onBack={() => navigate('recipe', { cbId, rId })} onStart={() => navigate('cook', { cbId, rId })} />}
           {s === 'done' && recipe && <DoneScreen recipe={recipe} onContinue={() => navigate('feedback', { cbId, rId })} />}
-          {s === 'feedback' && recipe && <FeedbackScreen recipe={recipe} onSave={(e, t, o, n) => handleSaveFeedback(cbId, rId, e, t, o, n)} onSkip={() => navigate('post', { cbId, rId })} />}
+          {s === 'feedback' && recipe && <FeedbackScreen recipe={recipe} onSave={(e, t, o, n, extras) => handleSaveFeedback(cbId, rId, e, t, o, n, extras)} onSkip={() => navigate('post', { cbId, rId })} />}
           {s === 'post' && recipe && <PostScreen recipe={recipe} onPost={(text, url) => handlePost(cbId, rId, text, url)} onSkip={() => navigate('recipe', { cbId, rId })} />}
         </div>
       </div>
