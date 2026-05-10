@@ -1400,7 +1400,7 @@ function RecipeFormScreen({ initialData, onBack, onSave, saving, unitPreference 
   const [description, setDescription] = useState(initialData?.description || '');
   const [time, setTime] = useState(initialData?.time || 30);
   const [difficulty, setDifficulty] = useState(initialData?.difficulty || 'Easy');
-  const [servings, setServings] = useState(initialData?.servings || 2);
+  const [servings, setServings] = useState(String(initialData?.servings ?? 2));
   const [tags, setTags] = useState(initialData?.tags || []);
   const [ingredients, setIngredients] = useState(
     initialData?.ingredients?.length ? initialData.ingredients.map(i => ({ ...i, id: i.id || generateId() })) : [{ id: generateId(), name: '', qty: '' }]
@@ -1495,7 +1495,9 @@ function RecipeFormScreen({ initialData, onBack, onSave, saving, unitPreference 
 
     onSave({
       name: name.trim(), description: description.trim(),
-      time: parseInt(time) || 30, difficulty, servings, tags, isPublic,
+      time: parseInt(time) || 30, difficulty,
+      servings: parseInt(servings) || 1,
+      tags, isPublic,
       ingredients: ingredientsToSave,
       steps: stepsToSave,
     });
@@ -1581,7 +1583,16 @@ function RecipeFormScreen({ initialData, onBack, onSave, saving, unitPreference 
           </div>
           <div className="form-field">
             <label className="form-label">Servings</label>
-            <input className="form-input" type="number" placeholder="2" value={servings} onChange={e => setServings(parseInt(e.target.value) || 2)} />
+            <input
+              className="form-input"
+              type="number"
+              inputMode="numeric"
+              placeholder="2"
+              value={servings}
+              onChange={e => setServings(e.target.value.replace(/[^\d]/g, ''))}
+              onFocus={e => e.target.select()}
+              onBlur={() => { if (!servings.trim()) setServings('2'); }}
+            />
           </div>
           <div className="form-field">
             <label className="form-label">Difficulty</label>
