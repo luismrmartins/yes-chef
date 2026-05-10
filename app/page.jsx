@@ -561,12 +561,17 @@ const STYLES = `
     overflow-y: auto; -webkit-overflow-scrolling: touch; background: var(--paper);
   }
   .app-content-inner { max-width: 480px; margin: 0 auto; }
+  /* AppHeader replaces the legacy desktop home-header; hide it to avoid double headers. */
   .home-header { display: none; }
-  .home-wrapper { height: auto !important; overflow: visible !important; }
-  /* The 3-column desktop home layout is gone — only the active tab column shows. */
-  .home-body { display: block !important; }
-  .home-col { display: none; }
-  .home-col.active { display: block; }
+  /* On desktop we want the 3-column grid for home (defined elsewhere); inside
+     .app-content the wrapper must size to the available height, not 100vh. */
+  .home-wrapper { height: 100%; }
+
+  /* On desktop, let the home page span the full width — bypass the
+     480px content cap so the 3 columns have room. */
+  @media (min-width: 768px) {
+    .app-content-inner:has(.home-wrapper) { max-width: none; }
+  }
 
   /* ── Screen transitions ──────────────────────────────── */
   @keyframes screen-slide-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
