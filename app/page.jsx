@@ -54,6 +54,8 @@ const STYLES = `
   .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
   .btn-red { background: var(--blue); color: var(--white); border: none; }
   .btn-red:hover { background: var(--blue-dark); }
+  .btn-red:disabled { background: var(--rule); color: var(--text-muted); cursor: not-allowed; opacity: 0.7; }
+  .btn-red:disabled:hover { background: var(--rule); }
   .btn-black { background: var(--ink); color: var(--white); border: none; }
   .btn-black:hover { opacity: 0.85; }
   .btn-ghost { background: transparent; color: var(--text-primary); border: 1px solid var(--text-primary); }
@@ -517,19 +519,44 @@ function timeAgo(dateStr) {
 
 function generateId() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
 
+// Whitelist of valid units. Single letters like "g" or "l" only match when
+// they're a standalone token (followed by whitespace or end of string), so
+// "1 garlic" no longer extracts "g" from "garlic".
+const INGREDIENT_UNITS = [
+  'kilograms', 'kilogram', 'kg', 'pounds', 'pound', 'lbs', 'lb',
+  'ounces', 'ounce', 'oz', 'grams', 'gram', 'g',
+  'tablespoons', 'tablespoon', 'tbsp', 'teaspoons', 'teaspoon', 'tsp',
+  'litres', 'litre', 'liters', 'liter',
+  'pints', 'pint', 'cups', 'cup',
+  'fl\\s+oz',
+  'ml', 'dl', 'cl', 'l',
+  'pinches', 'pinch', 'handfuls', 'handful', 'bunches', 'bunch',
+  'cloves', 'clove', 'slices', 'slice', 'pieces', 'piece',
+  'sprigs', 'sprig', 'sheets', 'sheet', 'rashers', 'rasher',
+  'cans', 'can', 'tins', 'tin', 'jars', 'jar', 'packs', 'pack', 'bags', 'bag',
+];
+const INGREDIENT_UNIT_PATTERN = [...INGREDIENT_UNITS].sort((a, b) => b.length - a.length).join('|');
+const INGREDIENT_QTY_RE = new RegExp(
+  `^([\\d./⅓⅔¼½¾⅛⅜⅝⅞]+(?:\\s+\\d+/\\d+)?)\\s*(?:(${INGREDIENT_UNIT_PATTERN})(?=\\s|$))?`,
+  'i'
+);
+
 function parseIngredientLine(line) {
   line = line.trim().replace(/^[-•*]\s*/, '');
   if (!line) return null;
-  const match = line.match(/^([\d¼½¾⅓⅔⅛⅜⅝⅞]+(?:[\/\.]\d+)?(?:\s+\d+\/\d+)?)\s*(cups?|tbsps?|tablespoons?|tsps?|teaspoons?|fl\.?\s*oz|ounces?|oz|pounds?|lbs?|grams?|g|kilograms?|kg|millilitres?|milliliters?|ml|litres?|liters?|l|cloves?|pieces?|slices?|large|medium|small|bunch(?:es)?|handfuls?|pinch(?:es)?|cans?|stalks?|sprigs?|leaves?)\s*/i);
-  if (match) return { qty: match[0].trim(), name: line.slice(match[0].length).trim() || line };
-  const numOnly = line.match(/^(\d+(?:[\/\.]\d+)?)\s+/);
-  if (numOnly) return { qty: numOnly[1], name: line.slice(numOnly[0].length).trim() };
-  return { qty: '', name: line };
+  const m = line.match(INGREDIENT_QTY_RE);
+  if (!m || !m[1]) return { qty: '', name: line };
+  const rest = line.slice(m[0].length).trim();
+  if (!rest) return { qty: '', name: line };
+  return { qty: m[0].trim(), name: rest };
 }
 
 function convertQty(qty, toPreference) {
   if (!qty) return qty;
-  const toMetric = { cup: [240,'ml'], cups: [240,'ml'], tbsp: [15,'ml'], tablespoon: [15,'ml'], tablespoons: [15,'ml'], tsp: [5,'ml'], teaspoon: [5,'ml'], teaspoons: [5,'ml'], 'fl oz': [30,'ml'], oz: [28.35,'g'], ounce: [28.35,'g'], ounces: [28.35,'g'], lb: [453.6,'g'], lbs: [453.6,'g'], pound: [453.6,'g'], pounds: [453.6,'g'] };
+  // Tablespoons and teaspoons are kept as-is in both directions — they're
+  // universal kitchen measures, converting them to ml just makes recipes
+  // harder to follow.
+  const toMetric = { cup: [240,'ml'], cups: [240,'ml'], 'fl oz': [30,'ml'], oz: [28.35,'g'], ounce: [28.35,'g'], ounces: [28.35,'g'], lb: [453.6,'g'], lbs: [453.6,'g'], pound: [453.6,'g'], pounds: [453.6,'g'] };
   const m = qty.match(/^([\d\.]+(?:\/[\d\.]+)?)\s*(.+)?$/);
   if (!m) return qty;
   let num = m[1].includes('/') ? parseFloat(m[1].split('/')[0]) / parseFloat(m[1].split('/')[1]) : parseFloat(m[1]);
@@ -540,7 +567,7 @@ function convertQty(qty, toPreference) {
     return `${round(num * f)} ${u}`;
   }
   if (toPreference === 'imperial') {
-    if (unit === 'ml') { if (num <= 5) return `${round(num/5)} tsp`; if (num <= 60) return `${round(num/15)} tbsp`; return `${round(num/240)} cups`; }
+    if (unit === 'ml') { if (num <= 60) return qty; return `${round(num/240)} cups`; }
     if (unit === 'g') { return num >= 454 ? `${round(num/453.6)} lbs` : `${round(num/28.35)} oz`; }
     if (unit === 'kg') return `${round(num * 2.205)} lbs`;
     if (unit === 'l') return `${round(num * 4.227)} cups`;
@@ -1382,9 +1409,11 @@ function RecipeFormScreen({ initialData, onBack, onSave, saving, unitPreference 
     initialData?.steps?.length ? initialData.steps.map(s => ({ ...s, id: s.id || generateId(), hasTimer: !!s.timer })) : [{ id: generateId(), text: '', timer: null, hasTimer: false }]
   );
   const [isPublic, setIsPublic] = useState(initialData?.isPublic || false);
-  const [ingMode, setIngMode] = useState('manual');
+  // Paste is the default for new recipes; existing recipes (edit mode) start
+  // in one-by-one mode so users see what they already have.
+  const [ingMode, setIngMode] = useState(isEdit ? 'manual' : 'paste');
   const [ingPaste, setIngPaste] = useState('');
-  const [stepMode, setStepMode] = useState('manual');
+  const [stepMode, setStepMode] = useState(isEdit ? 'manual' : 'paste');
   const [stepPaste, setStepPaste] = useState('');
   const [showStepHelp, setShowStepHelp] = useState(false);
 
@@ -1414,10 +1443,19 @@ function RecipeFormScreen({ initialData, onBack, onSave, saving, unitPreference 
     return next;
   });
 
+  // Treat unparsed paste content as "filled" so the Save button enables once
+  // the user has clearly entered ingredients/steps even if they haven't hit
+  // Apply yet. handleSave below applies any pending paste before saving.
   const detailsComplete = !!name.trim();
-  const ingredientsComplete = ingredients.some(i => i.name.trim());
-  const stepsComplete = steps.some(s => s.text.trim());
+  const ingredientsComplete = ingredients.some(i => i.name.trim()) || (ingMode === 'paste' && ingPaste.trim().length > 0);
+  const stepsComplete = steps.some(s => s.text.trim()) || (stepMode === 'paste' && stepPaste.trim().length > 0);
   const filledStepCount = steps.filter(s => s.text.trim()).length;
+
+  const missing = [
+    !detailsComplete && 'a name',
+    !ingredientsComplete && 'an ingredient',
+    !stepsComplete && 'a step',
+  ].filter(Boolean);
 
   const applyIngPaste = () => {
     const parsed = ingPaste.split('\n').map(parseIngredientLine).filter(Boolean)
@@ -1435,12 +1473,33 @@ function RecipeFormScreen({ initialData, onBack, onSave, saving, unitPreference 
   };
 
   const canSave = detailsComplete && ingredientsComplete && stepsComplete;
-  const handleSave = () => onSave({
-    name: name.trim(), description: description.trim(),
-    time: parseInt(time) || 30, difficulty, servings, tags, isPublic,
-    ingredients: ingredients.filter(i => i.name.trim()),
-    steps: steps.filter(s => s.text.trim()).map(s => ({ ...s, timer: s.hasTimer ? (parseInt(s.timer) || null) : null })),
-  });
+  const handleSave = () => {
+    // Auto-apply any unparsed paste content so a user who typed in the paste
+    // box but didn't tap Apply doesn't hit a confusing validation error.
+    let finalIngredients = ingredients;
+    if (ingMode === 'paste' && ingPaste.trim()) {
+      const parsed = ingPaste.split('\n').map(parseIngredientLine).filter(Boolean)
+        .map(p => ({ id: generateId(), name: p.name, qty: convertQty(p.qty, unitPreference) }));
+      if (parsed.length) finalIngredients = ingredients.some(i => i.name.trim()) ? [...ingredients, ...parsed] : parsed;
+    }
+    let finalSteps = steps;
+    if (stepMode === 'paste' && stepPaste.trim()) {
+      const parsed = parseStepsFromText(stepPaste).map(text => ({ id: generateId(), text, timer: null, hasTimer: false }));
+      if (parsed.length) finalSteps = steps.some(s => s.text.trim()) ? [...steps, ...parsed] : parsed;
+    }
+
+    const ingredientsToSave = finalIngredients.filter(i => i.name.trim());
+    const stepsToSave = finalSteps.filter(s => s.text.trim()).map(s => ({ ...s, timer: s.hasTimer ? (parseInt(s.timer) || null) : null }));
+
+    if (!name.trim() || !ingredientsToSave.length || !stepsToSave.length) return;
+
+    onSave({
+      name: name.trim(), description: description.trim(),
+      time: parseInt(time) || 30, difficulty, servings, tags, isPublic,
+      ingredients: ingredientsToSave,
+      steps: stepsToSave,
+    });
+  };
 
   const tabProgress = [
     { label: 'Details', complete: detailsComplete },
@@ -1452,7 +1511,17 @@ function RecipeFormScreen({ initialData, onBack, onSave, saving, unitPreference 
     <div className="form-screen">
       <div className="back-row safe-top">
         <button className="back-btn" onClick={onBack}>← Back</button>
-        <button className="btn btn-red btn-sm" style={{ marginLeft: 'auto' }} disabled={!canSave || saving} onClick={handleSave}>
+        {missing.length > 0 && (
+          <span style={{ marginLeft: 'auto', marginRight: 8, fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            Add {missing.join(' + ')}
+          </span>
+        )}
+        <button
+          className="btn btn-red btn-sm"
+          style={missing.length === 0 ? { marginLeft: 'auto' } : {}}
+          disabled={!canSave || saving}
+          onClick={handleSave}
+        >
           {saving ? 'Saving...' : isEdit ? 'Update' : 'Save'}
         </button>
       </div>

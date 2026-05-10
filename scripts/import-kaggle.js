@@ -79,13 +79,69 @@ function capFirst(s) {
   return s[0].toUpperCase() + s.slice(1);
 }
 
-// Try to split "2 cups flour" → { qty: '2 cups', name: 'flour' }.
-// Returns { qty: '', name: original } if no leading quantity is detected.
-const QTY_RE = /^([\d./⅓⅔¼½¾⅛⅜⅝⅞]+(?:\s*(?:cups?|tablespoons?|tbsps?|tbsp|teaspoons?|tsps?|tsp|ounces?|oz|pounds?|lbs?|grams?|g|kg|ml|liters?|l|pints?|quarts?|gallons?|cloves?|pieces?|slices?|cans?|packages?|pkgs?|sticks?|sprigs?|bunches?|handfuls?|dashes?|pinches?|large|medium|small))?)\.?\s+(.+)$/i;
+// ─── Quantity / unit parser ─────────────────────────────────────────────────
+// Whitelist of valid units. Single letters like "g" or "l" only match when
+// followed by whitespace or end of string, so "1 garlic" no longer extracts
+// "g" from "garlic".
+
+const UNIT_LIST = [
+  // weight
+  'kilograms', 'kilogram', 'kg', 'pounds', 'pound', 'lbs', 'lb',
+  'ounces', 'ounce', 'oz', 'grams', 'gram', 'g',
+  // volume
+  'tablespoons', 'tablespoon', 'tbsp', 'teaspoons', 'teaspoon', 'tsp',
+  'litres', 'litre', 'liters', 'liter',
+  'pints', 'pint', 'cups', 'cup',
+  'fl\\s+oz',
+  'ml', 'dl', 'cl', 'l',
+  // other
+  'pinches', 'pinch', 'handfuls', 'handful', 'bunches', 'bunch',
+  'cloves', 'clove', 'slices', 'slice', 'pieces', 'piece',
+  'sprigs', 'sprig', 'sheets', 'sheet', 'rashers', 'rasher',
+  'cans', 'can', 'tins', 'tin', 'jars', 'jar', 'packs', 'pack', 'bags', 'bag',
+];
+// Sort longest-first so JS alternation prefers e.g. "grams" over "g".
+const SORTED_UNITS = [...UNIT_LIST].sort((a, b) => b.length - a.length);
+const UNIT_PATTERN = SORTED_UNITS.join('|');
+
+// Number (with fractions / mixed numbers / unicode), then optional whitespace,
+// then optional unit that MUST end at a word boundary (\s or end-of-string).
+const QTY_RE = new RegExp(
+  `^([\\d./⅓⅔¼½¾⅛⅜⅝⅞]+(?:\\s+\\d+/\\d+)?)\\s*(?:(${UNIT_PATTERN})(?=\\s|$))?`,
+  'i'
+);
+
 function splitQty(ingredient) {
-  const m = ingredient.match(QTY_RE);
-  if (m) return { qty: m[1].trim(), name: m[2].trim() };
-  return { qty: '', name: ingredient };
+  const trimmed = String(ingredient || '').trim();
+  if (!trimmed) return { qty: '', name: '' };
+  const m = trimmed.match(QTY_RE);
+  if (!m || !m[1]) return { qty: '', name: trimmed };
+  const rest = trimmed.slice(m[0].length).trim();
+  if (!rest) return { qty: '', name: trimmed };
+  return { qty: m[0].trim(), name: rest };
+}
+
+// ─── Parser self-test ───────────────────────────────────────────────────────
+
+function runQtyParserTests() {
+  const cases = [
+    ['1 garlic',          { qty: '1',        name: 'garlic' }],
+    ['200g flour',        { qty: '200g',     name: 'flour' }],
+    ['2 cups milk',       { qty: '2 cups',   name: 'milk' }],
+    ['1 lemon',           { qty: '1',        name: 'lemon' }],
+    ['3 large eggs',      { qty: '3',        name: 'large eggs' }],
+    ['500ml water',       { qty: '500ml',    name: 'water' }],
+    ['1 garlic clove',    { qty: '1',        name: 'garlic clove' }],
+    ['2 tbsp olive oil',  { qty: '2 tbsp',   name: 'olive oil' }],
+  ];
+  let allPass = true;
+  for (const [input, expected] of cases) {
+    const actual = splitQty(input);
+    const pass = actual.qty === expected.qty && actual.name === expected.name;
+    if (!pass) allPass = false;
+    console.log(`${pass ? 'PASS' : 'FAIL'}  "${input}" → qty="${actual.qty}", name="${actual.name}"${pass ? '' : ` (expected qty="${expected.qty}", name="${expected.name}")`}`);
+  }
+  return allPass;
 }
 
 // Detect first time mention in a step. Returns minutes (number) or null.
@@ -221,6 +277,13 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
 // ─── Main ───────────────────────────────────────────────────────────────────
 async function main() {
+  console.log('Validating quantity parser…');
+  if (!runQtyParserTests()) {
+    console.error('Quantity parser tests failed. Aborting import.');
+    process.exit(1);
+  }
+  console.log('All parser tests passed.\n');
+
   if (!fs.existsSync(CSV_PATH)) {
     console.error(`CSV not found at ${CSV_PATH}`);
     process.exit(1);
