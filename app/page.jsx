@@ -152,38 +152,111 @@ const STYLES = `
   .checklist-progress { height: 1px; background: var(--rule); overflow: hidden; }
   .checklist-progress-fill { height: 100%; background: var(--blue); transition: width 0.3s ease; }
 
-  .cook-screen { background: var(--ink); height: 100vh; height: 100dvh; display: flex; flex-direction: column; position: relative; overflow: hidden; }
-  .timers-drawer { position: absolute; top: 0; right: 0; bottom: 0; width: min(300px, 88vw); background: var(--ink); border-left: 1px solid #252320; z-index: 50; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.22s cubic-bezier(.4,0,.2,1); }
+  /* ── Cook mode (light theme) ────────────────────────── */
+  .cook-screen { background: var(--paper); height: 100vh; height: 100dvh; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+  .cook-header {
+    height: 52px; padding: 0 24px; border-bottom: 1px solid var(--rule); background: var(--paper);
+    display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+  }
+  .cook-header-exit {
+    background: none; border: none; cursor: pointer; padding: 0;
+    font-family: 'DM Mono', monospace; font-size: 14px; color: var(--text-primary);
+    width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+  }
+  .cook-header-title {
+    flex: 1; text-align: center; font-family: 'DM Mono', monospace; font-weight: 400;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-primary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .cook-header-counter {
+    font-family: 'DM Mono', monospace; font-weight: 300; font-size: 11px;
+    color: var(--text-secondary); min-width: 40px; text-align: right;
+  }
+  .cook-body { flex: 1; overflow-y: auto; min-height: 0; display: flex; flex-direction: column; }
+  .cook-prev {
+    background: var(--paper); padding: 16px 24px; border-bottom: 1px solid var(--rule);
+  }
+  .cook-prev-label {
+    font-family: 'DM Mono', monospace; font-weight: 400; font-size: 9px;
+    letter-spacing: 0.14em; text-transform: uppercase; color: #B8B0A8; margin-bottom: 6px;
+  }
+  .cook-prev-text {
+    font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 300; line-height: 1.6;
+    color: #B8B0A8; text-decoration: line-through;
+  }
+  .cook-current {
+    background: #FFFFFF; padding: 24px;
+    border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+  }
+  .cook-step-label {
+    font-family: 'DM Mono', monospace; font-weight: 400; font-size: 9px;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--blue); margin-bottom: 14px;
+  }
+  .cook-current-text {
+    font-family: 'Cormorant Garamond', serif; font-weight: 400; font-style: italic;
+    font-size: 22px; line-height: 1.65; color: var(--text-primary); margin: 0;
+  }
+  .cook-next {
+    background: var(--paper); padding: 16px 24px;
+  }
+  .cook-next-label {
+    font-family: 'DM Mono', monospace; font-weight: 400; font-size: 9px;
+    letter-spacing: 0.14em; text-transform: uppercase; color: #B8B0A8; margin-bottom: 6px;
+  }
+  .cook-next-text {
+    font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 300; line-height: 1.6; color: #B8B0A8;
+  }
+  .cook-dots { display: flex; gap: 4px; align-items: center; justify-content: center; padding: 18px 24px 8px; }
+  .cook-dot { width: 4px; height: 4px; background: #EDEAE4; transition: all 0.2s; }
+  .cook-dot.active { background: var(--blue); width: 16px; }
+  .cook-dot.done { background: var(--rule); }
+
+  .cook-timer-widget {
+    margin-top: 16px; background: var(--paper); border: 1px solid var(--rule);
+    padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .cook-timer-display { font-family: 'DM Mono', monospace; font-weight: 400; font-size: 28px; color: var(--text-primary); line-height: 1; }
+  .cook-timer-sub { font-family: 'DM Mono', monospace; font-weight: 300; font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+  .cook-timer-btn-w {
+    background: transparent; border: 1px solid var(--rule); padding: 8px 14px; cursor: pointer;
+    font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 400;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); border-radius: 0;
+  }
+  .cook-timer-btn-w.running { border-color: var(--blue); color: var(--blue); }
+  .cook-timer-btn-w.done { background: var(--blue); color: var(--white); border-color: var(--blue); }
+
+  .cook-footer {
+    height: calc(56px + env(safe-area-inset-bottom, 0px));
+    padding: 8px 24px calc(8px + env(safe-area-inset-bottom, 0px));
+    background: var(--paper); border-top: 1px solid var(--rule);
+    display: flex; align-items: center; gap: 12px; flex-shrink: 0; z-index: 10;
+  }
+  .cook-nav-back {
+    width: 56px; height: 40px; border: 1px solid var(--rule); background: transparent;
+    cursor: pointer; font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 400;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); border-radius: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .cook-nav-back:disabled { opacity: 0.3; cursor: not-allowed; }
+  .cook-nav-next {
+    flex: 1; height: 40px; border: none; background: var(--blue); color: var(--white);
+    cursor: pointer; font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 400;
+    text-transform: uppercase; letter-spacing: 0.1em; border-radius: 0;
+  }
+  .cook-nav-next:hover { background: var(--blue-dark); }
+
+  /* Old drawers — keep light-theme equivalents for ingredients/timers */
+  .timers-drawer { position: absolute; top: 0; right: 0; bottom: 0; width: min(320px, 88vw); background: var(--paper); border-left: 1px solid var(--rule); z-index: 50; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.22s cubic-bezier(.4,0,.2,1); }
   .timers-drawer.open { transform: translateX(0); }
-  .ingr-drawer { position: absolute; top: 0; left: 0; bottom: 0; width: min(300px, 88vw); background: var(--ink); border-right: 1px solid #252320; z-index: 50; display: flex; flex-direction: column; transform: translateX(-100%); transition: transform 0.22s cubic-bezier(.4,0,.2,1); }
+  .ingr-drawer { position: absolute; top: 0; left: 0; bottom: 0; width: min(320px, 88vw); background: var(--paper); border-right: 1px solid var(--rule); z-index: 50; display: flex; flex-direction: column; transform: translateX(-100%); transition: transform 0.22s cubic-bezier(.4,0,.2,1); }
   .ingr-drawer.open { transform: translateX(0); }
-  .timers-drawer-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.45); z-index: 49; }
-  .timers-drawer-head { padding: 20px 20px 14px; border-bottom: 1px solid #252320; display: flex; align-items: center; justify-content: space-between; }
-  .timers-drawer-title { font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.14em; color: #4A4845; }
-  .timers-drawer-close { background: none; border: none; font-size: 18px; cursor: pointer; color: #4A4845; padding: 0 4px; line-height: 1; }
-  .timers-drawer-close:hover { color: #F5F3EF; }
+  .timers-drawer-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.25); z-index: 49; }
+  .timers-drawer-head { padding: 20px 20px 14px; border-bottom: 1px solid var(--rule); display: flex; align-items: center; justify-content: space-between; }
+  .timers-drawer-title { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.14em; color: var(--text-muted); }
+  .timers-drawer-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-muted); padding: 0 4px; line-height: 1; }
+  .timers-drawer-close:hover { color: var(--text-primary); }
   .timers-drawer-body { flex: 1; overflow-y: auto; }
-  .timers-drawer-empty { padding: 40px 20px; text-align: center; color: #3A3835; font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; line-height: 2; }
-  .cook-header { padding: 20px 20px 0; display: flex; align-items: center; justify-content: space-between; }
-  .cook-dots { display: flex; gap: 4px; align-items: center; }
-  .cook-dot { width: 4px; height: 4px; background: #252320; transition: all 0.2s; }
-  .cook-dot.active { background: var(--blue); width: 14px; }
-  .cook-dot.done { background: #3A3835; }
-  .cook-steps { flex: 1; display: flex; flex-direction: column; padding: 0 28px; justify-content: center; overflow-y: auto; min-height: 0; }
-  .cook-prev { padding: 20px 0 24px; border-bottom: 1px solid #252320; }
-  .cook-prev-text { font-family: 'DM Mono', monospace; font-size: 14px; text-decoration: line-through; line-height: 1.6; color: #3A3835; font-weight: 300; letter-spacing: 0.02em; }
-  .cook-current { padding: 36px 0; flex: 1; display: flex; flex-direction: column; justify-content: center; }
-  .cook-step-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: #4A4845; margin-bottom: 20px; }
-  .cook-current-text { font-family: 'Cormorant Garamond', serif; font-size: clamp(28px, 6vw, 38px); line-height: 1.55; font-weight: 300; font-style: italic; color: #F5F3EF; }
-  .cook-next { padding: 24px 0 20px; border-top: 1px solid #252320; }
-  .cook-next-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: #4A4845; margin-bottom: 10px; }
-  .cook-next-text { font-family: 'DM Mono', monospace; font-size: 14px; line-height: 1.6; color: #3A3835; font-weight: 300; letter-spacing: 0.02em; }
-  .cook-footer { padding: 20px 28px max(28px, calc(env(safe-area-inset-bottom, 0px) + 20px)); position: relative; z-index: 10; }
-  .cook-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .cook-nav-btn { flex: 1; height: 44px; border: 1px solid #3A3835; background: transparent; color: #9A9590; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; font-family: 'DM Mono', monospace; font-weight: 300; transition: all 0.15s; border-radius: 0; }
-  .cook-nav-btn:last-child { border-color: #F5F3EF; color: #F5F3EF; }
-  .cook-nav-btn:hover:not(:disabled) { background: rgba(245,243,239,0.05); }
-  .cook-nav-btn:disabled { opacity: 0.2; cursor: not-allowed; }
+  .timers-drawer-empty { padding: 40px 20px; text-align: center; color: var(--text-muted); font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; line-height: 2; }
 
   .input-mode-toggle { display: flex; gap: 0; margin-bottom: 10px; border: 1px solid var(--rule); align-self: flex-start; }
   .input-mode-btn { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.1em; padding: 6px 14px; border: none; background: none; cursor: pointer; color: var(--text-muted); transition: all 0.15s; }
@@ -353,35 +426,12 @@ const STYLES = `
     .home-col-right .shopping-item { padding: 10px 20px; }
   }
 
-  /* ── Two-panel cookbook layout ──────────────────────── */
-  .cookbook-layout { display: flex; height: 100vh; overflow: hidden; background: var(--paper); }
-  .recipe-list-panel { width: 260px; flex-shrink: 0; border-right: 1px solid var(--rule); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-  .recipe-detail-panel { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
-  .list-panel-header { padding: 24px 20px 14px; border-bottom: 1px solid var(--rule); flex-shrink: 0; }
-  .list-panel-back { background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; color: var(--text-muted); font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.1em; padding: 0; margin-bottom: 10px; }
-  .list-panel-back:hover { color: var(--text-primary); }
-  .list-panel-title { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-primary); line-height: 1.3; }
-  .list-panel-count { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-muted); margin-top: 4px; font-weight: 300; }
-  .recipe-list-rows { flex: 1; overflow-y: auto; }
-  .recipe-list-row { padding: 11px 20px; cursor: pointer; border-bottom: 1px solid var(--rule); transition: background 0.1s; }
+  /* ── Cookbook list rows (single-column, no split panel) ───────────── */
+  .recipe-list-rows { display: block; }
+  .recipe-list-row { padding: 14px 24px; cursor: pointer; border-bottom: 1px solid var(--rule); transition: background 0.1s; background: transparent; }
   .recipe-list-row:hover { background: var(--surface); }
-  .recipe-list-row.active { background: var(--surface); border-left: 2px solid var(--blue); padding-left: 18px; }
-  .recipe-list-row-name { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 400; color: var(--text-primary); line-height: 1.4; letter-spacing: 0.02em; }
-  .recipe-list-row-meta { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-muted); margin-top: 2px; font-weight: 300; }
-  .list-panel-footer { padding: 12px 16px; border-top: 1px solid var(--rule); flex-shrink: 0; }
-  .detail-empty-state { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; min-height: 60vh; }
-  .panel-mobile-back { display: none; }
-  .panel-mobile-back-btn { background: none; border: none; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); padding: 14px 28px; display: block; }
-  .panel-mobile-back-btn:hover { color: var(--text-primary); }
-
-  @media (max-width: 639px) {
-    .cookbook-layout { height: auto; overflow: visible; display: block; }
-    .recipe-list-panel { width: 100%; height: auto; overflow: visible; border-right: none; }
-    .recipe-detail-panel { display: none; }
-    .cookbook-layout.has-detail .recipe-list-panel { display: none; }
-    .cookbook-layout.has-detail .recipe-detail-panel { display: flex; flex-direction: column; min-height: 100vh; }
-    .panel-mobile-back { display: block; border-bottom: 1px solid var(--rule); }
-  }
+  .recipe-list-row-name { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 400; color: var(--text-primary); line-height: 1.4; letter-spacing: 0.02em; }
+  .recipe-list-row-meta { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted); margin-top: 3px; font-weight: 300; }
 
   /* ── Recipe comments ────────────────────────────────── */
   .comments-section { padding: 20px 28px 8px; }
@@ -454,8 +504,12 @@ const STYLES = `
   .photo-remove { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.55); color: white; border: none; cursor: pointer; width: 28px; height: 28px; border-radius: 0; font-size: 16px; display: flex; align-items: center; justify-content: center; }
   .char-count { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-muted); text-align: right; margin-top: 4px; }
 
-  /* ── App shell (mobile only) ────────────────────────── */
-  .app-header { display: none; }
+  /* ── Unified app shell (every screen, every width) ───── */
+  .app-header {
+    display: flex; position: fixed; top: 0; left: 0; right: 0; height: 52px; z-index: 100;
+    background: var(--paper); border-bottom: 1px solid var(--rule);
+    align-items: center; padding: 0 24px; gap: 8px;
+  }
   .app-header-spacer { flex: 1; }
   .app-header-btn {
     width: 36px; height: 36px; background: none; border: none; cursor: pointer;
@@ -463,7 +517,30 @@ const STYLES = `
     color: var(--text-primary); transition: opacity 0.15s;
   }
   .app-header-btn:hover { opacity: 0.6; }
-  .app-footer { display: none; }
+  .app-header-back {
+    background: none; border: none; cursor: pointer; display: flex; align-items: center;
+    gap: 6px; color: var(--text-primary); padding: 0;
+    font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 400;
+    text-transform: uppercase; letter-spacing: 0.1em; max-width: 40%;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .app-header-title {
+    flex: 1; text-align: center; font-family: 'DM Mono', monospace; font-weight: 400;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-primary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%;
+    margin: 0 auto;
+  }
+  .app-header-action {
+    background: none; border: none; cursor: pointer; padding: 0;
+    font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 400;
+    text-transform: uppercase; letter-spacing: 0.1em; color: var(--blue);
+    white-space: nowrap; max-width: 30%; overflow: hidden; text-overflow: ellipsis;
+  }
+  .app-footer {
+    display: flex; position: fixed; bottom: 0; left: 0; right: 0; height: 56px; z-index: 100;
+    background: var(--paper); border-top: 1px solid var(--rule);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
   .app-footer-tab {
     flex: 1; display: flex; flex-direction: column; align-items: center;
     justify-content: center; gap: 3px; border: none; background: none;
@@ -479,27 +556,23 @@ const STYLES = `
     font-family: 'DM Mono', monospace; font-weight: 300; font-size: 8px;
     text-transform: uppercase; letter-spacing: 0.1em;
   }
-  .app-content-inner { }
-
-  @media (max-width: 767px) {
-    .app-header {
-      display: flex; position: fixed; top: 0; left: 0; right: 0; height: 52px; z-index: 100;
-      background: var(--paper); border-bottom: 1px solid var(--rule);
-      align-items: center; padding: 0 24px; gap: 8px;
-    }
-    .app-footer {
-      display: flex; position: fixed; bottom: 0; left: 0; right: 0; height: 56px; z-index: 100;
-      background: var(--paper); border-top: 1px solid var(--rule);
-      padding-bottom: env(safe-area-inset-bottom, 0px);
-    }
-    .app-content {
-      position: fixed; top: 52px; bottom: 56px; left: 0; right: 0;
-      overflow-y: auto; -webkit-overflow-scrolling: touch; background: var(--paper);
-    }
-    .app-content-inner { max-width: 480px; margin: 0 auto; }
-    .home-header { display: none; }
-    .home-wrapper { height: auto !important; overflow: visible !important; }
+  .app-content {
+    position: fixed; top: 52px; bottom: 56px; left: 0; right: 0;
+    overflow-y: auto; -webkit-overflow-scrolling: touch; background: var(--paper);
   }
+  .app-content-inner { max-width: 480px; margin: 0 auto; }
+  .home-header { display: none; }
+  .home-wrapper { height: auto !important; overflow: visible !important; }
+  /* The 3-column desktop home layout is gone — only the active tab column shows. */
+  .home-body { display: block !important; }
+  .home-col { display: none; }
+  .home-col.active { display: block; }
+
+  /* ── Screen transitions ──────────────────────────────── */
+  @keyframes screen-slide-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
+  @keyframes screen-fade-in { from { opacity: 0; } to { opacity: 1; } }
+  .screen-enter-drill { animation: screen-slide-in 200ms ease-out; }
+  .screen-enter-fade { animation: screen-fade-in 150ms ease-out; }
 
 `;
 
@@ -734,17 +807,33 @@ function AppLogo({ size = 16 }) {
   );
 }
 
-function AppHeader({ onSearch, onProfile }) {
+function AppHeader(props) {
+  // Variant B (drill-down): back arrow + label | centered title | optional right action
+  if (props.variant === 'drill') {
+    return (
+      <header className="app-header">
+        <button className="app-header-back" onClick={props.onBack}>
+          <span aria-hidden>←</span>
+          {props.backLabel && <span>{props.backLabel}</span>}
+        </button>
+        <span className="app-header-title">{props.title || ''}</span>
+        {props.action ? (
+          <button className="app-header-action" onClick={props.action.onClick}>{props.action.label}</button>
+        ) : <span style={{ width: 1 }} />}
+      </header>
+    );
+  }
+  // Variant A (root): logo | spacer | search + profile
   return (
     <header className="app-header">
-      <img src="/logo.png" alt="The Pass" style={{ height: 28, width: 'auto' }} />
+      <img src="/logo.png" alt="The Pass" style={{ height: 24, width: 'auto' }} />
       <div className="app-header-spacer" />
-      <button className="app-header-btn" onClick={onSearch} aria-label="Search">
+      <button className="app-header-btn" onClick={props.onSearch} aria-label="Search">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
       </button>
-      <button className="app-header-btn" onClick={onProfile} aria-label="Profile">
+      <button className="app-header-btn" onClick={props.onProfile} aria-label="Profile">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
         </svg>
@@ -1221,11 +1310,7 @@ function CommunityCookbookScreen({ onBack, onOpenRecipe }) {
 
   return (
     <div className="screen">
-      <div className="back-row safe-top">
-        <button className="back-btn" onClick={onBack}>← Back</button>
-      </div>
       <div className="page-header" style={{ paddingTop: 12 }}>
-        <div className="page-header-title">Community Recipes</div>
         <div className="page-header-sub">All public recipes from The Pass community</div>
       </div>
       <div className="search-input-wrap">
@@ -1301,9 +1386,6 @@ function NewCookbookScreen({ onBack, onSave, saving }) {
   const [name, setName] = useState('');
   return (
     <div className="form-screen">
-      <div className="back-row safe-top">
-        <button className="back-btn" onClick={onBack}>← Back</button>
-      </div>
       <div className="form-body scroll-body">
         <div style={{ paddingTop: 12, paddingBottom: 8 }}>
           <div style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, fontStyle: 'italic', fontSize: 32, letterSpacing: '0.01em', color: 'var(--ink)' }}>New Cookbook</div>
@@ -1320,36 +1402,22 @@ function NewCookbookScreen({ onBack, onSave, saving }) {
   );
 }
 
-function CookbookScreen({ cookbook, onBack, onNewRecipe, onStartCook, favouriteIds, onToggleFavourite, onAddToCookbook, onOpenAddToList, shoppingRecipeIds, initialRecipeId, onEditRecipe, currentUserId, onTogglePublic, onPublish, onOpenAuthor }) {
-  const [selectedId, setSelectedId] = useState(initialRecipeId || null);
+function CookbookScreen({ cookbook, onNewRecipe, onOpenRecipe }) {
   const recipes = cookbook.recipes || [];
   const isLoading = cookbook.recipes === null;
-  const selectedRecipe = recipes.find(r => r.id === selectedId) || null;
-
-  useEffect(() => {
-    if (!selectedId && recipes.length > 0 && typeof window !== 'undefined' && window.innerWidth >= 640) {
-      setSelectedId(recipes[0].id);
-    }
-  }, [recipes.length]);
 
   return (
-    <div className={`cookbook-layout${selectedId ? ' has-detail' : ''}`}>
-      {/* Left panel — recipe list */}
-      <div className="recipe-list-panel">
-        <div className="list-panel-header safe-top">
-          <button className="list-panel-back" onClick={onBack}>
-            <AppLogo size={22} />
-          </button>
-          <div className="list-panel-title">{cookbook.name}</div>
-          {!isLoading && <div className="list-panel-count">{recipes.length} recipe{recipes.length !== 1 ? 's' : ''}</div>}
+    <div className="screen">
+      {isLoading ? (
+        <div style={{ padding: '32px 24px', color: 'var(--text-muted)', fontFamily: "'DM Mono', monospace", fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Loading…</div>
+      ) : recipes.length === 0 ? (
+        <div style={{ padding: '60px 24px 24px', textAlign: 'center', color: 'var(--text-muted)', fontFamily: "'DM Mono', monospace", fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+          No recipes yet
         </div>
+      ) : (
         <div className="recipe-list-rows">
-          {isLoading ? (
-            <div style={{ padding: '20px', color: 'var(--text-muted)', fontFamily: "'DM Mono', monospace", fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Loading…</div>
-          ) : recipes.length === 0 ? (
-            <div style={{ padding: '20px', color: 'var(--text-muted)', fontFamily: "'DM Mono', monospace", fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em' }}>No recipes yet</div>
-          ) : recipes.map(r => (
-            <div key={r.id} className={`recipe-list-row${selectedId === r.id ? ' active' : ''}`} onClick={() => setSelectedId(r.id)}>
+          {recipes.map(r => (
+            <div key={r.id} className="recipe-list-row" onClick={() => onOpenRecipe(r.id)}>
               <div className="recipe-list-row-name">{r.name}</div>
               <div className="recipe-list-row-meta">
                 {r.time} min · {r.difficulty}
@@ -1358,36 +1426,9 @@ function CookbookScreen({ cookbook, onBack, onNewRecipe, onStartCook, favouriteI
             </div>
           ))}
         </div>
-        <div className="list-panel-footer">
-          <button className="btn btn-black btn-full" style={{ fontSize: 14, height: 40 }} onClick={onNewRecipe}>+ Add Recipe</button>
-        </div>
-      </div>
-
-      {/* Right panel — recipe detail */}
-      <div className="recipe-detail-panel">
-        {selectedRecipe ? (
-          <RecipeDetailScreen
-            recipe={selectedRecipe}
-            cookbook={cookbook}
-            onBack={onBack}
-            onStartCook={() => onStartCook(selectedId)}
-            isFavourite={favouriteIds.has(selectedRecipe.id)}
-            onToggleFavourite={onToggleFavourite}
-            onAddToCookbook={onAddToCookbook}
-            onOpenAddToList={onOpenAddToList}
-            inShoppingList={shoppingRecipeIds.has(selectedRecipe.id)}
-            mobileBackToList={() => setSelectedId(null)}
-            onEdit={onEditRecipe ? () => onEditRecipe(cookbook.id, selectedId) : undefined}
-            currentUserId={currentUserId}
-            onTogglePublic={onTogglePublic ? (rId, isPublic) => onTogglePublic(cookbook.id, rId, isPublic) : undefined}
-            onPublish={onPublish ? (rId) => onPublish(cookbook.id, rId) : undefined}
-            onOpenAuthor={onOpenAuthor}
-          />
-        ) : (
-          <div className="detail-empty-state">
-            {isLoading ? 'Loading…' : recipes.length === 0 ? 'Add your first recipe →' : '← Select a recipe'}
-          </div>
-        )}
+      )}
+      <div style={{ padding: '20px 24px 28px' }}>
+        <button className="btn btn-black btn-full" style={{ fontSize: 14, height: 44 }} onClick={onNewRecipe}>+ Add Recipe</button>
       </div>
     </div>
   );
@@ -1511,16 +1552,14 @@ function RecipeFormScreen({ initialData, onBack, onSave, saving, unitPreference 
 
   return (
     <div className="form-screen">
-      <div className="back-row safe-top">
-        <button className="back-btn" onClick={onBack}>← Back</button>
+      <div style={{ padding: '12px 24px 8px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12, borderBottom: '1px solid var(--rule)' }}>
         {missing.length > 0 && (
-          <span style={{ marginLeft: 'auto', marginRight: 8, fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             Add {missing.join(' + ')}
           </span>
         )}
         <button
           className="btn btn-red btn-sm"
-          style={missing.length === 0 ? { marginLeft: 'auto' } : {}}
           disabled={!canSave || saving}
           onClick={handleSave}
         >
@@ -2157,24 +2196,7 @@ function RecipeDetailScreen({
 
   return (
     <div className="screen">
-      {mobileBackToList && (
-        <div className="panel-mobile-back">
-          <button className="panel-mobile-back-btn" onClick={mobileBackToList}>← Recipes</button>
-        </div>
-      )}
-      <div className="detail-hero safe-top">
-        {cookbook && (
-          <div style={{ marginBottom: 12, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, fontFamily: "'DM Mono', monospace", fontWeight: 400, textTransform: 'uppercase', letterSpacing: '0.12em' }} onClick={onBack}>
-            <AppLogo size={22} />
-            <span>/ {cookbook.name}</span>
-          </div>
-        )}
-        {!cookbook && (
-          <button onClick={onBack} style={{ marginBottom: 12, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, fontFamily: "'DM Mono', monospace", fontWeight: 400, textTransform: 'uppercase', letterSpacing: '0.12em', padding: 0 }}>
-            <AppLogo size={22} />
-            <span>/ Back</span>
-          </button>
-        )}
+      <div className="detail-hero">
         <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, fontStyle: 'italic', fontSize: 40, color: 'var(--ink)', lineHeight: 1.05, letterSpacing: '0.02em' }}>{recipe.name}</h1>
         {authorLine}
         {cookedLine}
@@ -2725,41 +2747,40 @@ function CookModeScreen({ recipe, onFinish, currentUserId }) {
   const removeTimer = id => setTimers(ts => ts.filter(t => t.id !== id));
   const stepTimerActive = current.timer && timers.some(t => t.stepNum === stepIdx + 1 && t.remaining > 0);
 
+  const stepTimer = current.timer ? timers.find(t => t.stepNum === stepIdx + 1) : null;
+  const isLast = stepIdx === steps.length - 1;
+
   return (
     <div className="cook-screen">
-      {/* Main cook view — always rendered */}
-      <div className="cook-header safe-top">
-        <img src="/logo.png" alt="The Pass" style={{ height: 22, width: 'auto', opacity: 0.4 }} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div className="cook-dots">
-            {steps.map((_, i) => <div key={i} className={`cook-dot${i === stepIdx ? ' active' : i < stepIdx ? ' done' : ''}`} />)}
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="cook-timer-btn" onClick={() => { setIngrOpen(o => !o); setDrawerOpen(false); }}>
-              {recipe.ingredients.length}
-            </button>
-            <button className={`cook-timer-btn${timers.length > 0 ? ' has-timers' : ''}`} onClick={() => { setDrawerOpen(o => !o); setIngrOpen(false); }}>
-              ⏱{timers.length > 0 && <span className="cook-timer-badge">{timers.length}</span>}
-            </button>
-          </div>
-        </div>
+      {/* Variant C header: ✕ exit | recipe name | step counter */}
+      <div className="cook-header">
+        <button className="cook-header-exit" onClick={onFinish} aria-label="Exit cook mode">✕</button>
+        <span className="cook-header-title">{recipe.name}</span>
+        <span className="cook-header-counter">{stepIdx + 1} / {steps.length}</span>
       </div>
-      <div className="cook-steps">
-        {prev && <div className="cook-prev"><div className="cook-prev-text">{prev.text}</div></div>}
+
+      {/* Body: prev / current / next + dots */}
+      <div className="cook-body">
+        {prev && (
+          <div className="cook-prev">
+            <div className="cook-prev-label">Previous</div>
+            <div className="cook-prev-text">{prev.text}</div>
+          </div>
+        )}
         <div className="cook-current">
           <div className="cook-step-label">Step {stepIdx + 1} of {steps.length}</div>
           <p className="cook-current-text">{current.text}</p>
+
           {currentNote && (
             <div style={{ marginTop: 14, borderLeft: '1px solid var(--blue)', paddingLeft: 12 }}>
-              <div style={{ fontFamily: "'DM Mono', monospace", fontWeight: 300, fontStyle: 'italic', fontSize: 12, color: '#6A8FE8', whiteSpace: 'pre-wrap', lineHeight: 1.55 }}>
+              <div style={{ fontFamily: "'DM Mono', monospace", fontWeight: 300, fontStyle: 'italic', fontSize: 12, color: 'var(--blue)', whiteSpace: 'pre-wrap', lineHeight: 1.55 }}>
                 {currentNote.content}
               </div>
             </div>
           )}
+
           {(() => {
-            const mentioned = recipe.ingredients.filter(ing =>
-              ing.qty && matchIngToStep(ing.name, current.text)
-            );
+            const mentioned = recipe.ingredients.filter(ing => ing.qty && matchIngToStep(ing.name, current.text));
             return mentioned.length > 0 ? (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 10px', marginTop: 14 }}>
                 {mentioned.map((ing, i) => {
@@ -2768,7 +2789,7 @@ function CookModeScreen({ recipe, onFinish, currentUserId }) {
                   const displayQty = qty ? qty.content : ing.qty;
                   const displayName = sub ? sub.content : ing.name;
                   return (
-                    <span key={i} style={{ fontFamily: "'DM Mono', monospace", fontSize: 13, color: '#E8EEFB', background: 'rgba(27,79,216,0.18)', padding: '3px 8px', borderRadius: 0 }}>
+                    <span key={i} style={{ fontFamily: "'DM Mono', monospace", fontSize: 12, color: 'var(--blue)', background: 'var(--blue-pale)', padding: '3px 8px', borderRadius: 0 }}>
                       {displayQty} {displayName}
                     </span>
                   );
@@ -2776,36 +2797,55 @@ function CookModeScreen({ recipe, onFinish, currentUserId }) {
               </div>
             ) : null;
           })()}
+
           {current.timer && (
-            <div className="timer-launch">
-              <span className="timer-launch-label">{current.timer} min timer</span>
-              {stepTimerActive
-                ? <button className="timer-launch-btn viewing" onClick={() => setDrawerOpen(true)}>View timers</button>
-                : <button className="timer-launch-btn" onClick={() => { startTimer(current, stepIdx + 1); setDrawerOpen(true); }}>Start timer</button>
-              }
+            <div className="cook-timer-widget">
+              <div>
+                <div className="cook-timer-display">{stepTimer ? fmt(stepTimer.remaining) : `${String(current.timer).padStart(2, '0')}:00`}</div>
+                <div className="cook-timer-sub">{current.timer} min timer</div>
+              </div>
+              {!stepTimer ? (
+                <button className="cook-timer-btn-w" onClick={() => startTimer(current, stepIdx + 1)}>Start</button>
+              ) : stepTimer.remaining === 0 ? (
+                <button className="cook-timer-btn-w done" onClick={() => resetTimer(stepTimer.id)}>Done</button>
+              ) : (
+                <button className="cook-timer-btn-w running" onClick={() => toggleTimer(stepTimer.id)}>
+                  {stepTimer.running ? 'Pause' : 'Resume'}
+                </button>
+              )}
             </div>
           )}
         </div>
         {next && (
           <div className="cook-next">
-            <div className="cook-next-label">Up next</div>
+            <div className="cook-next-label">Next</div>
             <div className="cook-next-text">{next.text}</div>
           </div>
         )}
-      </div>
-      <div className="cook-footer">
-        <div className="cook-nav">
-          <button className="cook-nav-btn" disabled={stepIdx === 0} onClick={() => setStepIdx(i => i - 1)}>←</button>
-          <div style={{ flex: 1 }}>
-            <button className="btn btn-red btn-full" onClick={() => stepIdx === steps.length - 1 ? onFinish() : setStepIdx(i => i + 1)}>
-              {stepIdx === steps.length - 1 ? 'Finish →' : 'Next step →'}
-            </button>
-          </div>
-          <div style={{ width: 52 }} />
+
+        <div className="cook-dots">
+          {steps.map((_, i) => <div key={i} className={`cook-dot${i === stepIdx ? ' active' : i < stepIdx ? ' done' : ''}`} />)}
+        </div>
+
+        <div style={{ padding: '12px 24px 24px', display: 'flex', gap: 12, justifyContent: 'center' }}>
+          <button onClick={() => { setIngrOpen(true); setDrawerOpen(false); }} style={{ background: 'transparent', border: '1px solid var(--rule)', padding: '8px 14px', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', borderRadius: 0 }}>
+            Ingredients ({recipe.ingredients.length})
+          </button>
+          <button onClick={() => { setDrawerOpen(true); setIngrOpen(false); }} style={{ background: 'transparent', border: '1px solid var(--rule)', padding: '8px 14px', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: 11, color: timers.length > 0 ? 'var(--blue)' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', borderRadius: 0, borderColor: timers.length > 0 ? 'var(--blue)' : 'var(--rule)' }}>
+            Timers{timers.length > 0 ? ` (${timers.length})` : ''}
+          </button>
         </div>
       </div>
 
-      {/* Timers drawer — overlays from the right */}
+      {/* Cook nav — replaces the footer nav during cook mode */}
+      <div className="cook-footer">
+        <button className="cook-nav-back" disabled={stepIdx === 0} onClick={() => setStepIdx(i => i - 1)}>BACK</button>
+        <button className="cook-nav-next" onClick={() => isLast ? onFinish() : setStepIdx(i => i + 1)}>
+          {isLast ? 'FINISH' : 'NEXT'}
+        </button>
+      </div>
+
+      {/* Ingredients drawer */}
       {ingrOpen && <div className="timers-drawer-overlay" onClick={() => setIngrOpen(false)} />}
       <div className={`ingr-drawer${ingrOpen ? ' open' : ''}`}>
         <div className="timers-drawer-head">
@@ -2817,18 +2857,16 @@ function CookModeScreen({ recipe, onFinish, currentUserId }) {
             const sub = ing.id ? ingSubFor(ing.id) : null;
             const qty = ing.id ? ingQtyFor(ing.id) : null;
             return (
-              <div key={ing.id || idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+              <div key={ing.id || idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '12px 20px', borderBottom: '1px solid var(--rule)' }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 15, color: sub ? 'rgba(232,238,251,0.4)' : '#E8EEFB', fontWeight: 300, textDecoration: sub ? 'line-through' : 'none' }}>{ing.name}</div>
-                  {sub && <div style={{ fontSize: 14, fontFamily: "'DM Mono', monospace", fontWeight: 300, fontStyle: 'italic', color: '#6A8FE8', marginTop: 2 }}>{sub.content}</div>}
+                  <div style={{ fontSize: 13, color: sub ? 'var(--text-muted)' : 'var(--text-primary)', fontFamily: "'DM Mono', monospace", fontWeight: 400, textDecoration: sub ? 'line-through' : 'none' }}>{ing.name}</div>
+                  {sub && <div style={{ fontSize: 12, fontFamily: "'DM Mono', monospace", fontWeight: 300, fontStyle: 'italic', color: 'var(--blue)', marginTop: 2 }}>{sub.content}</div>}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0, marginLeft: 12 }}>
                   {ing.qty && (
-                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 13, color: qty ? 'rgba(232,238,251,0.4)' : 'var(--blue)', textDecoration: qty ? 'line-through' : 'none' }}>{ing.qty}</span>
+                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 12, color: qty ? 'var(--text-muted)' : 'var(--blue)', textDecoration: qty ? 'line-through' : 'none' }}>{ing.qty}</span>
                   )}
-                  {qty && (
-                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 13, color: '#6A8FE8', marginTop: 2 }}>{qty.content}</span>
-                  )}
+                  {qty && <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 12, color: 'var(--blue)', marginTop: 2 }}>{qty.content}</span>}
                 </div>
               </div>
             );
@@ -2836,6 +2874,7 @@ function CookModeScreen({ recipe, onFinish, currentUserId }) {
         </div>
       </div>
 
+      {/* Timers drawer */}
       {drawerOpen && <div className="timers-drawer-overlay" onClick={() => setDrawerOpen(false)} />}
       <div className={`timers-drawer${drawerOpen ? ' open' : ''}`}>
         <div className="timers-drawer-head">
@@ -2844,23 +2883,20 @@ function CookModeScreen({ recipe, onFinish, currentUserId }) {
         </div>
         <div className="timers-drawer-body">
           {timers.length === 0 ? (
-            <div className="timers-drawer-empty">No timers yet.<br/>Tap "Start timer" on any<br/>step that has a timer.</div>
+            <div className="timers-drawer-empty">No timers yet.<br/>Start one from a step that has a timer.</div>
           ) : timers.map(t => (
-            <div key={t.id} className="timer-row">
-              <div className="timer-row-info">
-                <div className="timer-row-step">Step {t.stepNum}</div>
-                <div className="timer-row-label">{t.label}</div>
-              </div>
-              <div className="timer-row-right">
-                <div className={`timer-row-display${t.remaining === 0 ? ' done' : ''}`}>
+            <div key={t.id} style={{ padding: '14px 20px', borderBottom: '1px solid var(--rule)' }}>
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-muted)' }}>Step {t.stepNum}</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
+                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 22, color: t.remaining === 0 ? 'var(--blue)' : 'var(--text-primary)' }}>
                   {t.remaining === 0 ? 'Done!' : fmt(t.remaining)}
-                </div>
-                <div className="timer-row-actions">
+                </span>
+                <div style={{ display: 'flex', gap: 8 }}>
                   {t.remaining === 0
-                    ? <button className="timer-row-ctrl" onClick={() => resetTimer(t.id)}>Reset</button>
-                    : <button className="timer-row-ctrl" onClick={() => toggleTimer(t.id)}>{t.running ? 'Pause' : 'Resume'}</button>
+                    ? <button onClick={() => resetTimer(t.id)} style={{ background: 'transparent', border: '1px solid var(--rule)', padding: '4px 10px', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Reset</button>
+                    : <button onClick={() => toggleTimer(t.id)} style={{ background: 'transparent', border: '1px solid var(--rule)', padding: '4px 10px', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t.running ? 'Pause' : 'Resume'}</button>
                   }
-                  <button className="timer-row-remove" onClick={() => removeTimer(t.id)}>×</button>
+                  <button onClick={() => removeTimer(t.id)} style={{ background: 'transparent', border: '1px solid var(--rule)', padding: '4px 10px', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--text-muted)' }}>×</button>
                 </div>
               </div>
             </div>
@@ -3181,10 +3217,7 @@ function SearchScreen({ onBack, onOpenUser, currentUserId, onOpenRecipe }) {
 
   return (
     <div className="search-screen">
-      <div className="page-header safe-top" style={{ paddingBottom: 12 }}>
-        <div style={{ marginBottom: 12 }}>
-          <button className="back-btn" onClick={onBack}>← Back</button>
-        </div>
+      <div className="page-header" style={{ paddingTop: 12, paddingBottom: 12 }}>
         <div style={{ display: 'flex', gap: 24 }}>
           <button onClick={() => setActiveTab('recipes')} style={{
             background: 'none', border: 'none', padding: '8px 0', cursor: 'pointer',
@@ -3272,10 +3305,7 @@ function UserPublicProfileScreen({ userId, currentUserId, onBack, onOpenPublicRe
 
   return (
     <div className="screen">
-      <div className="back-row safe-top">
-        <button className="back-btn" onClick={onBack}>← Back</button>
-      </div>
-      <div className="page-header">
+      <div className="page-header" style={{ paddingTop: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
           <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--ink)', color: 'var(--white)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'DM Mono', monospace", fontWeight: 400, fontSize: 22 }}>{initial}</div>
           <div>
@@ -3465,8 +3495,8 @@ function PostScreen({ recipe, onPost, onSkip }) {
 
   return (
     <div className="post-screen">
-      <div className="back-row safe-top">
-        <button className="back-btn" onClick={onSkip}>← Skip</button>
+      <div style={{ display: 'none' }}>
+        <button onClick={onSkip}>← Skip</button>
       </div>
       <div className="page-header" style={{ paddingTop: 12 }}>
         <div className="page-header-title">Share your cook</div>
@@ -3883,7 +3913,29 @@ export default function App() {
   return (
     <>
       <style>{STYLES}</style>
-      <AppHeader onSearch={() => navigate('search')} onProfile={() => navigate('profile')} />
+      {(() => {
+        const drill = (() => {
+          if (s === 'cookbook' && cb) return { variant: 'drill', backLabel: 'Cookbooks', title: cb.name, onBack: () => { setMainTab('cookbooks'); navigate('home'); }, action: { label: '+ Add', onClick: () => navigate('new-recipe', { cbId }) } };
+          if (s === 'recipe' && cb) return { variant: 'drill', backLabel: cb.name || 'Back', title: recipe?.name || '', onBack: () => navigate('cookbook', { cbId }) };
+          if (s === 'public-recipe') return { variant: 'drill', backLabel: 'Back', title: publicRecipeView?.recipe?.name || '', onBack: goBackFromPublicRecipe };
+          if (s === 'community-cookbook') return { variant: 'drill', backLabel: 'Cookbooks', title: 'Community Recipes', onBack: () => { setMainTab('cookbooks'); navigate('home'); } };
+          if (s === 'new-cookbook') return { variant: 'drill', backLabel: 'Back', title: 'New Cookbook', onBack: () => navigate('home') };
+          if (s === 'new-recipe' && cb) return { variant: 'drill', backLabel: cb.name || 'Back', title: 'New Recipe', onBack: () => navigate('cookbook', { cbId }) };
+          if (s === 'edit-recipe' && cb) return { variant: 'drill', backLabel: 'Back', title: 'Edit Recipe', onBack: () => navigate('cookbook', { cbId, rId }) };
+          if (s === 'recipe-saved' && cb) return { variant: 'drill', backLabel: cb.name || 'Back', title: 'Saved', onBack: () => navigate('cookbook', { cbId }) };
+          if (s === 'search') return { variant: 'drill', backLabel: 'Home', title: 'Search', onBack: () => navigate('home') };
+          if (s === 'user-profile') return { variant: 'drill', backLabel: 'Back', title: '', onBack: () => navigate(screen._from || 'home') };
+          if (s === 'profile') return { variant: 'drill', backLabel: 'Home', title: 'Profile', onBack: () => navigate('home') };
+          if (s === 'prep' || s === 'prep-public') return { variant: 'drill', backLabel: 'Back', title: 'Prep', onBack: () => s === 'prep' ? navigate('recipe', { cbId, rId }) : navigate('public-recipe', { publicRecipeId: screen.publicRecipeId, _returnTo: screen._returnTo }) };
+          if (s === 'feedback') return { variant: 'drill', backLabel: 'Back', title: 'Feedback', onBack: () => navigate('post', { cbId, rId }) };
+          if (s === 'post') return { variant: 'drill', backLabel: 'Back', title: 'Share', onBack: () => navigate('recipe', { cbId, rId }) };
+          if (s === 'done') return { variant: 'drill', backLabel: 'Back', title: 'Done', onBack: () => navigate('feedback', { cbId, rId }) };
+          return null;
+        })();
+        return drill
+          ? <AppHeader {...drill} />
+          : <AppHeader onSearch={() => navigate('search')} onProfile={() => navigate('profile')} />;
+      })()}
       <div className="app-content">
         <div className="app-content-inner">
           {s === 'home' && (
@@ -3947,20 +3999,8 @@ export default function App() {
           {s === 'cookbook' && cb && (
             <CookbookScreen
               cookbook={cb}
-              onBack={() => { setMainTab('cookbooks'); navigate('home'); }}
               onNewRecipe={() => navigate('new-recipe', { cbId })}
-              onStartCook={(rId) => navigate('prep', { cbId: cb.id, rId })}
-              favouriteIds={favouriteIds}
-              onToggleFavourite={handleToggleFavourite}
-              onAddToCookbook={handleOpenAddToCookbook}
-              onOpenAddToList={handleOpenAddToList}
-              shoppingRecipeIds={shoppingRecipeIds}
-              initialRecipeId={rId || null}
-              onEditRecipe={(cbId, rId) => navigate('edit-recipe', { cbId, rId })}
-              currentUserId={user.id}
-              onTogglePublic={handleToggleRecipePublic}
-              onPublish={handlePublishRecipe}
-              onOpenAuthor={handleOpenAuthor}
+              onOpenRecipe={(rId) => navigate('recipe', { cbId, rId })}
             />
           )}
           {s === 'new-recipe' && cb && <RecipeFormScreen onBack={() => navigate('cookbook', { cbId })} onSave={data => handleNewRecipe(cbId, data)} saving={saving} unitPreference={profile?.unit_preference || 'metric'} />}
