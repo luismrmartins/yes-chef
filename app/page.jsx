@@ -1368,7 +1368,7 @@ function RecipeFormScreen({ initialData, onBack, onSave, saving, unitPreference 
   const [tab, setTab] = useState(0);
   const [name, setName] = useState(initialData?.name || '');
   const [description, setDescription] = useState(initialData?.description || '');
-  const [time, setTime] = useState(initialData?.time?.toString() || '');
+  const [time, setTime] = useState(initialData?.time || 30);
   const [difficulty, setDifficulty] = useState(initialData?.difficulty || 'Easy');
   const [servings, setServings] = useState(initialData?.servings || 2);
   const [tags, setTags] = useState(initialData?.tags || []);
@@ -1383,6 +1383,7 @@ function RecipeFormScreen({ initialData, onBack, onSave, saving, unitPreference 
   const [ingPaste, setIngPaste] = useState('');
   const [stepMode, setStepMode] = useState('manual');
   const [stepPaste, setStepPaste] = useState('');
+  const [showStepHelp, setShowStepHelp] = useState(false);
 
   const [customTagInput, setCustomTagInput] = useState('');
   const toggleTag = (tag) => setTags(p => p.includes(tag) ? p.filter(t => t !== tag) : [...p, tag]);
@@ -1397,6 +1398,23 @@ function RecipeFormScreen({ initialData, onBack, onSave, saving, unitPreference 
   const addStep = () => setSteps(p => [...p, { id: generateId(), text: '', timer: null, hasTimer: false }]);
   const removeStep = id => setSteps(p => p.filter(s => s.id !== id));
   const updateStep = (id, field, val) => setSteps(p => p.map(s => s.id === id ? { ...s, [field]: val } : s));
+  const moveStep = (idx, dir) => setSteps(p => {
+    const j = idx + dir;
+    if (j < 0 || j >= p.length) return p;
+    const next = p.slice();
+    [next[idx], next[j]] = [next[j], next[idx]];
+    return next;
+  });
+  const insertStepAfter = (idx) => setSteps(p => {
+    const next = p.slice();
+    next.splice(idx + 1, 0, { id: generateId(), text: '', timer: null, hasTimer: false });
+    return next;
+  });
+
+  const detailsComplete = !!name.trim();
+  const ingredientsComplete = ingredients.some(i => i.name.trim());
+  const stepsComplete = steps.some(s => s.text.trim());
+  const filledStepCount = steps.filter(s => s.text.trim()).length;
 
   const applyIngPaste = () => {
     const parsed = ingPaste.split('\n').map(parseIngredientLine).filter(Boolean)
@@ -1413,13 +1431,19 @@ function RecipeFormScreen({ initialData, onBack, onSave, saving, unitPreference 
     setStepMode('manual'); setStepPaste('');
   };
 
-  const canSave = name.trim() && ingredients.some(i => i.name.trim()) && steps.some(s => s.text.trim());
+  const canSave = detailsComplete && ingredientsComplete && stepsComplete;
   const handleSave = () => onSave({
     name: name.trim(), description: description.trim(),
     time: parseInt(time) || 30, difficulty, servings, tags, isPublic,
     ingredients: ingredients.filter(i => i.name.trim()),
     steps: steps.filter(s => s.text.trim()).map(s => ({ ...s, timer: s.hasTimer ? (parseInt(s.timer) || null) : null })),
   });
+
+  const tabProgress = [
+    { label: 'Details', complete: detailsComplete },
+    { label: 'Ingredients', complete: ingredientsComplete },
+    { label: 'Steps', complete: stepsComplete },
+  ];
 
   return (
     <div className="form-screen">
@@ -1430,28 +1454,62 @@ function RecipeFormScreen({ initialData, onBack, onSave, saving, unitPreference 
         </button>
       </div>
       <div style={{ padding: '0 28px 12px', borderBottom: '1px solid var(--rule)' }}>
-        <input className="form-input" placeholder="Recipe name" value={name} onChange={e => setName(e.target.value)} style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: 'italic', fontSize: 28, fontWeight: 300, letterSpacing: '0.01em', border: 'none', padding: '12px 0', background: 'transparent', width: '100%' }} />
+        <input className="form-input" placeholder="e.g. Spaghetti Carbonara" value={name} onChange={e => setName(e.target.value)} style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: 'italic', fontSize: 28, fontWeight: 300, letterSpacing: '0.01em', border: 'none', padding: '12px 0', background: 'transparent', width: '100%' }} />
       </div>
       <div className="tabs">
-        {['Details', 'Ingredients', 'Steps'].map((t, i) => (
-          <button key={t} className={`tab${tab === i ? ' active' : ''}`} onClick={() => setTab(i)}>{t}</button>
-        ))}
+        {tabProgress.map((t, i) => {
+          const isCurrent = tab === i;
+          const isComplete = t.complete && !isCurrent;
+          const color = isComplete ? 'var(--blue)' : isCurrent ? 'var(--text-primary)' : 'var(--text-muted)';
+          return (
+            <button
+              key={t.label}
+              className="tab"
+              onClick={() => setTab(i)}
+              style={{ color, borderBottomColor: isCurrent ? 'var(--blue)' : 'transparent' }}
+            >
+              {isComplete && <span aria-hidden style={{ marginRight: 6 }}>✓</span>}
+              {t.label}
+              {i < 2 && <span aria-hidden style={{ marginLeft: 8, color: 'var(--text-muted)' }}>→</span>}
+            </button>
+          );
+        })}
       </div>
       <div className="form-body scroll-body">
         {tab === 0 && <>
           <div className="form-field">
             <label className="form-label">Description</label>
-            <textarea className="form-input form-textarea" placeholder="A short description..." value={description} onChange={e => setDescription(e.target.value)} />
+            <textarea
+              className="form-input form-textarea"
+              placeholder="A short description of the dish - what it is, where it's from, why you love it"
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+            />
           </div>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <div className="form-field" style={{ flex: 1 }}>
-              <label className="form-label">Time (min)</label>
-              <input className="form-input" type="number" placeholder="30" value={time} onChange={e => setTime(e.target.value)} />
+          <div className="form-field">
+            <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+              <span>Time</span>
+              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 13, fontWeight: 400, color: 'var(--text-primary)', textTransform: 'none', letterSpacing: 0 }}>
+                {parseInt(time) || 5} minutes
+              </span>
+            </label>
+            <input
+              type="range"
+              min={5}
+              max={180}
+              step={5}
+              value={parseInt(time) || 5}
+              onChange={e => setTime(parseInt(e.target.value, 10))}
+              style={{ width: '100%', accentColor: 'var(--blue)' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: "'DM Mono', monospace", fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
+              <span>5 min</span>
+              <span>3 hours</span>
             </div>
-            <div className="form-field" style={{ flex: 1 }}>
-              <label className="form-label">Servings</label>
-              <input className="form-input" type="number" placeholder="2" value={servings} onChange={e => setServings(parseInt(e.target.value) || 2)} />
-            </div>
+          </div>
+          <div className="form-field">
+            <label className="form-label">Servings</label>
+            <input className="form-input" type="number" placeholder="2" value={servings} onChange={e => setServings(parseInt(e.target.value) || 2)} />
           </div>
           <div className="form-field">
             <label className="form-label">Difficulty</label>
@@ -1510,10 +1568,10 @@ function RecipeFormScreen({ initialData, onBack, onSave, saving, unitPreference 
               Convert all to {unitPreference}
             </button>
             <div className="dynamic-list">
-              {ingredients.map((ing, idx) => (
+              {ingredients.map((ing) => (
                 <div key={ing.id} className="dynamic-item">
-                  <input className="form-input" placeholder={`Ingredient ${idx + 1}`} value={ing.name} onChange={e => updateIngredient(ing.id, 'name', e.target.value)} style={{ flex: 2 }} />
-                  <input className="form-input" placeholder="Qty" value={ing.qty} onChange={e => updateIngredient(ing.id, 'qty', e.target.value)} style={{ flex: 1 }} />
+                  <input className="form-input" placeholder="e.g. Spaghetti" value={ing.name} onChange={e => updateIngredient(ing.id, 'name', e.target.value)} style={{ flex: 2 }} />
+                  <input className="form-input" placeholder="e.g. 320g" value={ing.qty} onChange={e => updateIngredient(ing.id, 'qty', e.target.value)} style={{ flex: 1 }} />
                   {ingredients.length > 1 && <button className="remove-btn" onClick={() => removeIngredient(ing.id)}>×</button>}
                 </div>
               ))}
@@ -1522,6 +1580,35 @@ function RecipeFormScreen({ initialData, onBack, onSave, saving, unitPreference 
           </>}
         </>}
         {tab === 2 && <>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 400, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-secondary)' }}>
+              Step {Math.max(filledStepCount, 1)} of {steps.length}
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowStepHelp(v => !v)}
+              aria-label="How to write a good step"
+              style={{
+                width: 22, height: 22, borderRadius: '50%', border: '1px solid var(--rule)',
+                background: showStepHelp ? 'var(--blue)' : 'transparent',
+                color: showStepHelp ? 'var(--white)' : 'var(--text-muted)',
+                cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: 12,
+                fontWeight: 400, padding: 0, lineHeight: 1,
+              }}
+            >
+              ?
+            </button>
+          </div>
+          {showStepHelp && (
+            <div style={{ background: 'var(--surface)', border: '1px solid var(--rule)', padding: '12px 14px', marginBottom: 12 }}>
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-muted)', marginBottom: 6 }}>
+                How to write a good step
+              </div>
+              <p style={{ fontFamily: "'DM Mono', monospace", fontWeight: 300, fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.55, margin: 0 }}>
+                Write one action per step. Start with a verb. Include temperatures, times, and visual cues — e.g. "Cook until golden brown, about 3 minutes."
+              </p>
+            </div>
+          )}
           <div className="input-mode-toggle">
             <button className={`input-mode-btn${stepMode === 'manual' ? ' active' : ''}`} onClick={() => setStepMode('manual')}>One by one</button>
             <button className={`input-mode-btn${stepMode === 'paste' ? ' active' : ''}`} onClick={() => setStepMode('paste')}>Paste</button>
@@ -1535,11 +1622,43 @@ function RecipeFormScreen({ initialData, onBack, onSave, saving, unitPreference 
             {steps.map((step, idx) => (
               <div key={step.id} style={{ borderBottom: '1px solid #EEEEEE', paddingBottom: 12 }}>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                  <div className="step-num">{idx + 1}</div>
-                  <textarea className="form-input form-textarea" placeholder={`Step ${idx + 1}...`} value={step.text} onChange={e => updateStep(step.id, 'text', e.target.value)} style={{ flex: 1, minHeight: 70, fontSize: 14 }} />
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                    <button
+                      type="button"
+                      onClick={() => moveStep(idx, -1)}
+                      disabled={idx === 0}
+                      aria-label="Move step up"
+                      style={{
+                        width: 24, height: 22, padding: 0, cursor: idx === 0 ? 'default' : 'pointer',
+                        background: 'transparent', border: '1px solid var(--rule)',
+                        color: idx === 0 ? 'var(--rule)' : 'var(--text-muted)',
+                        fontFamily: "'DM Mono', monospace", fontSize: 12, lineHeight: 1, borderRadius: 0,
+                      }}
+                    >↑</button>
+                    <div className="step-num" style={{ margin: 0 }}>{idx + 1}</div>
+                    <button
+                      type="button"
+                      onClick={() => moveStep(idx, 1)}
+                      disabled={idx === steps.length - 1}
+                      aria-label="Move step down"
+                      style={{
+                        width: 24, height: 22, padding: 0, cursor: idx === steps.length - 1 ? 'default' : 'pointer',
+                        background: 'transparent', border: '1px solid var(--rule)',
+                        color: idx === steps.length - 1 ? 'var(--rule)' : 'var(--text-muted)',
+                        fontFamily: "'DM Mono', monospace", fontSize: 12, lineHeight: 1, borderRadius: 0,
+                      }}
+                    >↓</button>
+                  </div>
+                  <textarea
+                    className="form-input form-textarea"
+                    placeholder="Describe what to do in this step. Be specific — imagine explaining it to someone who has never cooked before."
+                    value={step.text}
+                    onChange={e => updateStep(step.id, 'text', e.target.value)}
+                    style={{ flex: 1, minHeight: 70, fontSize: 14 }}
+                  />
                   {steps.length > 1 && <button className="remove-btn" onClick={() => removeStep(step.id)}>×</button>}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, color: 'var(--text-secondary)' }}>
                     <input type="checkbox" checked={step.hasTimer} onChange={e => updateStep(step.id, 'hasTimer', e.target.checked)} style={{ accentColor: 'var(--blue)' }} />
                     Timer
@@ -1547,6 +1666,17 @@ function RecipeFormScreen({ initialData, onBack, onSave, saving, unitPreference 
                   {step.hasTimer && (
                     <input className="form-input" type="number" placeholder="min" value={step.timer || ''} onChange={e => updateStep(step.id, 'timer', e.target.value)} style={{ width: 72 }} />
                   )}
+                  <button
+                    type="button"
+                    onClick={() => insertStepAfter(idx)}
+                    style={{
+                      marginLeft: 'auto', background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                      fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 400,
+                      textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--blue)',
+                    }}
+                  >
+                    + Insert step below
+                  </button>
                 </div>
               </div>
             ))}
@@ -2666,6 +2796,39 @@ function DoneScreen({ recipe, onContinue }) {
   );
 }
 
+function RecipeSavedScreen({ recipe, onCookNow, onBackToCookbook }) {
+  return (
+    <div className="screen" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '60px 28px', minHeight: '70vh', textAlign: 'center' }}>
+      <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, fontStyle: 'italic', fontSize: 'clamp(40px, 9vw, 56px)', letterSpacing: '0.02em', lineHeight: 1.05, color: 'var(--ink)', marginBottom: 12 }}>
+        Recipe saved.
+      </h1>
+      {recipe?.name && (
+        <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>
+          {recipe.name}
+        </p>
+      )}
+      <p style={{ fontFamily: "'DM Mono', monospace", fontWeight: 300, fontSize: 13, color: 'var(--text-secondary)', marginBottom: 36 }}>
+        Ready to cook?
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', maxWidth: 320 }}>
+        <button
+          className="btn btn-primary btn-full"
+          style={{ height: 52, fontSize: 16 }}
+          onClick={onCookNow}
+        >
+          Cook it now →
+        </button>
+        <button
+          onClick={onBackToCookbook}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Mono', monospace", fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', padding: '12px 0' }}
+        >
+          Back to cookbook
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const LEFT_APP_OPTIONS = [
   { value: 'none',           label: 'No, stayed in the app' },
   { value: 'once_or_twice',  label: 'Once or twice' },
@@ -3372,7 +3535,7 @@ export default function App() {
       const newRecipe = await createRecipe(cbId, data);
       setRecipesMap(prev => ({ ...prev, [cbId]: [...(prev[cbId] || []), newRecipe] }));
       setCookbooks(prev => prev.map(cb => cb.id === cbId ? { ...cb, recipeCount: (cb.recipeCount || 0) + 1 } : cb));
-      setScreen({ name: 'recipe', cbId, rId: newRecipe.id });
+      setScreen({ name: 'recipe-saved', cbId, rId: newRecipe.id });
     } finally {
       setSaving(false);
     }
@@ -3561,7 +3724,7 @@ export default function App() {
   const activeFooterTab = (() => {
     if (s === 'profile') return 'profile';
     if (s === 'discover') return 'discover';
-    if (['cookbook', 'new-cookbook', 'new-recipe', 'edit-recipe', 'recipe', 'prep', 'community-cookbook'].includes(s)) return 'cookbooks';
+    if (['cookbook', 'new-cookbook', 'new-recipe', 'edit-recipe', 'recipe', 'recipe-saved', 'prep', 'community-cookbook'].includes(s)) return 'cookbooks';
     if (s === 'public-recipe' || s === 'prep-public') return mainTab;
     if (s === 'home') return mainTab;
     return mainTab;
@@ -3708,6 +3871,13 @@ export default function App() {
             />
           )}
           {s === 'new-recipe' && cb && <RecipeFormScreen onBack={() => navigate('cookbook', { cbId })} onSave={data => handleNewRecipe(cbId, data)} saving={saving} unitPreference={profile?.unit_preference || 'metric'} />}
+          {s === 'recipe-saved' && cb && recipe && (
+            <RecipeSavedScreen
+              recipe={recipe}
+              onCookNow={() => navigate('prep', { cbId, rId })}
+              onBackToCookbook={() => navigate('cookbook', { cbId, rId })}
+            />
+          )}
           {s === 'edit-recipe' && cb && recipe && <RecipeFormScreen initialData={recipe} onBack={() => navigate('cookbook', { cbId, rId })} onSave={data => handleEditRecipe(cbId, rId, data)} saving={saving} unitPreference={profile?.unit_preference || 'metric'} />}
           {s === 'recipe' && cb && recipe && (
             <RecipeDetailScreen
