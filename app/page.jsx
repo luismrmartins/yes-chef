@@ -185,16 +185,17 @@ const STYLES = `
     color: #B8B0A8; text-decoration: line-through;
   }
   .cook-current {
-    background: #FFFFFF; padding: 24px;
+    background: #FFFFFF; padding: 36px 28px;
     border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
   }
   .cook-step-label {
-    font-family: 'DM Mono', monospace; font-weight: 400; font-size: 9px;
-    letter-spacing: 0.14em; text-transform: uppercase; color: var(--blue); margin-bottom: 14px;
+    font-family: 'DM Mono', monospace; font-weight: 400; font-size: 10px;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--blue); margin-bottom: 22px;
   }
   .cook-current-text {
     font-family: 'Cormorant Garamond', serif; font-weight: 400; font-style: italic;
-    font-size: 22px; line-height: 1.65; color: var(--text-primary); margin: 0;
+    font-size: clamp(32px, 7vw, 52px); line-height: 1.35; color: var(--text-primary); margin: 0;
+    letter-spacing: -0.005em;
   }
   .cook-next {
     background: var(--paper); padding: 16px 24px;
