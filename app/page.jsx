@@ -175,7 +175,7 @@ const STYLES = `
   .cook-next { padding: 24px 0 20px; border-top: 1px solid #252320; }
   .cook-next-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: #4A4845; margin-bottom: 10px; }
   .cook-next-text { font-family: 'DM Mono', monospace; font-size: 14px; line-height: 1.6; color: #3A3835; font-weight: 300; letter-spacing: 0.02em; }
-  .cook-footer { padding: 20px 28px 40px; }
+  .cook-footer { padding: 20px 28px max(28px, calc(env(safe-area-inset-bottom, 0px) + 20px)); position: relative; z-index: 10; }
   .cook-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .cook-nav-btn { flex: 1; height: 44px; border: 1px solid #3A3835; background: transparent; color: #9A9590; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; font-family: 'DM Mono', monospace; font-weight: 300; transition: all 0.15s; border-radius: 0; }
   .cook-nav-btn:last-child { border-color: #F5F3EF; color: #F5F3EF; }
