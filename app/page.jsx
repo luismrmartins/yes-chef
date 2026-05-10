@@ -567,10 +567,17 @@ const STYLES = `
      .app-content the wrapper must size to the available height, not 100vh. */
   .home-wrapper { height: 100%; }
 
-  /* On desktop, let the home page span the full width — bypass the
-     480px content cap so the 3 columns have room. */
+  /* Desktop: open up the layout so screens don't feel mobile-narrow. */
   @media (min-width: 768px) {
+    /* Home spans the full width to make room for the 3 columns. */
     .app-content-inner:has(.home-wrapper) { max-width: none; }
+    /* Other screens cap at a comfortable desktop width — wider than the
+       mobile column but still bounded for readability. */
+    .app-content-inner { max-width: 960px; }
+    /* Discovery picks become a 2-column grid on desktop. */
+    .discover-picks-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    /* Cookbook recipe list breathes a bit wider. */
+    .recipe-list-row { padding-left: 32px; padding-right: 32px; }
   }
 
   /* ── Screen transitions ──────────────────────────────── */
@@ -1214,25 +1221,18 @@ function DiscoverScreen({ currentUserId, onOpenRecipe, onSaveToLibrary, savedRec
         ) : picks.length === 0 ? (
           <div style={{ padding: '20px', fontFamily: "'Courier Prime', 'Courier New', monospace", fontSize: 14, color: 'var(--text-muted)' }}>No picks today — you've cooked or saved everything we have!</div>
         ) : (
-          picks.map(r => (
-            <DiscoverPickCard
-              key={r.id}
-              recipe={r}
-              onOpen={() => onOpenRecipe?.(r.id)}
-              onSave={() => onSaveToLibrary?.(r.id, null)}
-              saved={savedRecipeIds?.has?.(r.id) ?? false}
-            />
-          ))
+          <div className="discover-picks-grid">
+            {[...picks, ...extras].map(r => (
+              <DiscoverPickCard
+                key={r.id}
+                recipe={r}
+                onOpen={() => onOpenRecipe?.(r.id)}
+                onSave={() => onSaveToLibrary?.(r.id, null)}
+                saved={savedRecipeIds?.has?.(r.id) ?? false}
+              />
+            ))}
+          </div>
         )}
-        {extras.map(r => (
-          <DiscoverPickCard
-            key={r.id}
-            recipe={r}
-            onOpen={() => onOpenRecipe?.(r.id)}
-            onSave={() => onSaveToLibrary?.(r.id, null)}
-            saved={savedRecipeIds?.has?.(r.id) ?? false}
-          />
-        ))}
         <div style={{ padding: '16px 20px' }}>
           <button
             onClick={loadMore}
