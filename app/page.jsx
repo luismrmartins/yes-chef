@@ -1536,7 +1536,8 @@ function RecipeFormScreen({ initialData, onBack, onSave, saving, unitPreference 
     }
 
     const ingredientsToSave = finalIngredients.filter(i => i.name.trim());
-    const stepsToSave = finalSteps.filter(s => s.text.trim()).map(s => ({ ...s, timer: s.hasTimer ? (parseInt(s.timer) || null) : null }));
+    // Timers are no longer authored on recipe steps — they're ad-hoc in cook mode.
+    const stepsToSave = finalSteps.filter(s => s.text.trim()).map(s => ({ ...s, timer: null }));
 
     if (!name.trim() || !ingredientsToSave.length || !stepsToSave.length) return;
 
@@ -1787,13 +1788,6 @@ function RecipeFormScreen({ initialData, onBack, onSave, saving, unitPreference 
                   {steps.length > 1 && <button className="remove-btn" onClick={() => removeStep(step.id)}>×</button>}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, color: 'var(--text-secondary)' }}>
-                    <input type="checkbox" checked={step.hasTimer} onChange={e => updateStep(step.id, 'hasTimer', e.target.checked)} style={{ accentColor: 'var(--blue)' }} />
-                    Timer
-                  </label>
-                  {step.hasTimer && (
-                    <input className="form-input" type="number" placeholder="min" value={step.timer || ''} onChange={e => updateStep(step.id, 'timer', e.target.value)} style={{ width: 72 }} />
-                  )}
                   <button
                     type="button"
                     onClick={() => insertStepAfter(idx)}
@@ -2424,7 +2418,6 @@ function RecipeDetailScreen({
                   <div className="step-num">{idx + 1}</div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 14, lineHeight: 1.5 }}>{step.text}</div>
-                    {step.timer && <div style={{ fontSize: 12, color: 'var(--blue)', marginTop: 4, fontFamily: "'DM Mono', monospace" }}>{step.timer} min timer</div>}
                   </div>
                 </div>
                 {showAnnotations && stepId && (
@@ -2747,13 +2740,32 @@ function CookModeScreen({ recipe, onFinish, currentUserId }) {
   }, []);
 
   const fmt = s => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
-  const startTimer = (step, num) => setTimers(ts => [...ts, { id: generateId(), stepNum: num, label: step.text, totalSeconds: step.timer * 60, remaining: step.timer * 60, running: true }]);
+  // Ad-hoc timers: user adds one with any duration from inside cook mode.
+  const startCustomTimer = (mins) => {
+    const m = parseInt(mins, 10);
+    if (!Number.isFinite(m) || m <= 0) return;
+    setTimers(ts => [...ts, {
+      id: generateId(),
+      stepNum: stepIdx + 1,
+      label: `Step ${stepIdx + 1} · ${m} min`,
+      totalSeconds: m * 60,
+      remaining: m * 60,
+      running: true,
+    }]);
+  };
   const toggleTimer = id => setTimers(ts => ts.map(t => t.id === id ? { ...t, running: !t.running } : t));
   const resetTimer = id => setTimers(ts => ts.map(t => t.id === id ? { ...t, remaining: t.totalSeconds, running: false } : t));
   const removeTimer = id => setTimers(ts => ts.filter(t => t.id !== id));
-  const stepTimerActive = current.timer && timers.some(t => t.stepNum === stepIdx + 1 && t.remaining > 0);
 
-  const stepTimer = current.timer ? timers.find(t => t.stepNum === stepIdx + 1) : null;
+  const [addingTimer, setAddingTimer] = useState(false);
+  const [customMinutes, setCustomMinutes] = useState('');
+  const handleAddTimer = (mins) => {
+    startCustomTimer(mins);
+    setAddingTimer(false);
+    setCustomMinutes('');
+    setDrawerOpen(true);
+  };
+
   const isLast = stepIdx === steps.length - 1;
 
   return (
@@ -2804,21 +2816,82 @@ function CookModeScreen({ recipe, onFinish, currentUserId }) {
             ) : null;
           })()}
 
-          {current.timer && (
-            <div className="cook-timer-widget">
-              <div>
-                <div className="cook-timer-display">{stepTimer ? fmt(stepTimer.remaining) : `${String(current.timer).padStart(2, '0')}:00`}</div>
-                <div className="cook-timer-sub">{current.timer} min timer</div>
+          {/* Ad-hoc timer: add one at any step with a custom duration */}
+          {!addingTimer ? (
+            <div style={{ marginTop: 20 }}>
+              <button
+                onClick={() => setAddingTimer(true)}
+                style={{
+                  background: 'transparent', border: '1px solid var(--rule)',
+                  padding: '8px 14px', cursor: 'pointer',
+                  fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 400,
+                  textTransform: 'uppercase', letterSpacing: '0.08em',
+                  color: 'var(--text-primary)', borderRadius: 0,
+                }}
+              >
+                ⏱ + Add timer
+              </button>
+            </div>
+          ) : (
+            <div className="cook-timer-widget" style={{ marginTop: 16, flexDirection: 'column', alignItems: 'stretch', gap: 10 }}>
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-muted)' }}>
+                Add timer
               </div>
-              {!stepTimer ? (
-                <button className="cook-timer-btn-w" onClick={() => startTimer(current, stepIdx + 1)}>Start</button>
-              ) : stepTimer.remaining === 0 ? (
-                <button className="cook-timer-btn-w done" onClick={() => resetTimer(stepTimer.id)}>Done</button>
-              ) : (
-                <button className="cook-timer-btn-w running" onClick={() => toggleTimer(stepTimer.id)}>
-                  {stepTimer.running ? 'Pause' : 'Resume'}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {[1, 5, 10, 15, 30, 45, 60].map(m => (
+                  <button
+                    key={m}
+                    onClick={() => handleAddTimer(m)}
+                    style={{
+                      background: 'transparent', border: '1px solid var(--rule)',
+                      padding: '6px 10px', cursor: 'pointer',
+                      fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 400,
+                      color: 'var(--text-primary)', borderRadius: 0,
+                    }}
+                  >
+                    {m}m
+                  </button>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  autoFocus
+                  type="number"
+                  inputMode="numeric"
+                  placeholder="Custom (min)"
+                  value={customMinutes}
+                  onChange={e => setCustomMinutes(e.target.value.replace(/[^\d]/g, ''))}
+                  onKeyDown={e => { if (e.key === 'Enter') handleAddTimer(customMinutes); }}
+                  style={{
+                    flex: 1, padding: '8px 10px', border: '1px solid var(--rule)',
+                    background: 'var(--paper)', fontFamily: "'DM Mono', monospace",
+                    fontSize: 13, color: 'var(--text-primary)', outline: 'none', borderRadius: 0,
+                  }}
+                />
+                <button
+                  onClick={() => handleAddTimer(customMinutes)}
+                  disabled={!customMinutes || parseInt(customMinutes, 10) <= 0}
+                  style={{
+                    background: 'var(--blue)', border: 'none', color: 'var(--white)',
+                    padding: '8px 16px', cursor: 'pointer',
+                    fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 400,
+                    textTransform: 'uppercase', letterSpacing: '0.08em', borderRadius: 0,
+                  }}
+                >
+                  Start
                 </button>
-              )}
+                <button
+                  onClick={() => { setAddingTimer(false); setCustomMinutes(''); }}
+                  style={{
+                    background: 'transparent', border: '1px solid var(--rule)',
+                    color: 'var(--text-muted)', padding: '8px 12px', cursor: 'pointer',
+                    fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 400,
+                    textTransform: 'uppercase', letterSpacing: '0.08em', borderRadius: 0,
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -2889,7 +2962,7 @@ function CookModeScreen({ recipe, onFinish, currentUserId }) {
         </div>
         <div className="timers-drawer-body">
           {timers.length === 0 ? (
-            <div className="timers-drawer-empty">No timers yet.<br/>Start one from a step that has a timer.</div>
+            <div className="timers-drawer-empty">No timers yet.<br/>Tap "+ Add timer" on any step.</div>
           ) : timers.map(t => (
             <div key={t.id} style={{ padding: '14px 20px', borderBottom: '1px solid var(--rule)' }}>
               <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-muted)' }}>Step {t.stepNum}</div>
