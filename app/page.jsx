@@ -2960,9 +2960,62 @@ function CookModeScreen({ recipe, onFinish, currentUserId }) {
           <span className="timers-drawer-title">Timers</span>
           <button className="timers-drawer-close" onClick={() => setDrawerOpen(false)}>×</button>
         </div>
+        <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--rule)' }}>
+          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-muted)', marginBottom: 10 }}>
+            Add timer
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+            {[1, 5, 10, 15, 30, 45, 60].map(m => (
+              <button
+                key={m}
+                onClick={() => startCustomTimer(m)}
+                style={{
+                  background: 'transparent', border: '1px solid var(--rule)',
+                  padding: '6px 10px', cursor: 'pointer',
+                  fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 400,
+                  color: 'var(--text-primary)', borderRadius: 0,
+                }}
+              >
+                {m}m
+              </button>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              type="number"
+              inputMode="numeric"
+              placeholder="Custom (min)"
+              value={customMinutes}
+              onChange={e => setCustomMinutes(e.target.value.replace(/[^\d]/g, ''))}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  startCustomTimer(customMinutes);
+                  setCustomMinutes('');
+                }
+              }}
+              style={{
+                flex: 1, padding: '8px 10px', border: '1px solid var(--rule)',
+                background: 'var(--paper)', fontFamily: "'DM Mono', monospace",
+                fontSize: 13, color: 'var(--text-primary)', outline: 'none', borderRadius: 0,
+              }}
+            />
+            <button
+              onClick={() => { startCustomTimer(customMinutes); setCustomMinutes(''); }}
+              disabled={!customMinutes || parseInt(customMinutes, 10) <= 0}
+              style={{
+                background: 'var(--blue)', border: 'none', color: 'var(--white)',
+                padding: '8px 16px', cursor: 'pointer',
+                fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 400,
+                textTransform: 'uppercase', letterSpacing: '0.08em', borderRadius: 0,
+              }}
+            >
+              Start
+            </button>
+          </div>
+        </div>
         <div className="timers-drawer-body">
           {timers.length === 0 ? (
-            <div className="timers-drawer-empty">No timers yet.<br/>Tap "+ Add timer" on any step.</div>
+            <div className="timers-drawer-empty">No timers running.<br/>Add one above.</div>
           ) : timers.map(t => (
             <div key={t.id} style={{ padding: '14px 20px', borderBottom: '1px solid var(--rule)' }}>
               <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text-muted)' }}>Step {t.stepNum}</div>
